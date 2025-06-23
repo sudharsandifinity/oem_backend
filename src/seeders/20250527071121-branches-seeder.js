@@ -6,6 +6,7 @@ module.exports = {
     await queryInterface.bulkInsert('branches', [
       {
         companyId: 1,
+        branch_code: 'X001',
         name: 'Difinity Kerala',
         city: 'Kerala',
         address: '123 Church St.',
@@ -15,6 +16,7 @@ module.exports = {
       },
       {
         companyId: 1,
+        branch_code: 'X002',
         name: 'Difinity Chennai',
         city: 'Chennai',
         address: 'Greams Road',
@@ -24,6 +26,7 @@ module.exports = {
       },
       {
         companyId: 1,
+        branch_code: 'X003',
         name: 'Difinity Coimbatore',
         city: 'Coimbatore',
         address: 'Avinashi Road',
@@ -33,6 +36,7 @@ module.exports = {
       },
       {
         companyId: 2,
+        branch_code: 'Y001',
         name: 'Colan Bangalore',
         city: 'Bangalore',
         address: 'Indiranagar',
@@ -42,6 +46,7 @@ module.exports = {
       },
       {
         companyId: 2,
+        branch_code: 'Y002',
         name: 'Colan Mumbai',
         city: 'Mumbai',
         address: 'Andheri East',
@@ -51,6 +56,7 @@ module.exports = {
       },
       {
         companyId: 2,
+        branch_code: 'Y003',
         name: 'Colan Delhi',
         city: 'Delhi',
         address: 'Connaught Place',
@@ -60,6 +66,7 @@ module.exports = {
       },
       {
         companyId: 3,
+        branch_code: 'Z001',
         name: 'ABC Hyderabad',
         city: 'Hyderabad',
         address: 'HiTech City',
@@ -69,6 +76,7 @@ module.exports = {
       },
       {
         companyId: 3,
+        branch_code: 'Z002',
         name: 'ABC Kochi',
         city: 'Kochi',
         address: 'MG Road',
@@ -78,6 +86,7 @@ module.exports = {
       },
       {
         companyId: 3,
+        branch_code: 'Z003',
         name: 'ABC Trivandrum',
         city: 'Trivandrum',
         address: 'Technopark',
@@ -87,6 +96,7 @@ module.exports = {
       },
       {
         companyId: 3,
+        branch_code: 'Z004',
         name: 'ABC Pune',
         city: 'Pune',
         address: 'FC Road',

@@ -5,6 +5,14 @@ const createCompanySchema = Joi.object({
         'string.empty': 'Company name is required',
         'any.required': 'Company name is required'
     }),
+    company_code: Joi.string().required().messages({
+        'string.empty': 'Company Company Code is required',
+        'any.required': 'Company Company Code is required'
+    }),
+    company_db_name: Joi.string().required().messages({
+        'string.empty': 'Company Company DB Name is required',
+        'any.required': 'Company Company DB Name is required'
+    }),
     city: Joi.string().required().messages({
         'string.empty': 'City name is required',
         'any.required': 'City name is required'
@@ -12,6 +20,10 @@ const createCompanySchema = Joi.object({
     address: Joi.string().required().messages({
         'string.empty': 'Address is required',
         'any.required': 'Address is required'
+    }),
+    is_branch: Joi.number().max(1).optional().messages({
+        'number.base': 'Is have a branch must be a number',
+        'number.max': 'Is have a branch cannot be more than 1'
     }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
@@ -23,11 +35,23 @@ const updateCompanySchema = Joi.object({
     name: Joi.string().optional().messages({
         'string.empty': 'Company name cannot be empty'
     }),
+    company_code: Joi.string().optional().messages({
+        'string.empty': 'Company Company Code cannot be empty',
+        'any.required': 'Company Company Code cannot be empty'
+    }),
+    company_db_name: Joi.string().optional().messages({
+        'string.empty': 'Company Company DB Name cannot be empty',
+        'any.required': 'Company Company DB Name cannot be empty'
+    }),
     city: Joi.string().optional().messages({
         'string.empty': 'City name cannot be empty'
     }),
     address: Joi.string().optional().messages({
         'string.email': 'Address cannot be empty'
+    }),
+    is_branch: Joi.number().max(1).optional().messages({
+        'number.base': 'Is have a branch must be a number',
+        'number.max': 'Is have a branch cannot be more than 1'
     }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',

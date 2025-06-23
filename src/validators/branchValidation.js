@@ -5,6 +5,9 @@ const createBranchSchema = Joi.object({
     companyId: Joi.required().messages({
         'any.required': 'Company ID is required'
     }),
+    branch_code: Joi.required().messages({
+        'any.required': 'Branch Code is required'
+    }),
     name: Joi.string().required().messages({
         'string.empty': 'Branch name is required',
         'any.required': 'Branch name is required'
@@ -27,6 +30,9 @@ const createBranchSchema = Joi.object({
 const updateBranchSchema = Joi.object({
     companyId: Joi.optional().messages({
         'number.empty': 'Compnay ID cannot be empty'
+    }),
+    branch_code: Joi.optional().messages({
+        'any.required': 'Branch Code cannot be empty'
     }),
     name: Joi.string().optional().messages({
         'string.empty': 'Branch name cannot be empty'

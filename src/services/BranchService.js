@@ -1,3 +1,4 @@
+const logger = require("../config/logger");
 const { encodeId, decodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
 
@@ -35,6 +36,18 @@ class BranchService extends BaseService{
     }
 
     async create(data){
+        const existing = await this.repository.findByName(data.name);
+        if(existing) {
+            logger.warn('Breanch name is already exists', {Name: data.name});
+            throw new Error('Branch name is already exist!');
+        }
+
+        const branchCode = await this.repository.findBranchCode(data.branch_code);
+        if(branchCode) {
+            logger.warn('Breanch Code is already exists', {Code: data.branch_code});
+            throw new Error('Branch Code is already exist!');
+        }
+        
         if (data.companyId) {
             data.companyId = decodeId(data.companyId);
         }
@@ -49,6 +62,20 @@ class BranchService extends BaseService{
     async update(id, data){
         if (data.companyId) {
             data.companyId = decodeId(data.companyId);
+        }
+        if (data.name) {
+            const existing = await this.repository.findByName(data.name);
+            if (existing && existing.id != id) {
+                logger.warn('Branch name is already exists', {Name: data.name});
+                throw new Error('Branch name is already exist!');
+            }
+        }
+        if (data.branch_code) {
+            const existing_code = await this.repository.findBranchCode(data.branch_code);
+            if(existing_code) {
+                logger.warn('Branch Code is already exists', {BranchCode: data.branch_code});
+                throw new Error('Branch Code is already exist!');
+            }
         }
         const item = await this.repository.update(id, data);
         const result = item.toJSON();

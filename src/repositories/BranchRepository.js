@@ -15,6 +15,10 @@ class BranchRepository extends BaseRepository{
         return await this.model.findByPk(id, { include: Company });
     }
 
+    async findBranchCode(branch_code){
+        return await this.model.findOne({where: {branch_code}});
+    }
+
 }
 
 module.exports = BranchRepository;

@@ -14,6 +14,15 @@ module.exports = {
         unique: true,
         allowNull: true
       },
+      company_code: {
+        type: Sequelize.STRING,
+        unique: true,
+        allowNull: true
+      },
+      company_db_name: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       city: {
         type: Sequelize.STRING,
         allowNull: true
@@ -21,6 +30,11 @@ module.exports = {
       address: {
         type: Sequelize.TEXT,
         allowNull: true
+      },
+      is_branch: {
+        type: Sequelize.TINYINT,
+        comment: "0-false 1-true",
+        defaultValue: 0
       },
       status: {
         type: Sequelize.TINYINT,

@@ -25,10 +25,18 @@ class CompanyService extends BaseService{
 
     async create(data){
         const existing = await this.repository.findByName(data.name);
+        const existing_code = await this.repository.findCompanyCode(data.company_code);
+
         if(existing) {
             logger.warn('Company name is already exists', {Name: data.name});
             throw new Error('Company name is already exist!');
         }
+
+        if(existing_code) {
+            logger.warn('Company Code is already exists', {Name: data.company_code});
+            throw new Error('Company Code is already exist!');
+        }
+
         const company = await this.repository.create(data);
         const json = company.toJSON();
         json.id = encodeId(json.id)
@@ -41,6 +49,13 @@ class CompanyService extends BaseService{
             if (existing && existing.id != id) {
                 logger.warn('Company name is already exists', {Name: data.name});
                 throw new Error('Company name is already exist!');
+            }
+        }
+        if (data.company_code) {
+            const existing_code = await this.repository.findCompanyCode(data.company_code);
+            if(existing_code) {
+                logger.warn('Company Code is already exists', {Name: data.company_code});
+                throw new Error('Company Code is already exist!');
             }
         }
         return await this.repository.update(id, data);
