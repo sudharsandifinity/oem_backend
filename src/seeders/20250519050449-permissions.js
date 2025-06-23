@@ -1,0 +1,181 @@
+'use strict';
+
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up (queryInterface, Sequelize) {
+    await queryInterface.bulkInsert('permissions', [
+      {
+        name: 'user_list',
+        module: 'users',
+        http_method: 'GET',
+        route: '/api/v1/admin/users',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_get',
+        module: 'users',
+        http_method: 'GET',
+        route: '/api/v1/admin/users/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_create',
+        module: 'users',
+        http_method: 'POST',
+        route: '/api/v1/admin/users',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_update',
+        module: 'users',
+        http_method: 'PUT',
+        route: '/api/v1/admin/users/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_delete',
+        module: 'users',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/users/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'role_list',
+        module: 'roles',
+        http_method: 'GET',
+        route: '/api/v1/admin/roles',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'role_get',
+        module: 'roles',
+        http_method: 'GET',
+        route: '/api/v1/admin/roles/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'role_create',
+        module: 'roles',
+        http_method: 'POST',
+        route: '/api/v1/admin/roles',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'role_update',
+        module: 'roles',
+        http_method: 'PUT',
+        route: '/api/v1/admin/roles/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'role_delete',
+        module: 'roles',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/roles/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'permission_list',
+        module: 'permissions',
+        http_method: 'GET',
+        route: '/api/v1/admin/permissions',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_list',
+        module: 'companies',
+        http_method: 'GET',
+        route: '/api/v1/admin/companies',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_get',
+        module: 'companies',
+        http_method: 'GET',
+        route: '/api/v1/admin/companies/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_create',
+        module: 'companies',
+        http_method: 'POST',
+        route: '/api/v1/admin/companies',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_update',
+        module: 'companies',
+        http_method: 'PUT',
+        route: '/api/v1/admin/companies/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_delete',
+        module: 'companies',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/companies/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'branch_list',
+        module: 'branches',
+        http_method: 'GET',
+        route: '/api/v1/admin/branches',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'branch_get',
+        module: 'branches',
+        http_method: 'GET',
+        route: '/api/v1/admin/branches/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'branch_create',
+        module: 'branches',
+        http_method: 'POST',
+        route: '/api/v1/admin/branches',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'branch_update',
+        module: 'branches',
+        http_method: 'PUT',
+        route: '/api/v1/admin/branches/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'branch_delete',
+        module: 'branches',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/branches/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ], {});
+  },
+
+  async down (queryInterface, Sequelize) {
+    await queryInterface.bulkDelete('permissions', null, {});
+  }
+};
