@@ -171,6 +171,46 @@ module.exports = {
         route: '/api/v1/admin/branches/:id',
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      {
+        name: 'form_list',
+        module: 'forms',
+        http_method: 'GET',
+        route: '/api/v1/admin/forms',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_get',
+        module: 'forms',
+        http_method: 'GET',
+        route: '/api/v1/admin/forms/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_create',
+        module: 'forms',
+        http_method: 'POST',
+        route: '/api/v1/admin/forms',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_update',
+        module: 'forms',
+        http_method: 'PUT',
+        route: '/api/v1/admin/forms/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_delete',
+        module: 'forms',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/forms/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ], {});
   },
