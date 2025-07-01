@@ -211,7 +211,48 @@ module.exports = {
         route: '/api/v1/admin/forms/:id',
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      {
+        name: 'company_form_list',
+        module: 'company_forms',
+        http_method: 'GET',
+        route: '/api/v1/admin/company-forms',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_get',
+        module: 'company_forms',
+        http_method: 'GET',
+        route: '/api/v1/admin/company-forms/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_create',
+        module: 'company_forms',
+        http_method: 'POST',
+        route: '/api/v1/admin/company-forms',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_update',
+        module: 'company_forms',
+        http_method: 'PUT',
+        route: '/api/v1/admin/company-forms/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_delete',
+        module: 'company_forms',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/company-forms/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
+
     ], {});
   },
 

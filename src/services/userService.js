@@ -13,7 +13,6 @@ class UserService extends BaseService {
 
         return users.map(user => {
             const json = user.toJSON();
-            console.log('users', json);
             
             json.id = encodeId(json.id);
             json.roleId = encodeId(json.roleId);
