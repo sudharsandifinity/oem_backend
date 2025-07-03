@@ -11,6 +11,7 @@ class CompanyFormService extends BaseService {
         const datas = await this.repository.findAll();
         return datas.map((data) => {
             const json = data.toJSON();
+            json.id = encodeId(json.id);
             json.companyId = encodeId(json.companyId);
             json.formId = encodeId(json.formId);
             if(json.Company){
@@ -21,6 +22,17 @@ class CompanyFormService extends BaseService {
             }
             return json;
         })
+    }
+
+    async getById(id){
+        
+        const data = await this.repository.findById(id);
+        if (!data) return null;
+        const result = data.toJSON();
+        result.id = encodeId(result.id);
+        result.CompanyId = encodeId(result.CompanyId);
+        result.FormId = encodeId(result.FormId);
+        return result;
     }
 
     async create(data){
