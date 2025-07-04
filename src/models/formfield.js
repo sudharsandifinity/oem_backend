@@ -20,7 +20,6 @@ module.exports = (sequelize, DataTypes) => {
     field_name: DataTypes.STRING,
     display_name: DataTypes.STRING,
     input_type: DataTypes.STRING,
-    display_position: DataTypes.STRING,
     field_order: DataTypes.STRING,
     is_visible: DataTypes.TINYINT,
     is_field_data_bind: DataTypes.TINYINT,

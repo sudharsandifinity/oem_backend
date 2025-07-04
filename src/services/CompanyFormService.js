@@ -30,8 +30,8 @@ class CompanyFormService extends BaseService {
         if (!data) return null;
         const result = data.toJSON();
         result.id = encodeId(result.id);
-        result.CompanyId = encodeId(result.CompanyId);
-        result.FormId = encodeId(result.FormId);
+        result.Company.id = encodeId(result.Company.id);
+        result.Form.id = encodeId(result.Form.id);
         return result;
     }
 
@@ -46,26 +46,22 @@ class CompanyFormService extends BaseService {
         }
 
         const item = await this.repository.create(data);
-        const result = item.toJSON();
-        result.id = encodeId(result.id);
-        result.companyId = encodeId(result.companyId);
-        result.formId = encodeId(result.formId);
+        const result = await this.getById(item.id);
         return result;
     }
 
     async update(id, data){
+        
         if (data.companyId) {
             data.companyId = decodeId(data.companyId);
         }
+        
         if (data.formId) {
             data.formId = decodeId(data.formId);
         }
         
-        const item = await this.repository.update(id, data);
-        const result = item.toJSON();
-        result.id = encodeId(item.id)
-        result.companyId = encodeId(item.companyId)
-        result.formId = encodeId(item.formId)
+        await this.repository.update(id, data);
+        const result = await this.getById(id);
         return result;
     }
 

@@ -16,10 +16,6 @@ class FromFieldRepository extends BaseRepository {
         });
     }
 
-    async findByName(field_name){
-        return await this.model.findOne({ where: { field_name }});
-    }
-
     async findById(id) {
         return await this.model.findByPk(id, {
             attributes: {

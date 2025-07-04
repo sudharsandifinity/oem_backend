@@ -251,6 +251,86 @@ module.exports = {
         route: '/api/v1/admin/company-forms/:id',
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      {
+        name: 'form_section_list',
+        module: 'form_sections',
+        http_method: 'GET',
+        route: '/api/v1/admin/form-sections',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_section_get',
+        module: 'form_sections',
+        http_method: 'GET',
+        route: '/api/v1/admin/form-sections/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_section_create',
+        module: 'form_sections',
+        http_method: 'POST',
+        route: '/api/v1/admin/form-sections',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_section_update',
+        module: 'form_sections',
+        http_method: 'PUT',
+        route: '/api/v1/admin/form-sections/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_section_delete',
+        module: 'form_sections',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/form-sections/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_field_list',
+        module: 'form_fields',
+        http_method: 'GET',
+        route: '/api/v1/admin/form-fields',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_field_get',
+        module: 'form_fields',
+        http_method: 'GET',
+        route: '/api/v1/admin/form-fields/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_field_create',
+        module: 'form_fields',
+        http_method: 'POST',
+        route: '/api/v1/admin/form-fields',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_field_update',
+        module: 'form_fields',
+        http_method: 'PUT',
+        route: '/api/v1/admin/form-fields/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'form_field_delete',
+        module: 'form_fields',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/form-fields/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
 
     ], {});

@@ -1,10 +1,12 @@
 const Joi = require('joi');
 
 const createFormFieldSchema = Joi.object({
-  formId: Joi.required().messages({
+  formId: Joi.string().required().messages({
+    'string.empty': 'Form Id is required',
     'any.required': 'Form ID is required'
   }),
-  formSectionId: Joi.required().messages({
+  formSectionId: Joi.string().required().messages({
+    'string.empty': 'Form Section ID is required',
     'any.required': 'Form Section ID is required'
   }),
   field_name: Joi.string().required().messages({
@@ -19,7 +21,6 @@ const createFormFieldSchema = Joi.object({
     'string.empty': 'Input type is required',
     'any.required': 'Input type is required'
   }),
-  display_position: Joi.string().optional(),
   field_order: Joi.string().optional(),
   is_visible: Joi.number().max(1).optional().messages({
     'number.base': 'Is Visible must be a number',
@@ -38,9 +39,11 @@ const createFormFieldSchema = Joi.object({
 
 const updateFormFieldSchema = Joi.object({
   formId: Joi.string().optional().messages({
-    'string.empty': 'Form ID is required'
+    'string.empty': 'Form Id cannot be empty',
+    'any.required': 'Form ID is required'
   }),
-  formSectionId: Joi.optional().messages({
+  formSectionId: Joi.string().optional().messages({
+    'string.empty': 'Form Section Id cannot be empty',
     'any.required': 'Form Section ID is required'
   }),
   field_name: Joi.string().optional().messages({
@@ -52,7 +55,6 @@ const updateFormFieldSchema = Joi.object({
   input_type: Joi.string().optional().messages({
     'string.empty': 'Input type cannot be empty'
   }),
-  display_position: Joi.string().optional(),
   field_order: Joi.string().optional(),
   is_visible: Joi.number().max(1).optional().messages({
     'number.base': 'Is Visible must be a number',
@@ -69,14 +71,12 @@ const updateFormFieldSchema = Joi.object({
   })
 });
 
-// ID Validator (for GET /:id, etc.)
 const getByPkSchema = Joi.object({
   id: Joi.string().required().messages({
     'any.required': 'ID is required'
   })
 });
 
-// Middleware to validate request body
 function validate(schema) {
   return (req, res, next) => {
     const { error } = schema.validate(req.body, { abortEarly: true });
@@ -87,7 +87,6 @@ function validate(schema) {
   };
 }
 
-// Middleware to validate URL params
 function validateParams(schema) {
   return (req, res, next) => {
     const { error } = schema.validate(req.params, { abortEarly: true });

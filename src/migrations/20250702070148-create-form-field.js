@@ -30,7 +30,6 @@ module.exports = {
       },
       field_name: {
         type: Sequelize.STRING,
-        unique: true,
         allowNull: true,
       },
       display_name: {
@@ -38,10 +37,6 @@ module.exports = {
         allowNull: true,
       },
       input_type: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
-      display_position: {
         type: Sequelize.STRING,
         allowNull: true,
       },

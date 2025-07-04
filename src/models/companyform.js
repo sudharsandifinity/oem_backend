@@ -17,7 +17,8 @@ module.exports = (sequelize, DataTypes) => {
   CompanyForm.init({
     companyId: DataTypes.INTEGER,
     formId: DataTypes.INTEGER,
-    form_type: DataTypes.STRING
+    form_type: DataTypes.STRING,
+    status: DataTypes.TINYINT
   }, {
     sequelize,
     modelName: 'CompanyForm',

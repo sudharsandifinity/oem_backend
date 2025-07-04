@@ -7,12 +7,22 @@ class CompanyFormRepository extends BaseRepository {
         super(CompanyForm);
     }
 
-    async findAll(){
-        return await this.model.findAll({ include: [Company, Form] });
+    async findAll() {
+        return await this.model.findAll({
+            attributes: {
+            exclude: ['formId', 'companyId', 'FormId', 'CompanyId']
+            },
+            include: [Company, Form]
+        });
     }
 
     async findById(id){
-        return await this.model.findByPk(id, { include: [Company, Form] });
+        return await this.model.findByPk(id, {
+            attributes: {
+                exclude: ['formId', 'companyId', 'FormId', 'CompanyId']
+            },
+            include: [Company, Form] 
+        });
     }
 
 }

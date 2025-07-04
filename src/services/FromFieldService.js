@@ -36,12 +36,6 @@ class FromFieldService extends BaseService{
     }
 
     async create(data){
-        const existing = await this.repository.findByName(data.field_name);
-
-        if(existing) {
-            logger.warn('Field name is already exists', {Name: data.field_name});
-            throw new Error('Company name is already exist!');
-        }
 
         if(data.formId){
             data.formId = decodeId(data.formId)
@@ -62,14 +56,6 @@ class FromFieldService extends BaseService{
         }
         if (data.formSectionId) {
             data.formSectionId = decodeId(data.formSectionId);
-        }
-
-        if (data.field_name) {
-            const existing = await this.repository.findByName(data.field_name);
-            if (existing && existing.id != id) {
-                logger.warn('Field name is already exists', {Name: data.field_name});
-                throw new Error('Field name is already exist!');
-            }
         }
         
         const item = await this.repository.update(id, data);
