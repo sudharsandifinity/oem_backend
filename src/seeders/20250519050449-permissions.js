@@ -331,8 +331,47 @@ module.exports = {
         route: '/api/v1/admin/form-fields/:id',
         createdAt: new Date(),
         updatedAt: new Date()
-      }
-
+      },
+      {
+        name: 'company_form_field_list',
+        module: 'company_form_fields',
+        http_method: 'GET',
+        route: '/api/v1/admin/company-form-fields',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_field_get',
+        module: 'company_form_fields',
+        http_method: 'GET',
+        route: '/api/v1/admin/company-form-fields/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_field_create',
+        module: 'company_form_fields',
+        http_method: 'POST',
+        route: '/api/v1/admin/company-form-fields',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_field_update',
+        module: 'company_form_fields',
+        http_method: 'PUT',
+        route: '/api/v1/admin/company-form-fields/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'company_form_field_delete',
+        module: 'company_form_fields',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/company-form-fields/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
     ], {});
   },
 
