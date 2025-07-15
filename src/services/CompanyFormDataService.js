@@ -1,4 +1,4 @@
-const { encodeId } = require("../utils/hashids");
+const { encodeId, decodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
 
 class CompanyFormDataService extends BaseService {
@@ -40,41 +40,35 @@ class CompanyFormDataService extends BaseService {
         return result;
     }
 
-    // async create(data){
+    async create(data) {
+   
+        if (typeof data.form_data === 'object' && data.form_data !== null) {
+            data.form_data = JSON.stringify(data.form_data);
+        }
 
-    //     if(data.companyId){
-    //         data.companyId = decodeId(data.companyId)
-    //     }
+        if (data.companyFormId) {
+            data.companyFormId = decodeId(data.companyFormId);
+        }
 
-    //     if(data.formId){
-    //         data.formId = decodeId(data.formId)
-    //     }
+        const formData = await this.repository.create(data);
+        const result = await this.getById(formData.id);
+        return result;
+    }
 
-    //     if(data.formSectionId){
-    //         data.formSectionId = decodeId(data.formSectionId)
-    //     }
-
-    //     const FormField = await this.repository.create(data);
-    //     const result = await this.getById(FormField.id)
-    //     return result;
-    // }
-
-    // async update(id, data){
-    //     if(data.companyId){
-    //         data.companyId = decodeId(data.companyId)
-    //     }
+    async update(id, data){
         
-    //     if (data.formId) {
-    //         data.formId = decodeId(data.formId);
-    //     }
-    //     if (data.formSectionId) {
-    //         data.formSectionId = decodeId(data.formSectionId);
-    //     }
+        if (typeof data.form_data === 'object' && data.form_data !== null) {
+            data.form_data = JSON.stringify(data.form_data);
+        }
+
+        if (data.companyFormId) {
+            data.companyFormId = decodeId(data.companyFormId);
+        }
         
-    //     const item = await this.repository.update(id, data);
-    //     const result = await this.getById(item.id)
-    //     return result;
-    // }
+        const item = await this.repository.update(id, data);
+        const result = await this.getById(item.id)
+        return result;
+    }
 
 }
 

@@ -1,22 +1,29 @@
 const Joi = require('joi');
 
 const createCompanyFormDataSchema = Joi.object({
-  companyFormId: Joi.number().integer().required().messages({
-    'number.base': 'Company Form ID must be a number',
-    'any.required': 'Company Form ID is required'
-  }),
-  form_data: Joi.string().allow(null, '').optional().messages({
-    'string.base': 'Form data must be a string'
-  })
+    companyFormId: Joi.string().required().messages({
+        'string.empty': 'Form Id is required',
+        'any.required': 'Form ID is required'
+    }),
+    form_data: Joi.alternatives(
+        Joi.string(),
+        Joi.object()
+        ).optional().messages({
+        'string.base': 'Form data must be a string or an object'
+    })
 });
 
 const updateCompanyFormDataSchema = Joi.object({
-  companyFormId: Joi.number().integer().optional().messages({
-    'number.base': 'Company Form ID must be a number'
-  }),
-  form_data: Joi.string().allow(null, '').optional().messages({
-    'string.base': 'Form data must be a string'
-  })
+    companyFormId: Joi.string().required().messages({
+        'string.empty': 'Company Id is required',
+        'any.required': 'Company ID is required'
+    }),
+    form_data: Joi.alternatives(
+        Joi.string(),
+        Joi.object()
+        ).optional().messages({
+        'string.base': 'Form data must be a string or an object'
+    })
 });
 
 const getByPkSchema = Joi.object({
