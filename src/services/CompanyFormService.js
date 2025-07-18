@@ -17,7 +17,7 @@ class CompanyFormService extends BaseService {
             if(json.Company){
                 json.Company.id = encodeId(json.Company.id)
             }
-            if(json.formId){
+            if(json.Form){
                 json.Form.id = encodeId(json.Form.id)
             }
             return json;
