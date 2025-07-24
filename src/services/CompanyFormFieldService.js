@@ -1,71 +1,31 @@
 const logger = require("../config/logger");
 const { encodeId, decodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
-const {Form,Company,FormSection} = require('../models')
 
 class CompanyFormFieldService extends BaseService{
 
-    constructor(companyFormFieldRepository, formFieldRepository) {
-        super(companyFormFieldRepository);
-        this.formFieldRepository = formFieldRepository;
+    constructor(FromFieldRepository){
+        super(FromFieldRepository)
     }
 
-    // async getAll(){
-    //     const formFields = await this.repository.findAll();
+    async getAll(){
+        const formFields = await this.repository.findAll();
 
-    //     return formFields.map(formField => {
-    //         const json = formField.toJSON();
-    //         json.id = encodeId(json.id);
+        return formFields.map(formField => {
+            const json = formField.toJSON();
+            json.id = encodeId(json.id);
 
-    //         if(json.Form){
-    //             json.Form.id = encodeId(json.Form.id)
-    //         }
-    //         if(json.Company){
-    //             json.Company.id = encodeId(json.Company.id)
-    //         }
-    //         if(json.FormSection){
-    //             json.FormSection.id = encodeId(json.FormSection.id)
-    //         }
-    //         return json;
-    //     })
-    // }
-
-    async getAll() {
-        try {
-            const companyFields = await this.repository.findAll({
-                where: { status: 1 },
-                include: [Form, FormSection, Company]
-            });
-
-            const defaultFields = await this.formFieldRepository.findAll({
-                where: { status: 1 },
-                include: [Form, FormSection]
-            });
-
-            const overriddenFieldNames = companyFields.map(f => f.field_name);
-
-            const filteredDefaults = defaultFields.filter(
-                f => !overriddenFieldNames.includes(f.field_name)
-            );
-
-            const allFields = [...companyFields, ...filteredDefaults];
-
-            return allFields.map(field => {
-                const json = field.toJSON();
-                json.id = encodeId(json.id);
-                if (json.Form) json.Form.id = encodeId(json.Form.id);
-                if (json.Company) json.Company.id = encodeId(json.Company.id);
-                if (json.FormSection) json.FormSection.id = encodeId(json.FormSection.id);
-                return json;
-            });
-
-        } catch (error) {
-            logger.error("Error while getting Company Form Fields", error);
-            throw {
-                message: "Error while getting Company Form Fields",
-                error: error.message || error
-            };
-        }
+            if(json.Form){
+                json.Form.id = encodeId(json.Form.id)
+            }
+            if(json.Company){
+                json.Company.id = encodeId(json.Company.id)
+            }
+            if(json.FormSection){
+                json.FormSection.id = encodeId(json.FormSection.id)
+            }
+            return json;
+        })
     }
 
     async getById(id){
