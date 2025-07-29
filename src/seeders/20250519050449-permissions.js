@@ -411,6 +411,46 @@ module.exports = {
         route: '/api/v1/admin/user-company-form/:id',
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      {
+        name: 'user_menu_list',
+        module: 'user_menu',
+        http_method: 'GET',
+        route: '/api/v1/admin/user-menus',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_menu_get',
+        module: 'user_menu',
+        http_method: 'GET',
+        route: '/api/v1/admin/user-menus/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_menu_create',
+        module: 'user_menu',
+        http_method: 'POST',
+        route: '/api/v1/admin/user-menus',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_menu_update',
+        module: 'user_menu',
+        http_method: 'PUT',
+        route: '/api/v1/admin/user-menus/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'user_menu_delete',
+        module: 'user_menu',
+        http_method: 'DELETE',
+        route: '/api/v1/admin/user-menus/:id',
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ], {});
   },
