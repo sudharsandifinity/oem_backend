@@ -13,6 +13,7 @@ const companyFormFieldRoutes = require('./companyFormFieldRoutes');
 const userCompanyFormRoutes = require('./userCompanyFormRoutes');
 const companyFromDataRoutes = require('./companyFromDataRoutes');
 const userManuRoutes = require('./userManuRoutes');
+const userManuPermissionRoutes = require('./userMenuPermissionRoutes');
 
 router.use('/users', userRoutes);
 router.use('/roles', roleRoutes);
@@ -27,5 +28,6 @@ router.use('/company-form-fields', companyFormFieldRoutes);
 router.use('/user-company-form', userCompanyFormRoutes);
 router.use('/company-form-data', companyFromDataRoutes);
 router.use('/user-menus', userManuRoutes);
+router.use('/user-menu-permissions', userManuPermissionRoutes);
 
 module.exports = router;
