@@ -9,7 +9,7 @@ const authMiddleware = require('../../middlewares/authMiddleware');
 const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
 
 // Mount versioned API under /api/v1
-router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
+router.use('/admin', authMiddleware, adminRoutes);
 router.use('/auth', authRoutes);
 router.get('/health', async (req, res) => {
     try {

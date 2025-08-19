@@ -8,11 +8,11 @@ class UserRepository extends BaseRepository {
     }
 
     async findAll(){
-        return await this.model.findAll({ include: [ Role, Branch ] });
+        return await this.model.findAll({ include: [ Branch ] });
     }
 
     async findById(id){
-        return await this.model.findByPk(id, {include: [ Role, Branch ]});
+        return await this.model.findByPk(id, {include: [ Branch ]});
     }
 
     async findByEmail(email){

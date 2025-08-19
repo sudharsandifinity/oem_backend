@@ -22,17 +22,10 @@ module.exports = {
       password: {
         type: Sequelize.STRING
       },
-      roleId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: 2,
-        comment: '1-Admin, 2-sub-admin',
-        references: {
-          model: 'roles',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'NO ACTION'
+      is_super_user: {
+       type: Sequelize.TINYINT,
+        comment: "0-false 1-true",
+        defaultValue: 0
       },
       status: {
         type: Sequelize.TINYINT,

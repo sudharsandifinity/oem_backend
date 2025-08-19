@@ -19,9 +19,9 @@ const createUserSchema = Joi.object({
         'string.min': 'Password must be at least 6 characters',
         'any.required': 'Password is required'
     }),
-    roleId: Joi.string().required().messages({
-        'string.base': 'Role must be a string',
-        'any.required': 'Role is required'
+    is_super_user: Joi.number().max(1).optional().messages({
+        'number.base': 'is_super_user must be a number',
+        'number.max': 'is_super_user cannot be more than 1'
     }),
     branchIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Permission IDs must be an array of strings',
@@ -46,9 +46,9 @@ const updateUserSchema = Joi.object({
     password: Joi.string().min(6).optional().messages({
         'string.min': 'Password must be at least 6 characters'
     }),
-    roleId: Joi.string().required().messages({
-        'string.base': 'Role must be a string',
-        'any.required': 'Role is required'
+    is_super_user: Joi.number().max(1).optional().messages({
+        'number.base': 'is_super_user must be a number',
+        'number.max': 'is_super_user cannot be more than 1'
     }),
     branchIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Permission IDs must be an array of strings',

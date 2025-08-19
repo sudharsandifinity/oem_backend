@@ -8,7 +8,7 @@ class User extends Model {
     }
 
     static associate(models) {
-        User.belongsTo(models.Role);
+        // User.belongsTo(models.Role);
         User.belongsToMany(models.Branch, {
             through: models.UserBranch,
             foreignKey: 'userId',
@@ -37,12 +37,9 @@ module.exports = (sequelize) => {
             allowNull: false,
             unique: true
         },
-        roleId: {
-            type: DataTypes.INTEGER,
-            references: {
-              model: 'Role',
-              key: 'id',
-            },
+        is_super_user: {
+            type: DataTypes.TINYINT,
+            defaultValue: 0
         },
         password: {
             type: DataTypes.STRING,

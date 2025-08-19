@@ -15,7 +15,6 @@ class UserService extends BaseService {
             const json = user.toJSON();
             
             json.id = encodeId(json.id);
-            json.roleId = encodeId(json.roleId);
 
             if (json.Role) {
                 json.Role.id = encodeId(json.Role.id);
