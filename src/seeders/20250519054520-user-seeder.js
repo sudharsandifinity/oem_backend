@@ -10,7 +10,7 @@ module.exports = {
         last_name: 'Admin',
         email: 'sudharsan181199@yopmail.com',
         password: await bcrypt.hash('Admin@123', 10),
-        roleId: 1,
+        is_super_user: 1,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -20,7 +20,7 @@ module.exports = {
         last_name: '',
         email: 'subadmindifinity@yopmail.com',
         password: await bcrypt.hash('Subadmin@123', 10),
-        roleId: 2,
+        is_super_user: 1,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -30,7 +30,7 @@ module.exports = {
         last_name: 'id',
         email: 'managerdifinity@yopmail.com',
         password: await bcrypt.hash('Manger@123', 10),
-        roleId: 3,
+        is_super_user: 0,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -40,7 +40,7 @@ module.exports = {
         last_name: 'me',
         email: 'superdifinity@yopmail.com',
         password: await bcrypt.hash('Super@123', 10),
-        roleId: 3,
+        is_super_user: 1,
         status: 0,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -50,7 +50,7 @@ module.exports = {
         last_name: 'id',
         email: 'userdifinity@yopmail.com',
         password: await bcrypt.hash('User@123', 10),
-        roleId: 3,
+        is_super_user: 0,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
