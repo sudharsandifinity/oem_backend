@@ -6,52 +6,81 @@ module.exports = {
       {
         name: 'Sales',
         display_name: 'Sales',
-        parent: null,
+        scope: 'global',
+        companyId: null,
+        branchId: null,
+        parentUserMenuId: null,
+        formId: 1,
         order_number: 1,
+        status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         name: 'Purchase',
         display_name: 'Purchase',
-        parent: null,
+        scope: 'global',
+        companyId: null,
+        branchId: null,
+        formId: 2,
+        parentUserMenuId: null,
         order_number: 2,
+        status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         name: 'Sales Order',
         display_name: 'Sales Order',
-        parent: "1",
+        scope: 'global',
+        companyId: null,
+        branchId: null,
+        parentUserMenuId: 1,
+        formId: 1,
         order_number: 1,
+        status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         name: 'Sales Invoice',
         display_name: 'Sales Invoice',
-        parent: '1',
+        scope: 'global',
+        companyId: null,
+        branchId: null,
+        parentUserMenuId: 1,
+        formId: 1,
         order_number: 2,
+        status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         name: 'Purchase Order',
         display_name: 'Purchase Order',
-        parent: '2',
+        scope: 'global',
+        companyId: null,
+        branchId: null,
+        parentUserMenuId: 2,
+        formId: 2,
         order_number: 1,
+        status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         name: 'Purchase Invoice',
         display_name: 'Purchase Invoice',
-        parent: '2',
+        scope: 'global',
+        companyId: null,
+        branchId: null,
+        parentUserMenuId: 2,
+        formId: 2,
         order_number: 2,
+        status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       }
-
     ], {});
   },
 

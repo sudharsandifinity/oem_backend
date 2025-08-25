@@ -13,6 +13,21 @@ module.exports = {
         unique: true,
         allowNull: false
       },
+      scope: {
+        type: Sequelize.ENUM('company', 'global'),
+        defaultValue: 'company',
+        allowNull: false
+      },
+      companyId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'companies',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       status: {
         type: Sequelize.TINYINT,
         allowNull: true,

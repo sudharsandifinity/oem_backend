@@ -19,15 +19,15 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      formId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'forms',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
+      // formId: {
+      //   type: Sequelize.INTEGER,
+      //   references: {
+      //     model: 'forms',
+      //     key: 'id',
+      //   },
+      //   onUpdate: 'CASCADE',
+      //   onDelete: 'CASCADE'
+      // },
       formSectionId: {
         type: Sequelize.INTEGER,
         references: {
