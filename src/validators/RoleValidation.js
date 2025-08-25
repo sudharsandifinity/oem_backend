@@ -5,6 +5,15 @@ const createRoleSchema = Joi.object({
         'string.empty': 'Name is required',
         'any.required': 'Name is required'
     }),
+    scope: Joi.string().valid('company', 'global').required().messages({
+        'any.only': 'Scope must be either "company" or "global"',
+        'string.empty': 'Scope is required',
+        'any.required': 'Scope is required'
+    }),
+    companyId: Joi.number().integer().optional().messages({
+        'number.base': 'Company ID must be a number',
+        'number.integer': 'Company ID must be an integer'
+    }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
@@ -18,6 +27,13 @@ const createRoleSchema = Joi.object({
 const updateRoleSchema = Joi.object({
     name: Joi.string().optional().messages({
         'string.empty': 'Name cannot be empty'
+    }),
+    scope: Joi.string().valid('company', 'global').optional().messages({
+        'any.only': 'Scope must be either "company" or "global"'
+    }),
+    companyId: Joi.number().integer().optional().messages({
+        'number.base': 'Company ID must be a number',
+        'number.integer': 'Company ID must be an integer'
     }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',

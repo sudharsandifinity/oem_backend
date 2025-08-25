@@ -10,13 +10,19 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      UserMenu.belongsTo(models.Form, {foreignKey: 'formId'})
     }
   }
   UserMenu.init({
+    parentUserMenuId: DataTypes.INTEGER,
+    companyId: DataTypes.INTEGER,
+    branchId: DataTypes.INTEGER,
+    formId: DataTypes.INTEGER,
+    scope: DataTypes.ENUM('global', 'company', 'branch'),
     name: DataTypes.STRING,
     display_name: DataTypes.STRING,
-    parent: DataTypes.INTEGER,
-    order_number: DataTypes.INTEGER
+    order_number: DataTypes.INTEGER,
+    status: DataTypes.TINYINT
   }, {
     sequelize,
     modelName: 'UserMenu',

@@ -9,24 +9,24 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      companyId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'companies',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      formId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'forms',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
+      // companyId: {
+      //   type: Sequelize.INTEGER,
+      //   references: {
+      //     model: 'companies',
+      //     key: 'id',
+      //   },
+      //   onUpdate: 'CASCADE',
+      //   onDelete: 'CASCADE'
+      // },
+      // formId: {
+      //   type: Sequelize.INTEGER,
+      //   references: {
+      //     model: 'forms',
+      //     key: 'id',
+      //   },
+      //   onUpdate: 'CASCADE',
+      //   onDelete: 'CASCADE'
+      // },
       form_type: {
         type: Sequelize.STRING,
         allowNull: true

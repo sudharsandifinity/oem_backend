@@ -19,6 +19,8 @@ module.exports = (sequelize, DataTypes) => {
   }
   Role.init({
     name: DataTypes.STRING,
+    scope: DataTypes.ENUM('company', 'global'),
+    companyId: DataTypes.INTEGER,
     status: DataTypes.TINYINT
   }, {
     sequelize,

@@ -5,8 +5,6 @@ class BaseRepository {
     }
 
     async findAll(){
-        console.log('test base repo');
-        
         return await this.model.findAll();
     }
 
