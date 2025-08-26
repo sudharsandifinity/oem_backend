@@ -14,12 +14,12 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Company.init({
+    name: DataTypes.STRING,
     company_code: DataTypes.STRING,
     company_db_name: DataTypes.STRING,
-    name: DataTypes.STRING,
-    city: DataTypes.STRING,
-    address: DataTypes.TEXT,
-    is_branch: DataTypes.TINYINT,
+    // city: DataTypes.STRING,
+    // address: DataTypes.TEXT,
+    // is_branch: DataTypes.TINYINT,
     status: DataTypes.TINYINT
   }, {
     sequelize,

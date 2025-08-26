@@ -13,18 +13,18 @@ const createCompanySchema = Joi.object({
         'string.empty': 'Company Company DB Name is required',
         'any.required': 'Company Company DB Name is required'
     }),
-    city: Joi.string().required().messages({
-        'string.empty': 'City name is required',
-        'any.required': 'City name is required'
-    }),
-    address: Joi.string().required().messages({
-        'string.empty': 'Address is required',
-        'any.required': 'Address is required'
-    }),
-    is_branch: Joi.number().max(1).optional().messages({
-        'number.base': 'Is have a branch must be a number',
-        'number.max': 'Is have a branch cannot be more than 1'
-    }),
+    // city: Joi.string().required().messages({
+    //     'string.empty': 'City name is required',
+    //     'any.required': 'City name is required'
+    // }),
+    // address: Joi.string().required().messages({
+    //     'string.empty': 'Address is required',
+    //     'any.required': 'Address is required'
+    // }),
+    // is_branch: Joi.number().max(1).optional().messages({
+    //     'number.base': 'Is have a branch must be a number',
+    //     'number.max': 'Is have a branch cannot be more than 1'
+    // }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
@@ -43,16 +43,16 @@ const updateCompanySchema = Joi.object({
         'string.empty': 'Company Company DB Name cannot be empty',
         'any.required': 'Company Company DB Name cannot be empty'
     }),
-    city: Joi.string().optional().messages({
-        'string.empty': 'City name cannot be empty'
-    }),
-    address: Joi.string().optional().messages({
-        'string.email': 'Address cannot be empty'
-    }),
-    is_branch: Joi.number().max(1).optional().messages({
-        'number.base': 'Is have a branch must be a number',
-        'number.max': 'Is have a branch cannot be more than 1'
-    }),
+    // city: Joi.string().optional().messages({
+    //     'string.empty': 'City name cannot be empty'
+    // }),
+    // address: Joi.string().optional().messages({
+    //     'string.email': 'Address cannot be empty'
+    // }),
+    // is_branch: Joi.number().max(1).optional().messages({
+    //     'number.base': 'Is have a branch must be a number',
+    //     'number.max': 'Is have a branch cannot be more than 1'
+    // }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
