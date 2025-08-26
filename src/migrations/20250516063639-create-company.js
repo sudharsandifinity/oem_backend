@@ -23,19 +23,19 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      city: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      address: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-      is_branch: {
-        type: Sequelize.TINYINT,
-        comment: "0-false 1-true",
-        defaultValue: 0
-      },
+      // city: {
+      //   type: Sequelize.STRING,
+      //   allowNull: true
+      // },
+      // address: {
+      //   type: Sequelize.TEXT,
+      //   allowNull: true
+      // },
+      // is_branch: {
+      //   type: Sequelize.TINYINT,
+      //   comment: "0-false 1-true",
+      //   defaultValue: 0
+      // },
       status: {
         type: Sequelize.TINYINT,
         comment: "0-inactive 1-active",

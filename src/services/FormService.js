@@ -44,7 +44,7 @@ class FormService extends BaseService{
     }
 
     async create(data){
-        const existing = await this.repository.findByName(data.name);
+        // const existing = await this.repository.findByName(data.name);
 
         // if(existing) {
         //     logger.warn('Form name is already exists', {Name: data.name});
