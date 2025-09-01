@@ -1,5 +1,5 @@
 const BaseRepository = require("./baseRepository")
-const { Form, Company, Branch } = require('../models');
+const { Form, Company, Branch, FormField } = require('../models');
 
 class FormRepository extends BaseRepository{
 
@@ -8,7 +8,16 @@ class FormRepository extends BaseRepository{
     }
 
     async findAll(){
-        return await this.model.findAll({ include: [ Company, Branch ] });
+        return await this.model.findAll({ include: [ Company, Branch, FormField ] });
+    }
+
+    async findById(id) {
+        return await this.model.findByPk(id, {
+            attributes: {
+                exclude: ['parentFormId']
+            },
+            include: [ Company, Branch, FormField ]
+        });
     }
 
     async findAllActiveGlobalForms() {
@@ -16,7 +25,7 @@ class FormRepository extends BaseRepository{
     }
 
     async findByCompanyId(companyId) {
-        return await Form.findAll({ where: { companyId } });
+        return await this.model.findAll({ where: { companyId } });
     }
 
     // async findGlobalFormsByIds(formIds) {

@@ -39,8 +39,7 @@ module.exports = {
         onDelete: 'NO ACTION'
       },
       name: {
-        type: Sequelize.STRING,
-        unique: true
+        type: Sequelize.STRING
       },
       display_name: {
         type: Sequelize.STRING

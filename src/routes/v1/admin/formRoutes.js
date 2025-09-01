@@ -10,7 +10,7 @@ const formController = new FormController(formService);
 
 router.get('/', formController.getAll);
 router.get('/global-forms', formController.getAllActiveGlobalForms);
-router.post('/assign-global-forms', formController.assignGlobalForms);
+router.post('/assign-form', formController.assignGlobalForms);
 router.post('/', validate(createFormSchema), formController.create); 
 router.get('/:id', validateParams(getByPkSchema), formController.getById); 
 router.put('/:id', validateParams(getByPkSchema), validate(updateFormSchema), formController.update); 

@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Form.belongsTo(models.Company, { foreignKey: 'companyId' });
       Form.belongsTo(models.Branch, { foreignKey: 'branchId' });
+      Form.hasMany(models.FormField, { foreignKey: 'formId' });
     }
   }
   Form.init({
