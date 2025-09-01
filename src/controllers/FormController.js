@@ -17,17 +17,16 @@ class FormController extends BaseController{
 
     assignGlobalForms = async (req, res, next) => {
         try {
-            const { companyId, globalFormIds } = req.body;
+            const { companyId, branchId, formIds } = req.body;
 
-            if (!companyId || !Array.isArray(globalFormIds) || globalFormIds.length === 0) {
-                return res.status(400).json({ message: "companyId and globalFormIds[] are required" });
+            if ((!branchId && !companyId) || !Array.isArray(formIds) || formIds.length === 0) {
+                return res.status(400).json({ message: "companyId or branchId and formIds[] are required" });
             }
 
-            const result = await this.service.assignGlobalForms(companyId, globalFormIds);
+            await this.service.assignGlobalForms(companyId, branchId, formIds);
 
             return res.status(201).json({
-                message: "Global forms assigned successfully",
-                data: result
+                message: "forms assigned successfully"
             });
         } catch (err) {
             next(err);

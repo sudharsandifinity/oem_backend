@@ -2,12 +2,14 @@ const logger = require("../config/logger");
 const { encodeId, decodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
 const CompanyRepository = require("../repositories/CompanyRepository");
+const FromFieldRepository = require("../repositories/FromFieldRepository");
 
 class FormService extends BaseService{
 
     constructor(FormRepository){
         super(FormRepository);
         this.companyRepository = new CompanyRepository();
+        this.fromFieldRepository = new FromFieldRepository();
     }
 
     async getAll(){
@@ -28,6 +30,14 @@ class FormService extends BaseService{
                 json.Branch.companyId = encodeId(json.Branch.companyId);
                 json.Branch.CompanyId = encodeId(json.Branch.CompanyId);
             }
+            if (json.FormFields) {
+                json.FormFields = json.FormFields.map(formField => ({
+                    ...formField,
+                    id: encodeId(formField.id),
+                    formId: encodeId(formField.formId),
+                    formSectionId: encodeId(formField.formSectionId)
+                }));
+            }
             return json;
         })
     }
@@ -40,6 +50,12 @@ class FormService extends BaseService{
         result.parentFormId = encodeId(result.parentFormId);
         result.companyId = encodeId(result.companyId);
         result.branchId = encodeId(result.branchId);
+        result.FormFields = result.FormFields.map(field => ({
+            ...field,
+            id: encodeId(field.id),
+            formId: encodeId(field.formId),
+            formSectionId: encodeId(field.formSectionId),
+        }));
         return result;
     }
 
@@ -107,47 +123,55 @@ class FormService extends BaseService{
         })
     }
 
-    async assignGlobalForms(companyId, globalFormIds) {
+    async assignGlobalForms(companyId, branchId, globalFormIds) {
 
-        // companyId = decodeId(companyId);
         globalFormIds = globalFormIds.map(globalFormId => decodeId(globalFormId));
 
-
-        const idMap = {}; // oldId -> newId
-
-        // Step 1: Duplicate forms
         for (const globalFormId of globalFormIds) {
-            const globalForm = await this.repository.findById(globalFormId);
+            const globalForm = await this.getById(globalFormId);
+            
             if (!globalForm) continue;
 
-            const formData = globalForm.toJSON();
+            const formData = globalForm;
             delete formData.id;
             delete formData.createdAt;
             delete formData.updatedAt;
 
             formData.companyId = companyId;
-            formData.parentFormId = null; // fix later
+            formData.branchId = branchId;
 
-            console.log('form data', formData);
+            ["companyId", "branchId", "parentFormId"].forEach(key => {
+                if (formData[key] === "" || formData[key] === undefined) {
+                    formData[key] = null;
+                }
+            });
+
+            ["companyId", "branchId", "parentFormId"].forEach(key => {
+                if(formData[key]){
+                    formData[key] = decodeId(formData[key]);
+                }
+            });
+            
+            const newForm = await this.repository.create(formData);
             
 
-            const newForm = await this.repository.create(formData);
-            idMap[globalForm.id] = newForm.id;
-        }
+            if (formData.FormFields && Array.isArray(formData.FormFields)) {
+                for (const field of formData.FormFields) {
 
-        // Step 2: Fix parentFormId relationships
-        for (const [oldId, newId] of Object.entries(idMap)) {
-            const globalForm = await this.repository.findById(oldId);
+                    delete field.id;
+                    field.formId = newForm.id;
+                    delete field.createdAt;
+                    delete field.updatedAt;
 
-            if (globalForm.parentFormId && idMap[globalForm.parentFormId]) {
-                await this.repository.update(newId, {
-                    parentFormId: idMap[globalForm.parentFormId]
-                });
+                    if(field.formSectionId){
+                        field.formSectionId = decodeId(field.formSectionId)
+                    }
+                    
+                    await this.fromFieldRepository.create(field);
+                }
             }
         }
-
-        // Step 3: Return updated company forms
-        return await this.repository.findByCompanyId(companyId);
+        return;
     }
 
 }
