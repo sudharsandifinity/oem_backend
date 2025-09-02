@@ -1,62 +1,55 @@
 const Joi = require('joi');
 
-const createFormSchema = Joi.object({
+const createBranchSchema = Joi.object({
+    companyId: Joi.required().messages({
+        'any.required': 'Company ID is required'
+    }),
+    branch_code: Joi.required().messages({
+        'any.required': 'Branch Code is required'
+    }),
     name: Joi.string().required().messages({
-        'string.empty': 'Form name is required',
-        'any.required': 'Form name is required'
+        'string.empty': 'Branch name is required',
+        'any.required': 'Branch name is required'
     }),
-    display_name: Joi.string().required().messages({
-        'string.empty': 'Form display name is required',
-        'any.required': 'Form display name is required'
+    city: Joi.string().required().messages({
+        'string.empty': 'City is required',
+        'any.required': 'City is required'
     }),
-    form_type: Joi.string().required().messages({
-        'string.empty': 'Form type is required',
-        'any.required': 'Form type is required'
+    address: Joi.string().required().messages({
+        'string.empty': 'Address is required',
+        'any.required': 'Address is required'
     }),
     status: Joi.number().valid(0, 1).optional().messages({
         'number.base': 'Status must be a number',
         'any.only': 'Status must be 0 (Inactive) or 1 (Active)'
-    }),
-    companyId: Joi.string().allow(null, '').optional().messages({
-        'string.base': 'Company ID must be a string'
-    }),
-    branchId: Joi.string().allow(null, '').optional().messages({
-        'string.base': 'Branch ID must be a string'
-    }),
-    parentFormId: Joi.string().allow(null, '').optional().messages({
-        'string.base': 'Parent Form ID must be a string'
     })
 });
 
-const updateFormSchema = Joi.object({
+const updateBranchSchema = Joi.object({
+    companyId: Joi.optional().messages({
+        'number.empty': 'Compnay ID cannot be empty'
+    }),
+    branch_code: Joi.optional().messages({
+        'any.required': 'Branch Code cannot be empty'
+    }),
     name: Joi.string().optional().messages({
-        'string.empty': 'Form name cannot be empty'
+        'string.empty': 'Branch name cannot be empty'
     }),
-    display_name: Joi.string().optional().messages({
-        'string.empty': 'Form display name is required'
+    city: Joi.string().optional().messages({
+        'string.empty': 'City cannot be empty'
     }),
-    form_type: Joi.string().optional().messages({
-        'string.empty': 'Form type is required'
+    address: Joi.string().optional().messages({
+        'string.empty': 'Address cannot be empty'
     }),
     status: Joi.number().valid(0, 1).optional().messages({
         'number.base': 'Status must be a number',
         'any.only': 'Status must be 0 or 1'
-    }),
-    companyId: Joi.string().allow(null, '').optional().messages({
-        'string.base': 'Company ID must be a string'
-    }),
-    branchId: Joi.string().allow(null, '').optional().messages({
-        'string.base': 'Branch ID must be a string'
-    }),
-    parentFormId: Joi.string().allow(null, '').optional().messages({
-        'string.base': 'Parent Form ID must be a string'
     })
 });
 
 const getByPkSchema = Joi.object({
     id: Joi.string().required().messages({
-        'any.required': 'ID is required',
-        'string.base': 'ID must be a string'
+        'any.required': 'ID is required'
     })
 });
 
@@ -81,8 +74,8 @@ function validateParams(schema) {
 }
 
 module.exports = {
-    createFormSchema,
-    updateFormSchema,
+    createBranchSchema,
+    updateBranchSchema,
     getByPkSchema,
     validate,
     validateParams
