@@ -22,6 +22,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
+      is_main: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
       name: {
         type: Sequelize.STRING,
         allowNull: true
@@ -32,6 +36,10 @@ module.exports = {
       },
       address: {
         type: Sequelize.TEXT,
+        allowNull: true
+      },
+      country: {
+        type: Sequelize.STRING,
         allowNull: true
       },
       status: {

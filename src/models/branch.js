@@ -16,9 +16,11 @@ module.exports = (sequelize, DataTypes) => {
   Branch.init({
     companyId: DataTypes.INTEGER,
     branch_code: DataTypes.STRING,
+    is_main: DataTypes.BOOLEAN,
     name: DataTypes.STRING,
     city: DataTypes.STRING,
     address: DataTypes.TEXT,
+    country: DataTypes.STRING,
     status: DataTypes.TINYINT
   }, {
     sequelize,

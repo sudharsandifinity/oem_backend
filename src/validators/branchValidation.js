@@ -7,6 +7,9 @@ const createBranchSchema = Joi.object({
     branch_code: Joi.required().messages({
         'any.required': 'Branch Code is required'
     }),
+    is_main: Joi.boolean().optional().messages({
+        'boolean.base': 'is_main must be a boolean'
+    }),
     name: Joi.string().required().messages({
         'string.empty': 'Branch name is required',
         'any.required': 'Branch name is required'
@@ -18,6 +21,9 @@ const createBranchSchema = Joi.object({
     address: Joi.string().required().messages({
         'string.empty': 'Address is required',
         'any.required': 'Address is required'
+    }),
+    country: Joi.string().optional().messages({
+        'string.base': 'Country must be a string'
     }),
     status: Joi.number().valid(0, 1).optional().messages({
         'number.base': 'Status must be a number',
@@ -32,6 +38,9 @@ const updateBranchSchema = Joi.object({
     branch_code: Joi.optional().messages({
         'any.required': 'Branch Code cannot be empty'
     }),
+    is_main: Joi.boolean().optional().messages({
+        'boolean.base': 'is_main must be a boolean'
+    }),
     name: Joi.string().optional().messages({
         'string.empty': 'Branch name cannot be empty'
     }),
@@ -40,6 +49,9 @@ const updateBranchSchema = Joi.object({
     }),
     address: Joi.string().optional().messages({
         'string.empty': 'Address cannot be empty'
+    }),
+    country: Joi.string().optional().messages({
+        'string.base': 'Country must be a string'
     }),
     status: Joi.number().valid(0, 1).optional().messages({
         'number.base': 'Status must be a number',
