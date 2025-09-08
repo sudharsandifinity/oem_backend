@@ -60,6 +60,7 @@ class BranchService extends BaseService{
     }
 
     async update(id, data){
+
         if (data.companyId) {
             data.companyId = decodeId(data.companyId);
         }
@@ -72,15 +73,13 @@ class BranchService extends BaseService{
         }
         if (data.branch_code) {
             const existing_code = await this.repository.findBranchCode(data.branch_code);
-            if(existing_code) {
+            if(existing_code && existing_code.id != id) {
                 logger.warn('Branch Code is already exists', {BranchCode: data.branch_code});
                 throw new Error('Branch Code is already exist!');
             }
         }
-        const item = await this.repository.update(id, data);
-        const result = item.toJSON();
-        result.id = encodeId(item.id)
-        result.companyId = encodeId(item.companyId)
+        const item = await this.repository.update(id, data);        
+        const result = await this.getById(item.id);
         return result;
     }
 
