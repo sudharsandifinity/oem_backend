@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      UserMenu.belongsTo(models.Form, {foreignKey: 'formId'})
+      UserMenu.belongsTo(models.Form, {foreignKey: 'formId'});
     }
   }
   UserMenu.init({

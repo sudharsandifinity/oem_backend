@@ -1,5 +1,5 @@
 const BaseRepository = require("./baseRepository");
-const { UserMenu, Form } = require('../models');
+const { UserMenu, Form, FormField } = require('../models');
 
 class UserMenuRepository extends BaseRepository {
 
@@ -7,8 +7,26 @@ class UserMenuRepository extends BaseRepository {
         super(UserMenu);
     }
 
-    async findAll(){
-        return await this.model.findAll({ include: Form });
+    async findAll() {
+        return await this.model.findAll({
+            include: [
+            {
+                model: Form,
+                include: [FormField],
+            },
+            ],
+        });
+    }
+
+    async findById(id) {
+        return await this.model.findByPk(id, {
+            include: [
+            {
+                model: Form,
+                include: [FormField],
+            },
+            ],
+        });
     }
 
 }
