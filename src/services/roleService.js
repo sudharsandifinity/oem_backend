@@ -8,6 +8,18 @@ class RoleService extends BaseService{
         super(roleRepository);
     }
 
+    async getAll(){
+        const datas = await this.repository.findAll();
+        return datas.map((data) => {
+            const json = data.toJSON();
+            json.id = encodeId(json.id);
+            json.Permissions.map((permission) => {
+                permission.id = encodeId(permission.id)
+            })
+            return json;
+        })
+    }
+
     async getById(id){
         const role = await this.repository.findById(id);
         if(!role) return null;
@@ -34,16 +46,8 @@ class RoleService extends BaseService{
             await role.setPermissions(permissionIdsArray);
         }
         
-        const roleData = await this.repository.findByIdWithPermissions(role.id);
-        const json = roleData.toJSON();
-        json.id = encodeId(json.id);
-        if(json.Permissions){
-            json.Permissions = json.Permissions.map((permi) => ({
-                ...permi,
-                id: encodeId(permi.id)
-            }))
-        }
-        return json;
+        const roleData = await this.getById(role.id);
+        return roleData;
     }
 
     async update(id, data){
@@ -65,16 +69,8 @@ class RoleService extends BaseService{
             }
         }
 
-        const updatedData = await this.repository.findByIdWithPermissions(id);
-        const json = updatedData.toJSON();
-        json.id = encodeId(json.id);
-        if(json.Permissions){
-            json.Permissions = json.Permissions.map((permi) => ({
-                ...permi,
-                id: encodeId(permi.id)
-            }))
-        }
-        return json;
+        const updatedData = await this.getById(id);
+        return updatedData;
     }
 
 }

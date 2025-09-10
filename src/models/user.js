@@ -14,6 +14,11 @@ class User extends Model {
             foreignKey: 'userId',
             otherKey: 'branchId'
         });
+        User.belongsToMany(models.Role, {
+            through: models.UserRole,
+            foreignKey: 'userId',
+            otherKey: 'roleId'
+        });
     }
 }
 
