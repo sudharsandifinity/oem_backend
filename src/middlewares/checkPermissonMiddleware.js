@@ -1,25 +1,36 @@
 const logger = require('../config/logger');
-const { Role, Permission } = require('../models');
+const { Role, Permission, UserRole } = require('../models');
 
 const checkPermisson = async (req, res, next) => {
     try{
-        const roleId = req.user.role_id;
-        const role = await Role.findByPk(roleId, {
-            include: [{
-                model: Permission
-            }]
+        const userId = req.user.id;
+        const userRole = await UserRole.findAll({
+            where: {userId}, 
+            include: [
+                {
+                    model: Role, 
+                    include:[
+                        {   
+                            model: Permission,
+                            throw: {attributes:[]}
+                        }
+                    ]
+                }
+            ]
         });
         
-        
-        if (!role) {
-            logger.warn('Role Not Found!', { roleId, userId: req.user.id });
+        if (!userRole) {
+            logger.warn('Role Not Found!', { roleId: userRole.id, userId: req.user.id });
             return res.status(403).json({ error: 'Role not found' });
         }
-    
-        const role_permissions = role.Permissions.map(permission => ({
-            http_method: permission.http_method,
-            route: permission.route
-        }));
+
+        const role_permissions = userRole.flatMap(userRoleItem => 
+            userRoleItem.Role?.Permissions?.map(p => ({
+                http_method: p.http_method,
+                route: p.route
+            })) || []
+        );
+
 
         const currentRoute = req.originalUrl;
         const currentMethod = req.method;
@@ -33,22 +44,23 @@ const checkPermisson = async (req, res, next) => {
             return new RegExp(`^${regexString}$`);
         };
     
-        const hasPermission = role_permissions.some(permission => {
+        const hasPermission = role_permissions.some(permission => {            
             const routeRegex = convertRouteToRegex(permission.route);
             return routeRegex.test(currentRoute) && permission.http_method === currentMethod;
         });
+        
 
-        if(roleId == 1){
+        if(req.is_super_user == 1){
             if (!hasPermission){
                 logger.warn('Please add the route in permissions table', {method: currentMethod, route: currentRoute});
             }
             return next();
         }
     
-        if (!hasPermission || !role?.status) {
+        if (!hasPermission || !userRole[0].Role?.status) {
             logger.warn('Access denied', {
                 userId: req.user.id,
-                role: role.name,
+                role: userRole.name,
                 method: currentMethod,
                 route: currentRoute
             });

@@ -2,14 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { sequelize } = require('../../models');
 
-// Load API v1
 const adminRoutes = require('./admin/index');
 const authRoutes = require('./auth/index');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
 
-// Mount versioned API under /api/v1
-router.use('/admin', authMiddleware, adminRoutes);
+router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
 router.use('/auth', authRoutes);
 router.get('/health', async (req, res) => {
     try {
