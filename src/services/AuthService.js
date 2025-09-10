@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User, Role, Permission } = require('../models');
 const { sendEmail } = require('../config/mail');
+const { encodeId, decodeId } = require("../utils/hashids");
 
 class AuthService {
     async login(email, password) {
@@ -26,12 +27,34 @@ class AuthService {
         if (!isMatch) throw new Error('Invalid password!');
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, role_id: user.roleId },
+            { id: user.id, email: user.email, is_super_user: user.is_super_user },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        return { token, user };
+        const data = user.toJSON();
+        delete data.password;
+        delete data.status;
+        delete data.createdAt;
+        delete data.updatedAt;
+
+        data.id = encodeId(data.id);
+        data.Roles.map((role) => {
+            role.id = encodeId(role.id)
+            role.companyId = encodeId(role.companyId)
+            delete role.status;
+            delete role.createdAt;
+            delete role.updatedAt;
+
+            role.Permissions.map((permission) => {
+                permission.id = encodeId(permission.id)
+                delete permission.createdAt;
+                delete permission.updatedAt;
+            })
+        })
+        
+
+        return { token, user, data };
     }
 
     async profile(id){
@@ -39,7 +62,7 @@ class AuthService {
             // include: [{ model: Role,
             //     include: [Permission]
             // }],
-            attributes: { exclude: ['password', 'createdAt', 'updatedAt'] }
+            attributes: { exclude: ['status', 'password', 'createdAt', 'updatedAt'] }
         });
 
         return user;

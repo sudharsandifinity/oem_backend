@@ -23,9 +23,13 @@ const createUserSchema = Joi.object({
         'number.base': 'is_super_user must be a number',
         'number.max': 'is_super_user cannot be more than 1'
     }),
+    roleIds: Joi.array().items(Joi.string()).optional().messages({
+        'array.base': 'Role IDs must be an array of strings',
+        'array.includes': 'Each role ID must be a string'
+    }),
     branchIds: Joi.array().items(Joi.string()).optional().messages({
-        'array.base': 'Permission IDs must be an array of strings',
-        'array.includes': 'Each permission ID must be a string'
+        'array.base': 'Branch IDs must be an array of strings',
+        'array.includes': 'Each branch ID must be a string'
     }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
@@ -50,9 +54,13 @@ const updateUserSchema = Joi.object({
         'number.base': 'is_super_user must be a number',
         'number.max': 'is_super_user cannot be more than 1'
     }),
+    roleIds: Joi.array().items(Joi.string()).optional().messages({
+        'array.base': 'Role IDs must be an array of strings',
+        'array.includes': 'Each role ID must be a string'
+    }),
     branchIds: Joi.array().items(Joi.string()).optional().messages({
-        'array.base': 'Permission IDs must be an array of strings',
-        'array.includes': 'Each permission ID must be a string'
+        'array.base': 'Branch IDs must be an array of strings',
+        'array.includes': 'Each branch ID must be a string'
     }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
