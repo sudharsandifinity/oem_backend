@@ -213,46 +213,6 @@ module.exports = {
         updatedAt: new Date()
       },
       {
-        name: 'company_form_list',
-        module: 'company_forms',
-        http_method: 'GET',
-        route: '/api/v1/admin/company-forms',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_get',
-        module: 'company_forms',
-        http_method: 'GET',
-        route: '/api/v1/admin/company-forms/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_create',
-        module: 'company_forms',
-        http_method: 'POST',
-        route: '/api/v1/admin/company-forms',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_update',
-        module: 'company_forms',
-        http_method: 'PUT',
-        route: '/api/v1/admin/company-forms/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_delete',
-        module: 'company_forms',
-        http_method: 'DELETE',
-        route: '/api/v1/admin/company-forms/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
         name: 'form_section_list',
         module: 'form_sections',
         http_method: 'GET',
@@ -329,86 +289,6 @@ module.exports = {
         module: 'form_fields',
         http_method: 'DELETE',
         route: '/api/v1/admin/form-fields/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_field_list',
-        module: 'company_form_fields',
-        http_method: 'GET',
-        route: '/api/v1/admin/company-form-fields',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_field_get',
-        module: 'company_form_fields',
-        http_method: 'GET',
-        route: '/api/v1/admin/company-form-fields/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_field_create',
-        module: 'company_form_fields',
-        http_method: 'POST',
-        route: '/api/v1/admin/company-form-fields',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_field_update',
-        module: 'company_form_fields',
-        http_method: 'PUT',
-        route: '/api/v1/admin/company-form-fields/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'company_form_field_delete',
-        module: 'company_form_fields',
-        http_method: 'DELETE',
-        route: '/api/v1/admin/company-form-fields/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'user_company_form_list',
-        module: 'user_company_form',
-        http_method: 'GET',
-        route: '/api/v1/admin/user-company-form',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'user_company_form_get',
-        module: 'user_company_form',
-        http_method: 'GET',
-        route: '/api/v1/admin/user-company-form/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'user_company_form_create',
-        module: 'user_company_form',
-        http_method: 'POST',
-        route: '/api/v1/admin/user-company-form',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'user_company_form_update',
-        module: 'user_company_form',
-        http_method: 'PUT',
-        route: '/api/v1/admin/user-company-form/:id',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'user_company_form_delete',
-        module: 'user_company_form',
-        http_method: 'DELETE',
-        route: '/api/v1/admin/user-company-form/:id',
         createdAt: new Date(),
         updatedAt: new Date()
       },

@@ -5,7 +5,21 @@ const { sendEmail } = require('../config/mail');
 
 class AuthService {
     async login(email, password) {
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne({
+            where: { email },
+            include: [
+                {
+                model: Role,
+                through: { attributes: [] },
+                include: [
+                    {
+                    model: Permission,
+                    through: { attributes: [] }
+                    }
+                ]
+                }
+            ]
+        });
         if (!user) throw new Error('Invalid email or user not found!');
 
         const isMatch = await bcrypt.compare(password, user.password);

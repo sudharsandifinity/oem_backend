@@ -8,16 +8,24 @@ class RoleRepository extends BaseRepository{
     }
 
     async findAll(){
-        return await this.model.findAll({ include: Permission })
+        return await this.model.findAll({
+            include: [
+                {
+                    model: Permission,
+                    through: { attributes: [] }
+                }
+            ]
+        })
     }
 
     async findById(id){
-        return await this.model.findByPk(id, {include: Permission});
-    }
-
-    async findByIdWithPermissions(id) {
         return await this.model.findByPk(id, {
-            include: Permission,
+            include: [
+                {
+                    model: Permission,
+                    through: { attributes: [] }
+                }
+            ]
         });
     }
 }

@@ -30,6 +30,26 @@ module.exports = {
         last_name: 'id',
         email: 'managerdifinity@yopmail.com',
         password: await bcrypt.hash('Manger@123', 10),
+        is_super_user: 1,
+        status: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        first_name: 'Manger2',
+        last_name: 'id',
+        email: 'manager2difinity@yopmail.com',
+        password: await bcrypt.hash('Manger@123', 10),
+        is_super_user: 1,
+        status: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        first_name: 'Manger',
+        last_name: 'id',
+        email: 'managerdifinity1@yopmail.com',
+        password: await bcrypt.hash('Manger@123', 10),
         is_super_user: 0,
         status: 1,
         createdAt: new Date(),

@@ -1,4 +1,4 @@
-const { User, Role, Branch } = require('../models');
+const { User, Role, Branch, UserRole, Permission } = require('../models');
 const BaseRepository = require('./baseRepository');
 
 class UserRepository extends BaseRepository {
@@ -7,12 +7,38 @@ class UserRepository extends BaseRepository {
         super(User)
     }
 
-    async findAll(){
-        return await this.model.findAll({ include: [ Branch ] });
+    async findAll() {
+        return await this.model.findAll({
+            include: [
+            {
+                model: Role,
+                through: { attributes: [] },
+                include: [
+                {
+                    model: Permission,
+                    through: { attributes: [] }
+                }
+                ]
+            }
+            ]
+        });
     }
 
     async findById(id){
-        return await this.model.findByPk(id, {include: [ Branch ]});
+        return await this.model.findByPk(id, {
+            include: [
+            {
+                model: Role,
+                through: { attributes: [] },
+                include: [
+                {
+                    model: Permission,
+                    through: { attributes: [] }
+                }
+                ]
+            }
+            ]
+        });
     }
 
     async findByEmail(email){
