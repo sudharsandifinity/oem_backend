@@ -1,5 +1,5 @@
 const BaseRepository = require('./baseRepository');
-const { Role, Permission } = require('../models');
+const { Role, Permission, UserMenu } = require('../models');
 
 class RoleRepository extends BaseRepository{
 
@@ -12,7 +12,13 @@ class RoleRepository extends BaseRepository{
             include: [
                 {
                     model: Permission,
-                    through: { attributes: [] }
+                    through: { attributes: [] },
+                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] }
+                },
+                {
+                    model: UserMenu,
+                    through: { attributes: [] },
+                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] }
                 }
             ]
         })
@@ -23,7 +29,13 @@ class RoleRepository extends BaseRepository{
             include: [
                 {
                     model: Permission,
-                    through: { attributes: [] }
+                    through: { attributes: [] },
+                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] }
+                },
+                {
+                    model: UserMenu,
+                    through: { attributes: [] },
+                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] }
                 }
             ]
         });
