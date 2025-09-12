@@ -16,15 +16,26 @@ class UserService extends BaseService {
             
             json.id = encodeId(json.id);
 
-            if (json.Role) {
-                json.Role.id = encodeId(json.Role.id);
-            }
+            if(json.Roles){
+                json.Roles = json.Roles.map((role) => ({
+                ...role,
+                id: encodeId(role.id),
+                companyId: encodeId(role.companyId),
+                Permissions: role.Permissions.map((permission) => ({
+                    ...permission,
+                    id: encodeId(permission.id)
+                }))
+            }))
+            };
             if (json.Branches) {
                 json.Branches = json.Branches.map((branch) => ({
                     ...branch,
                     id: encodeId(branch.id),
                     companyId: encodeId(branch.CompanyId),
-                    CompanyId: encodeId(branch.CompanyId),
+                    Company: {
+                        ...branch.Company,
+                        id: encodeId(branch.Company.id)
+                    }
                 }));
             }
 
@@ -53,7 +64,12 @@ class UserService extends BaseService {
         if(result.Branches){
             result.Branches = result.Branches.map((branch) => ({
                 ...branch,
-                id: encodeId(branch.id)
+                id: encodeId(branch.id),
+                companyId: encodeId(branch.companyId),
+                Company: {
+                    ...branch.Company,
+                    id: encodeId(branch.Company.id)
+                }
             }))
         }
         return result;
