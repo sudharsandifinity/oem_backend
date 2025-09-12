@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Branch.belongsTo(models.Company);
+      Branch.belongsTo(models.Company, {foreignKey:'companyId'});
     }
   }
   Branch.init({
