@@ -1,4 +1,4 @@
-const { User, Role, Branch, Company, UserRole, Permission } = require('../models');
+const { User, Role, Branch, Company, UserMenu, Permission } = require('../models');
 const BaseRepository = require('./baseRepository');
 
 class UserRepository extends BaseRepository {
@@ -45,11 +45,24 @@ class UserRepository extends BaseRepository {
                     through: { attributes: [] },
                     attributes: {exclude: ['createdAt', 'updatedAt']},
                     include: [
-                    {
-                        model: Permission,
-                        through: { attributes: [] },
-                        attributes: {exclude: ['createdAt', 'updatedAt']},
-                    }
+                        {
+                            model: Permission,
+                            through: { attributes: [] },
+                            attributes: {exclude: ['createdAt', 'updatedAt']},
+                        },
+                        {
+                            model: UserMenu,
+                            attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
+                            through: {
+                                attributes: [
+                                'can_list_view',
+                                'can_create',
+                                'can_edit',
+                                'can_view',
+                                'can_delete'
+                                ]
+                            },
+                        }
                     ]
                 },
                 {

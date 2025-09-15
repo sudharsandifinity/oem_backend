@@ -93,7 +93,51 @@ module.exports = {
         can_delete: false,
         createdAt: now,
         updatedAt: now
-      }
+      },
+      {
+        roleId: 9,
+        userMenuId: 9,
+        can_list_view: true,
+        can_create: false,
+        can_edit: false,
+        can_view: true,
+        can_delete: false,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        roleId: 9,
+        userMenuId: 10,
+        can_list_view: true,
+        can_create: false,
+        can_edit: false,
+        can_view: true,
+        can_delete: false,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        roleId: 9,
+        userMenuId: 11,
+        can_list_view: true,
+        can_create: false,
+        can_edit: false,
+        can_view: true,
+        can_delete: false,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        roleId: 9,
+        userMenuId: 12,
+        can_list_view: true,
+        can_create: false,
+        can_edit: false,
+        can_view: true,
+        can_delete: false,
+        createdAt: now,
+        updatedAt: now
+      },
     ], {});
   },
 

@@ -57,7 +57,15 @@ class UserService extends BaseService {
             Permissions: role.Permissions.map((permission) => ({
                 ...permission,
                 id: encodeId(permission.id)
-            }))
+            })),
+            UserMenus: role.UserMenus.map((usermenu) => ({
+                ...usermenu,
+                id: encodeId(usermenu.id),
+                parentUserMenuId: encodeId(usermenu.parentUserMenuId),
+                companyId: encodeId(usermenu.companyId),
+                branchId: encodeId(usermenu.branchId),
+                formId: encodeId(usermenu.formId),
+            })),
         }));
 
         }

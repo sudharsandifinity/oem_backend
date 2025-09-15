@@ -33,7 +33,31 @@ module.exports = {
         roleId: 4,
         createdAt: new Date(),
         updatedAt: new Date()
-      }
+      },
+      {
+        userId: 5,
+        roleId: 9,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        userId: 7,
+        roleId: 7,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        userId: 8,
+        roleId: 6,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        userId: 9,
+        roleId: 8,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
     ], {});
   },
 

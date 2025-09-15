@@ -67,7 +67,15 @@ module.exports = {
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
-      }
+      },
+      {
+        name: 'Company Manager',
+        scope: 'user',
+        companyId: 1,
+        status: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
     ], {});
   },
 

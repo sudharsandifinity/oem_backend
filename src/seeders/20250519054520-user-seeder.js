@@ -95,6 +95,26 @@ module.exports = {
         createdAt: new Date(),
         updatedAt: new Date()
       },
+      {
+        first_name: 'Abi',
+        last_name: 'R',
+        email: 'abi.difinity@yopmail.com',
+        password: await bcrypt.hash('User@123', 10),
+        is_super_user: 0,
+        status: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        first_name: 'Praveen',
+        last_name: 'S',
+        email: 'praveen.difinity@yopmail.com',
+        password: await bcrypt.hash('User@123', 10),
+        is_super_user: 0,
+        status: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
     ], {});
   },
 

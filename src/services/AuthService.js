@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Role, Permission } = require('../models');
+const { User, Role, Permission, UserMenu } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 
@@ -14,8 +14,21 @@ class AuthService {
                 through: { attributes: [] },
                 include: [
                     {
-                    model: Permission,
-                    through: { attributes: [] }
+                        model: Permission,
+                        through: { attributes: [] }
+                    },
+                    {
+                        model: UserMenu,
+                        attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
+                        through: {
+                            attributes: [
+                            'can_list_view',
+                            'can_create',
+                            'can_edit',
+                            'can_view',
+                            'can_delete'
+                            ]
+                        },
                     }
                 ]
                 }
@@ -50,6 +63,14 @@ class AuthService {
                 permission.id = encodeId(permission.id)
                 delete permission.createdAt;
                 delete permission.updatedAt;
+            })
+
+            role.UserMenus.map((usermenu) => {
+                usermenu.id = encodeId(usermenu.id)
+                usermenu.parentUserMenuId = encodeId(usermenu.parentUserMenuId)
+                usermenu.companyId = encodeId(usermenu.companyId)
+                usermenu.branchId = encodeId(usermenu.branchId)
+                usermenu.formId = encodeId(usermenu.formId)
             })
         })
         
