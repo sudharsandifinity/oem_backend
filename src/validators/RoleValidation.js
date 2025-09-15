@@ -12,10 +12,10 @@ const createRoleSchema = Joi.object({
     'any.required': 'Scope is required'
   }),
 
-  companyId: Joi.string().required().messages({
-    'any.required': 'Company ID is required',
+  companyId: Joi.string().allow('').optional().messages({
     'string.base': 'Company ID must be a string'
-  }),
+}),
+
 
   status: Joi.number().max(1).optional().messages({
     'number.base': 'Status must be a number',
@@ -54,10 +54,10 @@ const updateRoleSchema = Joi.object({
     'any.only': 'Scope must be either "master" or "user"'
   }),
 
-  companyId: Joi.string().required().messages({
-    'any.required': 'Company ID is required',
-    'string.base': 'Company ID must be a string'
-  }),
+    companyId: Joi.string().allow('').optional().messages({
+        'string.base': 'Company ID must be a string'
+    }),
+
 
   status: Joi.number().max(1).optional().messages({
     'number.base': 'Status must be a number',
