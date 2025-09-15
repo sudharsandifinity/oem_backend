@@ -33,13 +33,39 @@ const createRoleSchema = Joi.object({
     otherwise: Joi.forbidden()
   }),
 
-  userMenuIds: Joi.when('scope', {
+  userMenus: Joi.when('scope', {
     is: 'user',
-    then: Joi.array().items(Joi.string().trim().required()).min(1).required().messages({
-      'array.base': 'User menu IDs must be an array of strings',
-      'any.required': 'User menu IDs are required for user scope',
-      'array.min': 'At least one user menu ID must be provided',
-      'string.base': 'Each user menu ID must be a string'
+    then: Joi.array().items(
+      Joi.object({
+        menuId: Joi.string().trim().required().messages({
+          'string.base': 'Menu ID must be a string',
+          'any.required': 'Menu ID is required'
+        }),
+        can_list_view: Joi.boolean().required().messages({
+          'boolean.base': 'can_list_view must be a boolean',
+          'any.required': 'can_list_view is required'
+        }),
+        can_create: Joi.boolean().required().messages({
+          'boolean.base': 'can_create must be a boolean',
+          'any.required': 'can_create is required'
+        }),
+        can_edit: Joi.boolean().required().messages({
+          'boolean.base': 'can_edit must be a boolean',
+          'any.required': 'can_edit is required'
+        }),
+        can_view: Joi.boolean().required().messages({
+          'boolean.base': 'can_view must be a boolean',
+          'any.required': 'can_view is required'
+        }),
+        can_delete: Joi.boolean().required().messages({
+          'boolean.base': 'can_delete must be a boolean',
+          'any.required': 'can_delete is required'
+        })
+      })
+    ).min(1).required().messages({
+      'array.base': 'User menus must be an array of objects',
+      'array.min': 'At least one user menu must be provided',
+      'any.required': 'User menus are required for user scope'
     }),
     otherwise: Joi.forbidden()
   })
@@ -74,12 +100,23 @@ const updateRoleSchema = Joi.object({
     otherwise: Joi.forbidden()
   }),
 
-  userMenuIds: Joi.when('scope', {
+  userMenus: Joi.when('scope', {
     is: 'user',
-    then: Joi.array().items(Joi.string().trim().required()).min(1).required().messages({
-      'array.base': 'User menu IDs must be an array of strings',
-      'any.required': 'User menu IDs are required when scope is "user"',
-      'array.min': 'At least one user menu ID must be provided'
+    then: Joi.array().items(
+      Joi.object({
+        menuId: Joi.string().required().messages({
+          'any.required': 'Menu ID is required'
+        }),
+        can_list_view: Joi.boolean().optional(),
+        can_create: Joi.boolean().optional(),
+        can_edit: Joi.boolean().optional(),
+        can_view: Joi.boolean().optional(),
+        can_delete: Joi.boolean().optional()
+      })
+    ).min(1).required().messages({
+      'array.base': 'User menus must be an array of objects',
+      'any.required': 'User menus are required when scope is "user"',
+      'array.min': 'At least one user menu must be provided'
     }),
     otherwise: Joi.forbidden()
   })

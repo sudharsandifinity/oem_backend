@@ -37,7 +37,7 @@ module.exports = {
         updatedAt: new Date()
       },
       {
-        name: 'manager',
+        name: 'Sales Manager',
         scope: 'user',
         companyId: 1,
         status: 1,
@@ -45,10 +45,26 @@ module.exports = {
         updatedAt: new Date()
       },
       {
-        name: 'supervisor',
+        name: 'Purchasing Manager',
         scope: 'user',
-        companyId: 3,
-        status: 0,
+        companyId: 1,
+        status: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Sales Representative',
+        scope: 'user',
+        companyId: 1,
+        status: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Purchase Executive',
+        scope: 'user',
+        companyId: 1,
+        status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -56,8 +72,6 @@ module.exports = {
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.bulkDelete('roles', {
-      name: { [Sequelize.Op.in]: ['admin', 'sub-admin', 'manager', 'supervisor'] }
-    }, {});
+    await queryInterface.bulkDelete('roles', null, {});
   }
 };

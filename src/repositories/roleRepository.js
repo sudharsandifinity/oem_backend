@@ -1,5 +1,5 @@
 const BaseRepository = require('./baseRepository');
-const { Role, Permission, UserMenu } = require('../models');
+const { Role, Permission, UserMenu, Company } = require('../models');
 
 class RoleRepository extends BaseRepository{
 
@@ -8,20 +8,7 @@ class RoleRepository extends BaseRepository{
     }
 
     async findAll(){
-        return await this.model.findAll({
-            include: [
-                {
-                    model: Permission,
-                    through: { attributes: [] },
-                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] }
-                },
-                {
-                    model: UserMenu,
-                    through: { attributes: [] },
-                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] }
-                }
-            ]
-        })
+        return await this.model.findAll()
     }
 
     async findById(id){
@@ -34,8 +21,16 @@ class RoleRepository extends BaseRepository{
                 },
                 {
                     model: UserMenu,
-                    through: { attributes: [] },
-                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] }
+                    attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
+                    through: {
+                        attributes: [
+                        'can_list_view',
+                        'can_create',
+                        'can_edit',
+                        'can_view',
+                        'can_delete'
+                        ]
+                    },
                 }
             ]
         });
