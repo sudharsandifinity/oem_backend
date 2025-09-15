@@ -17,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
   RoleMenu.init({
     roleId: DataTypes.INTEGER,
     userMenuId: DataTypes.INTEGER,
+    can_list_view: DataTypes.BOOLEAN,
+    can_create: DataTypes.BOOLEAN,
+    can_edit: DataTypes.BOOLEAN,
+    can_view: DataTypes.BOOLEAN,
+    can_delete: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'RoleMenu',

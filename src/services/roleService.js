@@ -1,5 +1,6 @@
 const { decodeId, encodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
+const { RoleMenu } = require('../models');
 
 
 class RoleService extends BaseService{
@@ -14,9 +15,16 @@ class RoleService extends BaseService{
             const json = data.toJSON();
             json.id = encodeId(json.id);
             json.companyId = encodeId(json.companyId);
-            json.Permissions.map((permission) => {
-                permission.id = encodeId(permission.id)
-            })
+            // json.Permissions.map((permission) => {
+            //     permission.id = encodeId(permission.id)
+            // })
+            // json.UserMenus.map((usermenu) => {
+            //     usermenu.id = encodeId(usermenu.id)
+            //     usermenu.parentUserMenuId = encodeId(usermenu.parentUserMenuId)
+            //     usermenu.companyId = encodeId(usermenu.companyId)
+            //     usermenu.branchId = encodeId(usermenu.branchId)
+            //     usermenu.formId = encodeId(usermenu.formId)
+            // })
             return json;
         })
     }
@@ -65,10 +73,22 @@ class RoleService extends BaseService{
             await role.setPermissions(permissionIds, { transaction: t });
             }
 
-            if (data.scope === 'user' && Array.isArray(data.userMenuIds)) {
-            const userMenuIds = data.userMenuIds.map(decodeId);
-            await role.setUserMenus(userMenuIds, { transaction: t });
+            if (data.scope === 'user' && Array.isArray(data.userMenus)) {
+                for (const menu of data.userMenus) {
+                    const menuId = decodeId(menu.menuId);
+
+                    await RoleMenu.create({
+                    roleId: role.id,
+                    userMenuId: menuId,
+                    can_list_view: menu.can_list_view || false,
+                    can_create: menu.can_create || false,
+                    can_edit: menu.can_edit || false,
+                    can_view: menu.can_view || false,
+                    can_delete: menu.can_delete || false
+                    }, { transaction: t });
+                }
             }
+
             await t.commit();
             return await this.getById(role.id);
 
@@ -104,21 +124,36 @@ class RoleService extends BaseService{
             await role.setPermissions(permissionIds, { transaction: t });
             }
 
-            if (data.scope === 'user' && Array.isArray(data.userMenuIds)) {
-            const userMenuIds = data.userMenuIds.map(decodeId);
-            await role.setUserMenus(userMenuIds, { transaction: t });
+            if (data.scope === 'user' && Array.isArray(data.userMenus)) {
+            await RoleMenu.destroy({
+                where: { roleId: role.id },
+                transaction: t,
+            });
+
+            for (const menu of data.userMenus) {
+                const menuId = decodeId(menu.menuId || menu.id);
+
+                await RoleMenu.create({
+                roleId: role.id,
+                userMenuId: menuId,
+                can_list_view: menu.can_list_view ?? false,
+                can_create: menu.can_create ?? false,
+                can_edit: menu.can_edit ?? false,
+                can_view: menu.can_view ?? false,
+                can_delete: menu.can_delete ?? false,
+                }, { transaction: t });
+            }
             }
 
             await t.commit();
-
             return await this.getById(id);
 
         } catch (error) {
-
             await t.rollback();
-            throw new Error(`${error.message}`);
+            throw new Error(`Error while updating role: ${error.message}`);
         }
     }
+
 
 
 }
