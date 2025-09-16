@@ -14,14 +14,14 @@ class RoleService extends BaseService{
         return datas.map((data) => {
             const json = data.toJSON();
             json.id = encodeId(json.id);
-            json.companyId = encodeId(json.companyId);
+            json.branchId = encodeId(json.branchId);
             // json.Permissions.map((permission) => {
             //     permission.id = encodeId(permission.id)
             // })
             // json.UserMenus.map((usermenu) => {
             //     usermenu.id = encodeId(usermenu.id)
             //     usermenu.parentUserMenuId = encodeId(usermenu.parentUserMenuId)
-            //     usermenu.companyId = encodeId(usermenu.companyId)
+            //     usermenu.branchId = encodeId(usermenu.branchId)
             //     usermenu.branchId = encodeId(usermenu.branchId)
             //     usermenu.formId = encodeId(usermenu.formId)
             // })
@@ -34,7 +34,7 @@ class RoleService extends BaseService{
         if(!role) return null;
         const result = role.toJSON();
         result.id = encodeId(result.id);
-        result.companyId = encodeId(result.companyId);
+        result.branchId = encodeId(result.branchId);
         if (result.Permissions) {
             result.Permissions = result.Permissions.map((permi) => ({
                 ...permi,
@@ -59,7 +59,7 @@ class RoleService extends BaseService{
         const t = await sequelize.transaction();
 
         try {
-            data.companyId = decodeId(data.companyId);
+            data.branchId = decodeId(data.branchId);
 
             const existing = await this.repository.findByName(data.name);
             if (existing) {
@@ -103,8 +103,8 @@ class RoleService extends BaseService{
         const t = await sequelize.transaction();
 
         try {
-            if (data.companyId) {
-            data.companyId = decodeId(data.companyId);
+            if (data.branchId) {
+            data.branchId = decodeId(data.branchId);
             }
 
             if (data.name) {

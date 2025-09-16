@@ -22,17 +22,12 @@ module.exports = (sequelize, DataTypes) => {
         otherKey: 'userMenuId'
       })
 
-      Role.belongsToMany(models.UserMenu, {
-        through: models.RoleMenu,
-        foreignKey: 'roleId',
-        otherKey: 'userMenuId'
-      });
     }
   }
   Role.init({
     name: DataTypes.STRING,
-    scope: DataTypes.ENUM('company', 'global'),
-    companyId: DataTypes.INTEGER,
+    scope: DataTypes.ENUM('master', 'user'),
+    branchId: DataTypes.INTEGER,
     status: DataTypes.TINYINT
   }, {
     sequelize,

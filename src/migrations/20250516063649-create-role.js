@@ -17,11 +17,10 @@ module.exports = {
         defaultValue: 'user',
         allowNull: false
       },
-      companyId: {
+      branchId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
         references: {
-          model: 'companies',
+          model: 'branches',
           key: 'id',
         },
         onUpdate: 'CASCADE',

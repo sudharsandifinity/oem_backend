@@ -12,8 +12,8 @@ const createRoleSchema = Joi.object({
     'any.required': 'Scope is required'
   }),
 
-  companyId: Joi.string().allow('').optional().messages({
-    'string.base': 'Company ID must be a string'
+  branchId: Joi.string().allow('').optional().messages({
+    'string.base': 'Branch ID must be a string'
 }),
 
 
@@ -41,25 +41,20 @@ const createRoleSchema = Joi.object({
           'string.base': 'Menu ID must be a string',
           'any.required': 'Menu ID is required'
         }),
-        can_list_view: Joi.boolean().required().messages({
-          'boolean.base': 'can_list_view must be a boolean',
-          'any.required': 'can_list_view is required'
+        can_list_view: Joi.boolean().optional().messages({
+          'boolean.base': 'can_list_view must be a boolean'
         }),
-        can_create: Joi.boolean().required().messages({
-          'boolean.base': 'can_create must be a boolean',
-          'any.required': 'can_create is required'
+        can_create: Joi.boolean().optional().messages({
+          'boolean.base': 'can_create must be a boolean'
         }),
-        can_edit: Joi.boolean().required().messages({
-          'boolean.base': 'can_edit must be a boolean',
-          'any.required': 'can_edit is required'
+        can_edit: Joi.boolean().optional().messages({
+          'boolean.base': 'can_edit must be a boolean'
         }),
-        can_view: Joi.boolean().required().messages({
-          'boolean.base': 'can_view must be a boolean',
-          'any.required': 'can_view is required'
+        can_view: Joi.boolean().optional().messages({
+          'boolean.base': 'can_view must be a boolean'
         }),
-        can_delete: Joi.boolean().required().messages({
-          'boolean.base': 'can_delete must be a boolean',
-          'any.required': 'can_delete is required'
+        can_delete: Joi.boolean().optional().messages({
+          'boolean.base': 'can_delete must be a boolean'
         })
       })
     ).min(1).required().messages({
@@ -80,8 +75,8 @@ const updateRoleSchema = Joi.object({
     'any.only': 'Scope must be either "master" or "user"'
   }),
 
-    companyId: Joi.string().allow('').optional().messages({
-        'string.base': 'Company ID must be a string'
+    branchId: Joi.string().allow('').optional().messages({
+        'string.base': 'Branch ID must be a string'
     }),
 
 

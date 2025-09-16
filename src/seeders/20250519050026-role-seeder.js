@@ -7,7 +7,7 @@ module.exports = {
       {
         name: 'admin',
         scope: 'master',
-        companyId: null,
+        branchId: null,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -15,7 +15,7 @@ module.exports = {
       {
         name: 'sub-admin',
         scope: 'master',
-        companyId: null,
+        branchId: null,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -23,7 +23,7 @@ module.exports = {
       {
         name: 'manager',
         scope: 'master',
-        companyId: null,
+        branchId: null,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -31,7 +31,7 @@ module.exports = {
       {
         name: 'gen-manager',
         scope: 'master',
-        companyId: null,
+        branchId: null,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -39,7 +39,7 @@ module.exports = {
       {
         name: 'Sales Manager',
         scope: 'user',
-        companyId: 1,
+        branchId: 1,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -47,7 +47,7 @@ module.exports = {
       {
         name: 'Purchasing Manager',
         scope: 'user',
-        companyId: 1,
+        branchId: 1,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -55,7 +55,7 @@ module.exports = {
       {
         name: 'Sales Representative',
         scope: 'user',
-        companyId: 1,
+        branchId: 1,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -63,7 +63,7 @@ module.exports = {
       {
         name: 'Purchase Executive',
         scope: 'user',
-        companyId: 1,
+        branchId: 1,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -71,7 +71,7 @@ module.exports = {
       {
         name: 'Company Manager',
         scope: 'user',
-        companyId: 1,
+        branchId: 1,
         status: 1,
         createdAt: new Date(),
         updatedAt: new Date()
