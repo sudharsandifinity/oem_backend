@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Role, Permission, UserMenu } = require('../models');
+const { User, Role, Permission, UserMenu, Branch, Company } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 
@@ -31,6 +31,17 @@ class AuthService {
                         },
                     }
                 ]
+                },
+                {
+                    model: Branch,
+                    through: { attributes: [] },
+                    attributes: {exclude: ['createdAt', 'updatedAt']},
+                    include: [
+                        {
+                            model: Company,
+                            attributes: {exclude: ['createdAt', 'updatedAt']},
+                        }
+                    ]
                 }
             ]
         });
@@ -72,6 +83,12 @@ class AuthService {
                 usermenu.branchId = encodeId(usermenu.branchId)
                 usermenu.formId = encodeId(usermenu.formId)
             })
+        })
+
+        data.Branches.map((branch) => {
+            branch.id = encodeId(branch.id)
+            branch.companyId = encodeId(branch.companyId)
+            branch.Company.id = encodeId(branch.Company.id)
         })
         
 
