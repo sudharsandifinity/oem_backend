@@ -23,19 +23,18 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      // city: {
-      //   type: Sequelize.STRING,
-      //   allowNull: true
-      // },
-      // address: {
-      //   type: Sequelize.TEXT,
-      //   allowNull: true
-      // },
-      // is_branch: {
-      //   type: Sequelize.TINYINT,
-      //   comment: "0-false 1-true",
-      //   defaultValue: 0
-      // },
+      base_url: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      sap_username: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      secret_key: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
       status: {
         type: Sequelize.TINYINT,
         comment: "0-inactive 1-active",

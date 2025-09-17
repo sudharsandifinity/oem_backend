@@ -17,9 +17,9 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     company_code: DataTypes.STRING,
     company_db_name: DataTypes.STRING,
-    // city: DataTypes.STRING,
-    // address: DataTypes.TEXT,
-    // is_branch: DataTypes.TINYINT,
+    base_url: DataTypes.TEXT,
+    sap_username: DataTypes.STRING,
+    secret_key: DataTypes.TEXT,
     status: DataTypes.TINYINT
   }, {
     sequelize,

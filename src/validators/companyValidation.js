@@ -13,18 +13,15 @@ const createCompanySchema = Joi.object({
         'string.empty': 'Company Company DB Name is required',
         'any.required': 'Company Company DB Name is required'
     }),
-    // city: Joi.string().required().messages({
-    //     'string.empty': 'City name is required',
-    //     'any.required': 'City name is required'
-    // }),
-    // address: Joi.string().required().messages({
-    //     'string.empty': 'Address is required',
-    //     'any.required': 'Address is required'
-    // }),
-    // is_branch: Joi.number().max(1).optional().messages({
-    //     'number.base': 'Is have a branch must be a number',
-    //     'number.max': 'Is have a branch cannot be more than 1'
-    // }),
+    base_url: Joi.string().optional().messages({
+        'string.empty': 'base URL is not empty'
+    }),
+    sap_username: Joi.string().optional().messages({
+        'string.empty': 'sap username is not empty'
+    }),
+    secret_key: Joi.string().optional().messages({
+        'string.empty': 'secret key is not empty'
+    }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
@@ -43,16 +40,15 @@ const updateCompanySchema = Joi.object({
         'string.empty': 'Company Company DB Name cannot be empty',
         'any.required': 'Company Company DB Name cannot be empty'
     }),
-    // city: Joi.string().optional().messages({
-    //     'string.empty': 'City name cannot be empty'
-    // }),
-    // address: Joi.string().optional().messages({
-    //     'string.email': 'Address cannot be empty'
-    // }),
-    // is_branch: Joi.number().max(1).optional().messages({
-    //     'number.base': 'Is have a branch must be a number',
-    //     'number.max': 'Is have a branch cannot be more than 1'
-    // }),
+     base_url: Joi.string().optional().messages({
+        'string.empty': 'base URL is not empty'
+    }),
+    sap_username: Joi.string().optional().messages({
+        'string.empty': 'sap username is not empty'
+    }),
+    secret_key: Joi.string().optional().messages({
+        'string.empty': 'secret key is not empty'
+    }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'

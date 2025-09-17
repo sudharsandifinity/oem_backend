@@ -1,4 +1,5 @@
 const logger = require("../config/logger");
+const { encrypt } = require("../utils/crypto");
 const { encodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
 
@@ -16,11 +17,27 @@ class CompanyService extends BaseService{
             if(json.Branches){
                 json.Branches = json.Branches.map((branch) => ({
                     ...branch,
-                    id: encodeId(branch.id)
+                    id: encodeId(branch.id),
+                    companyId: encodeId(branch.companyId)
                 }))
             }
             return json;
         })
+    }
+
+    async getById(id){
+        const company = await this.repository.findById(id);
+        if(!company) return null;
+        const result = company.toJSON();
+        result.id = encodeId(result.id);
+        if(result.Branches){
+            result.Branches = result.Branches.map((branch) => ({
+                ...branch,
+                id: encodeId(branch.id),
+                companyId: encodeId(branch.companyId)
+            }))
+        }
+        return result;
     }
 
     async create(data){
@@ -37,10 +54,17 @@ class CompanyService extends BaseService{
             throw new Error('Company Code is already exist!');
         }
 
+        if(data.sap_username){
+            data.sap_username = encrypt(data.sap_username)
+        }
+
+        if(data.secret_key){
+            data.secret_key = encrypt(data.secret_key)
+        }
+
         const company = await this.repository.create(data);
-        const json = company.toJSON();
-        json.id = encodeId(json.id)
-        return json;
+        const result = await this.getById(company.id);
+        return result;
     }
 
     async update(id, data) {
@@ -53,12 +77,23 @@ class CompanyService extends BaseService{
         }
         if (data.company_code) {
             const existing_code = await this.repository.findCompanyCode(data.company_code);
-            if(existing_code) {
+            if(existing_code && existing_code.id != id) {
                 logger.warn('Company Code is already exists', {Name: data.company_code});
                 throw new Error('Company Code is already exist!');
             }
         }
-        return await this.repository.update(id, data);
+
+        if(data.sap_username){
+            data.sap_username = encrypt(data.sap_username)
+        }
+
+        if(data.secret_key){
+            data.secret_key = encrypt(data.secret_key)
+        }
+
+        const company = await this.repository.update(id, data);
+        const result = await this.getById(company.id);
+        return result;
     }
 
 }

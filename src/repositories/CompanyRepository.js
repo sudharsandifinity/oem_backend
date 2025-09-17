@@ -12,6 +12,10 @@ class CompanyRepository extends BaseRepository{
         return await this.model.findAll({ include: Branch });
     }
 
+    async findById(id){
+        return await this.model.findByPk(id, { include: Branch });
+    }
+
     async findCompanyCode(company_code){
         return await this.model.findOne({where: {company_code}});
     }
