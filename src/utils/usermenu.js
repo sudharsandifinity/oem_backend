@@ -4,13 +4,14 @@ function usermenu(flatMenus) {
   const menuMap = {};
   const roots = [];
 
-  flatMenus.forEach(menu => {
-    menu = menu.toJSON();
+  flatMenus.forEach(rawMenu => {
+    const menu = typeof rawMenu.toJSON === 'function' ? rawMenu.toJSON() : rawMenu;
     menu.children = [];
     menuMap[menu.id] = menu;
   });
 
-  flatMenus.forEach(menu => {
+  flatMenus.forEach(rawMenu => {
+    const menu = typeof rawMenu.toJSON === 'function' ? rawMenu.toJSON() : rawMenu;
     const parentId = menu.parentUserMenuId;
     if (parentId && menuMap[parentId]) {
       menuMap[parentId].children.push(menuMap[menu.id]);
@@ -21,6 +22,7 @@ function usermenu(flatMenus) {
 
   return roots;
 }
+
 
 function encodeUserMenu(menuItem) {
   menuItem.id = encodeId(menuItem.id);

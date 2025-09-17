@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { User, Role, Permission, UserMenu, Branch, Company } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
+const { usermenu, encodeUserMenu } = require('../utils/usermenu');
 
 class AuthService {
     async login(email, password) {
@@ -76,13 +77,8 @@ class AuthService {
                 delete permission.updatedAt;
             })
 
-            role.UserMenus.map((usermenu) => {
-                usermenu.id = encodeId(usermenu.id)
-                usermenu.parentUserMenuId = encodeId(usermenu.parentUserMenuId)
-                usermenu.companyId = encodeId(usermenu.companyId)
-                usermenu.branchId = encodeId(usermenu.branchId)
-                usermenu.formId = encodeId(usermenu.formId)
-            })
+            role.UserMenus = usermenu(role.UserMenus);
+            role.UserMenus.map(menuItem => encodeUserMenu(menuItem));
         })
 
         data.Branches.map((branch) => {

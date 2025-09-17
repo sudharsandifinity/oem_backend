@@ -96,6 +96,28 @@ module.exports = {
       },
       {
         roleId: 9,
+        userMenuId: 7,
+        can_list_view: true,
+        can_create: false,
+        can_edit: false,
+        can_view: true,
+        can_delete: false,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        roleId: 9,
+        userMenuId: 8,
+        can_list_view: true,
+        can_create: false,
+        can_edit: false,
+        can_view: true,
+        can_delete: false,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        roleId: 9,
         userMenuId: 9,
         can_list_view: true,
         can_create: false,
