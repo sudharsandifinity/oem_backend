@@ -9,15 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      companyFormId: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'company_form_fields',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
+      // companyFormId: {
+      //   type: Sequelize.INTEGER,
+      //   references: {
+      //     model: 'company_form_fields',
+      //     key: 'id'
+      //   },
+      //   onUpdate: 'CASCADE',
+      //   onDelete: 'CASCADE'
+      // },
       form_data: {
         type: Sequelize.TEXT,
         allowNull: true
