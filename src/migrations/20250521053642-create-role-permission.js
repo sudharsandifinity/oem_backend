@@ -14,7 +14,9 @@ module.exports = {
         references: {
           model: 'roles',
           key: 'id'
-        }
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
       permissionId: {
         type: Sequelize.INTEGER,

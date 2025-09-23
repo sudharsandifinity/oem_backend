@@ -25,7 +25,7 @@ module.exports = {
           key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'NO ACTION'
       },
       branchId: {
         type: Sequelize.INTEGER,
@@ -34,7 +34,7 @@ module.exports = {
           key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'NO ACTION'
+        onDelete: 'CASCADE'
       },
       parentUserMenuId: {
         type: Sequelize.INTEGER,

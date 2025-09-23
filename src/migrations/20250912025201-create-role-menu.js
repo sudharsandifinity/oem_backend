@@ -14,7 +14,9 @@ module.exports = {
         references: {
           model: 'roles',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       userMenuId: {
         type: Sequelize.INTEGER,
@@ -24,7 +26,7 @@ module.exports = {
           key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'NO ACTION'
       },
       can_list_view: {
         type: Sequelize.BOOLEAN,

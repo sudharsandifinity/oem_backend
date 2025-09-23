@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      CompanyFormData.belongsTo(models.CompanyForm, {foreignKey: 'companyFormId'})
+      // CompanyFormData.belongsTo(models.CompanyForm, {foreignKey: 'companyFormId'})
     }
   }CompanyFormData.init({
     companyFormId: DataTypes.INTEGER,
