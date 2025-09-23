@@ -17,7 +17,7 @@ module.exports = {
           key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'NO ACTION'
       },
       branchId: {
         type: Sequelize.INTEGER,
@@ -25,8 +25,9 @@ module.exports = {
           model: 'branches',
           key: 'id'
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'NO ACTION'
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+
       },
       parentFormId: {
         type: Sequelize.INTEGER,
@@ -34,9 +35,7 @@ module.exports = {
         references: {
           model: 'forms',
           key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'NO ACTION'
+        }
       },
       name: {
         type: Sequelize.STRING

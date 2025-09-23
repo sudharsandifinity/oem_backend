@@ -213,6 +213,22 @@ module.exports = {
         updatedAt: new Date()
       },
       {
+        name: 'forms_list',
+        module: 'global_forms',
+        http_method: 'GET',
+        route: '/api/v1/admin/forms/global-forms',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'assign_forms',
+        module: 'global_forms',
+        http_method: 'POST',
+        route: '/api/v1/admin/forms/assign-form',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
         name: 'form_section_list',
         module: 'form_sections',
         http_method: 'GET',
@@ -331,7 +347,8 @@ module.exports = {
         route: '/api/v1/admin/user-menus/:id',
         createdAt: new Date(),
         updatedAt: new Date()
-      }
+      },
+      
     ], {});
   },
 
