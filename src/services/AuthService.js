@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Role, Permission, UserMenu, Branch, Company } = require('../models');
+const { User, Role, Permission, UserMenu, Branch, Company, Form, FormTab, SubForm, FormField } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
@@ -20,6 +20,20 @@ class AuthService {
                     },
                     {
                         model: UserMenu,
+                        include: [
+                            {
+                                model: Form,
+                                include: [
+                                    {
+                                        model: FormTab,
+                                        include: [{
+                                            model: SubForm,
+                                            include: [FormField]
+                                        }],
+                                    } 
+                                ]
+                            }
+                        ],
                         attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
                         through: {
                             attributes: [
