@@ -12,50 +12,105 @@ class FormService extends BaseService{
         this.fromFieldRepository = new FromFieldRepository();
     }
 
-    async getAll(){
+    async getAll() {
         const forms = await this.repository.findAll();
 
         return forms.map(form => {
             const json = form.toJSON();
+
             json.id = encodeId(json.id);
-            json.parentFormId = encodeId(json.parentFormId);
-            json.companyId = encodeId(json.companyId);
-            json.branchId = encodeId(json.branchId);
+            if (json.parentFormId) json.parentFormId = encodeId(json.parentFormId);
+            if (json.companyId) json.companyId = encodeId(json.companyId);
+            if (json.branchId) json.branchId = encodeId(json.branchId);
 
             if (json.Company) {
-                json.Company.id = encodeId(json.Company.id);
+                if (json.Company.id) json.Company.id = encodeId(json.Company.id);
             }
+
             if (json.Branch) {
-                json.Branch.id = encodeId(json.Branch.id);
-                json.Branch.companyId = encodeId(json.Branch.companyId);
-                json.Branch.CompanyId = encodeId(json.Branch.CompanyId);
+                if (json.Branch.id) json.Branch.id = encodeId(json.Branch.id);
+                if (json.Branch.companyId) json.Branch.companyId = encodeId(json.Branch.companyId);
+                if (json.Branch.CompanyId) json.Branch.CompanyId = encodeId(json.Branch.CompanyId);
             }
-            if (json.FormFields) {
-                json.FormFields = json.FormFields.map(formField => ({
-                    ...formField,
-                    id: encodeId(formField.id),
-                    formId: encodeId(formField.formId),
-                    formSectionId: encodeId(formField.formSectionId)
+
+            if (Array.isArray(json.FormFields)) {
+                json.FormFields = json.FormFields.map(field => ({
+                    ...field,
+                    id: encodeId(field.id),
+                    formId: encodeId(field.formId),
+                    formSectionId: encodeId(field.formSectionId)
                 }));
             }
+
+            if (Array.isArray(json.FormTabs)) {
+                json.FormTabs = json.FormTabs.map(tab => {
+                    if (tab.id) tab.id = encodeId(tab.id);
+                    if (tab.formId) tab.formId = encodeId(tab.formId);
+
+                    if (Array.isArray(tab.SubForms)) {
+                        tab.SubForms = tab.SubForms.map(subForm => {
+                            if (subForm.id) subForm.id = encodeId(subForm.id);
+                            if (subForm.formTabId) subForm.formTabId = encodeId(subForm.formTabId);
+
+                            if (Array.isArray(subForm.FormFields)) {
+                                subForm.FormFields = subForm.FormFields.map(field => {
+                                    if (field.id) field.id = encodeId(field.id);
+                                    if (field.subFormId) field.subFormId = encodeId(field.subFormId);
+                                    if (field.formSectionId) field.formSectionId = encodeId(field.formSectionId);
+                                    return field;
+                                });
+                            }
+
+                            return subForm;
+                        });
+                    }
+
+                    return tab;
+                });
+            }
+
             return json;
-        })
+        });
     }
 
-    async getById(id){
+    async getById(id) {
         const form = await this.repository.findById(id);
-        if(!form) return null;
+        if (!form) return null;
+
         const result = form.toJSON();
+
         result.id = encodeId(result.id);
-        result.parentFormId = encodeId(result.parentFormId);
-        result.companyId = encodeId(result.companyId);
-        result.branchId = encodeId(result.branchId);
-        result.FormFields = result.FormFields.map(field => ({
-            ...field,
-            id: encodeId(field.id),
-            formId: encodeId(field.formId),
-            formSectionId: encodeId(field.formSectionId),
-        }));
+        if (result.parentFormId) result.parentFormId = encodeId(result.parentFormId);
+        if (result.companyId) result.companyId = encodeId(result.companyId);
+        if (result.branchId) result.branchId = encodeId(result.branchId);
+
+        if (Array.isArray(result.FormTabs)) {
+            result.FormTabs = result.FormTabs.map(tab => {
+                if (tab.id) tab.id = encodeId(tab.id);
+                if (tab.formId) tab.formId = encodeId(tab.formId);
+
+                if (Array.isArray(tab.SubForms)) {
+                    tab.SubForms = tab.SubForms.map(subForm => {
+                        if (subForm.id) subForm.id = encodeId(subForm.id);
+                        if (subForm.formTabId) subForm.formTabId = encodeId(subForm.formTabId);
+
+                        if (Array.isArray(subForm.FormFields)) {
+                            subForm.FormFields = subForm.FormFields.map(field => {
+                                if (field.id) field.id = encodeId(field.id);
+                                if (field.subFormId) field.subFormId = encodeId(field.subFormId);
+                                if (field.formSectionId) field.formSectionId = encodeId(field.formSectionId);
+                                return field;
+                            });
+                        }
+
+                        return subForm;
+                    });
+                }
+
+                return tab;
+            });
+        }
+
         return result;
     }
 

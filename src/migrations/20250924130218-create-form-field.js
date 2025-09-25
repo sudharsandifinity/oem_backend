@@ -10,53 +10,47 @@ module.exports = {
         autoIncrement: true,
         primaryKey: true,
       },
-      formId: {
+      subFormId: {
         type: Sequelize.INTEGER,
         references: {
-          model: 'forms',
+          model: 'sub_forms',
           key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
       formSectionId: {
         type: Sequelize.INTEGER,
         references: {
           model: 'form_sections',
-          key: 'id'
+          key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'SET NULL',
       },
       field_name: {
         type: Sequelize.STRING,
-        allowNull: true,
       },
       display_name: {
         type: Sequelize.STRING,
-        allowNull: true,
       },
       input_type: {
         type: Sequelize.STRING,
-        allowNull: true,
       },
       field_order: {
-        type: Sequelize.STRING,
-        allowNull: true,
+        type: Sequelize.INTEGER,
       },
       is_visible: {
-        type: Sequelize.TINYINT,
-        allowNull: true,
-        defaultValue: 1
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
       },
       is_field_data_bind: {
-        type: Sequelize.TINYINT,
-        allowNull: true,
-        defaultValue: 0
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
       bind_data_by: {
         type: Sequelize.STRING,
-        allowNull: true,
+        defaultValue: false,
       },
       status: {
         type: Sequelize.TINYINT,

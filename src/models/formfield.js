@@ -10,12 +10,12 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      FormField.belongsTo(models.Form, { foreignKey: 'formId' });
+      FormField.belongsTo(models.Form, { foreignKey: 'subFormId' });
       FormField.belongsTo(models.FormSection, { foreignKey: 'formSectionId' });
     }
   }
   FormField.init({
-    formId: DataTypes.INTEGER,
+    subFormId: DataTypes.INTEGER,
     formSectionId: DataTypes.INTEGER,
     field_name: DataTypes.STRING,
     display_name: DataTypes.STRING,
