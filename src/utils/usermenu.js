@@ -24,34 +24,44 @@ function usermenu(flatMenus) {
 }
 
 
-function encodeUserMenu(menuItem) {
-  menuItem.id = encodeId(menuItem.id);
-  menuItem.parentUserMenuId = encodeId(menuItem.parentUserMenuId);
-  menuItem.companyId = encodeId(menuItem.companyId);
-  menuItem.branchId = encodeId(menuItem.branchId);
-  menuItem.formId = encodeId(menuItem.formId);
+function encodeUserMenu(menu) {
+    if (menu.id) menu.id = encodeId(menu.id);
+    if (menu.parentUserMenuId) menu.parentUserMenuId = encodeId(menu.parentUserMenuId);
+    if (menu.companyId) menu.companyId = encodeId(menu.companyId);
+    if (menu.branchId) menu.branchId = encodeId(menu.branchId);
+    if (menu.formId) menu.formId = encodeId(menu.formId);
 
-  if (menuItem.Form) {
-    menuItem.Form.id = encodeId(menuItem.Form.id);
-    menuItem.Form.parentFormId = encodeId(menuItem.Form.parentFormId);
-    menuItem.Form.companyId = encodeId(menuItem.Form.companyId);
-    menuItem.Form.branchId = encodeId(menuItem.Form.branchId);
+    if (menu.Form) {
+        if (menu.Form.id) menu.Form.id = encodeId(menu.Form.id);
+        if (menu.Form.parentFormId) menu.Form.parentFormId = encodeId(menu.Form.parentFormId);
+        if (menu.Form.companyId) menu.Form.companyId = encodeId(menu.Form.companyId);
+        if (menu.Form.branchId) menu.Form.branchId = encodeId(menu.Form.branchId);
 
-    if (Array.isArray(menuItem.Form.FormFields)) {
-      menuItem.Form.FormFields = menuItem.Form.FormFields.map(field => ({
-        ...field,
-        id: encodeId(field.id),
-        formId: encodeId(field.formId),
-        formSectionId: encodeId(field.formSectionId),
-      }));
+        if (Array.isArray(menu.Form.FormTabs)) {
+            menu.Form.FormTabs.forEach(tab => {
+                tab.id = encodeId(tab.id);
+                if (tab.formId) tab.formId = encodeId(tab.formId);
+
+                if (Array.isArray(tab.SubForms)) {
+                    tab.SubForms.forEach(subForm => {
+                        subForm.id = encodeId(subForm.id);
+                        if (subForm.formTabId) subForm.formTabId = encodeId(subForm.formTabId);
+
+                        if (Array.isArray(subForm.FormFields)) {
+                            subForm.FormFields.forEach(field => {
+                                field.id = encodeId(field.id);
+                                if (field.subFormId) field.subFormId = encodeId(field.subFormId);
+                                if (field.formSectionId) field.formSectionId = encodeId(field.formSectionId);
+                            });
+                        }
+                    });
+                }
+            });
+        }
     }
-  }
-
-  if (Array.isArray(menuItem.children)) {
-    menuItem.children = menuItem.children.map(child => encodeUserMenu(child));
-  }
-
-  return menuItem;
+    if (Array.isArray(menu.children)) {
+        menu.children.forEach(child => encodeUserMenu(child));
+    }
 }
 
 module.exports = {
