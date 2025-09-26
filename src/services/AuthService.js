@@ -4,6 +4,8 @@ const { User, Role, Permission, UserMenu, Branch, Company, Form, FormTab, SubFor
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
+const axios = require('axios');
+const https = require('https');
 
 class AuthService {
     async login(email, password) {
@@ -71,6 +73,49 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
+        let externalLoginResponse = null;
+        let sapData;
+
+        if (user.is_super_user === 0) {
+            try {
+                const externalPayload = {
+                    UserName: "manager",
+                    Password: "Sap@12345",
+                    CompanyDB: "GLD_Demo"
+                };
+
+                const response = await axios.post(
+                    'https://192.168.100.82:50000/b1s/v2/Login',
+                    externalPayload,
+                    {
+                        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        // timeout: 5000
+                    }
+                );
+
+                externalLoginResponse = response;
+
+                if (!externalLoginResponse || externalLoginResponse.error) {
+                    console.error('SAP error response:', externalLoginResponse);
+                    throw new Error('External system login failed.');
+                }
+
+                console.log('SAP Login Successful:', externalLoginResponse.data);
+                
+                sapData = {
+                    B1SESSION: externalLoginResponse.data.SessionId,
+                    ROUTEID: '.node1'
+                }
+
+            } catch (error) {
+                console.error('External SAP login error:', error.message);
+                throw new Error('Failed to authenticate with external system.');
+            }
+        }
+
         const data = user.toJSON();
         delete data.password;
         delete data.status;
@@ -102,7 +147,7 @@ class AuthService {
         })
         
 
-        return { token, user, data };
+        return { token, user, data, sapData };
     }
 
     async profile(id){

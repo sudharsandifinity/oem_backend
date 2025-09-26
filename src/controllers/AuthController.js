@@ -22,6 +22,17 @@ class AuthController {
                 maxAge: parseInt(process.env.ACCESS_TOKEN_MAX_AGE)
             });
 
+            res.cookie('B1SESSION', result.sapData.B1SESSION, {
+                httpOnly: true,
+                maxAge: parseInt(process.env.ACCESS_TOKEN_MAX_AGE)
+            });
+
+            res.cookie('ROUTEID', result.sapData.ROUTEID, {
+                httpOnly: true,
+                domain: '192.168.100.82',
+                path: '/b1s/v2', 
+            });
+
             return res.status(200).json({
                 message: 'Login successful',
                 token: result.token,
