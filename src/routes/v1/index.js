@@ -4,7 +4,7 @@ const { sequelize } = require('../../models');
 
 const adminRoutes = require('./admin/index');
 const authRoutes = require('./auth/index');
-const sapRoutes = require('./sapRoutes');
+const sapRoutes = require('./sap/index');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
 
