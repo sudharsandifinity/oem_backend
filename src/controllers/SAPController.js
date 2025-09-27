@@ -57,7 +57,7 @@ const getBusinessPartners = async (req, res) => {
 
 const getOrders = async (req, res) => {
   try {
-    const response = await sapGetRequest(req, "/Orders");
+    const response = await sapGetRequest(req, "/Orders?$orderby=DocEntry desc");
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
