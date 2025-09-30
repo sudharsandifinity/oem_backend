@@ -115,6 +115,76 @@ const getOrderById = async (req, res) => {
   }
 };
 
+const getPurchaseOrders = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "/PurchaseOrders?$orderby=DocEntry desc");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Orders', error: err.message });
+  }
+};
+
+const createPurchaseOrders = async (req, res) => {
+  try {
+    const payload = req.body;
+
+    const response = await sapPostRequest(req, "/PurchaseOrders", payload);
+
+    res.status(201).json({
+      message: 'Order created successfully',
+      data: response.data
+    });
+  } catch (err) {
+    console.error('SAP Order creation error:', err.message);
+    res.status(500).json({
+      message: 'Error creating Order in SAP',
+      error: err.message
+    });
+  }
+};
+
+const updatePurchaseOrder = async (req, res) => {
+  try {
+    const docEntry = req.params.docEntry;
+    const payload = req.body;
+
+    const response = await sapPutRequest(req, `/PurchaseOrders(${docEntry})`, payload);
+
+    res.status(200).json({
+      message: 'Order updated successfully',
+      data: response.data
+    });
+  } catch (err) {
+    console.error('SAP Order update error:', err.message);
+    res.status(500).json({
+      message: 'Error updating Order in SAP',
+      error: err.message
+    });
+  }
+};
+
+const getPurchaseOrderById = async (req, res) => {
+  try {
+    const docEntry = req.params.docEntry;
+    const response = await sapGetRequest(req, `/PurchaseOrders(${docEntry})`);
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP getOrderById error:', err.message);
+    res.status(500).json({ message: 'Error fetching order', error: err.message });
+  }
+};
+
+const getVendors = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "/BusinessPartners?$filter=CardType eq 'cSupplier'");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching BusinessPartners', error: err.message });
+  }
+};
+
 const getItems = async (req, res) => {
   try {
     const response = await sapGetRequest(req, "/Items?$select=ItemCode,ItemName,ForeignName");
@@ -125,4 +195,6 @@ const getItems = async (req, res) => {
   }
 };
 
-module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById };
+module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
+  getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors
+ };
