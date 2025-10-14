@@ -56,8 +56,11 @@ const getBusinessPartners = async (req, res) => {
 };
 
 const getOrders = async (req, res) => {
+  const { top = 20, skip = 0 } = req.query;
+
   try {
-    const response = await sapGetRequest(req, "/Orders?$orderby=DocEntry desc");
+    const query = `/Orders?$orderby=DocEntry desc&$top=${top}&$skip=${skip}`;
+    const response = await sapGetRequest(req, query);
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
