@@ -80,7 +80,7 @@ class AuthService {
             try {
                 const externalPayload = {
                     UserName: "manager",
-                    Password: "Sap@12345",
+                    Password: "Sap@1234",
                     CompanyDB: "GLD_Demo"
                 };
 
