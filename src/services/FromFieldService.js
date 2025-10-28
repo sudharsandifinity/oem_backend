@@ -18,6 +18,9 @@ class FromFieldService extends BaseService{
             if(json.Form){
                 json.Form.id = encodeId(json.Form.id)
             }
+            if(json.subFormId){
+                json.Form.id = encodeId(json.subFormId.id)
+            }
             if(json.FormSection){
                 json.FormSection.id = encodeId(json.FormSection.id)
             }
@@ -31,6 +34,7 @@ class FromFieldService extends BaseService{
         const result = data.toJSON();
         result.id = encodeId(result.id);
         result.Form.id = encodeId(result.Form.id);
+        result.subFormId = encodeId(result.subFormId);
         result.FormSection.id = encodeId(result.FormSection.id);
         return result;
     }
@@ -39,6 +43,10 @@ class FromFieldService extends BaseService{
 
         if(data.formId){
             data.formId = decodeId(data.formId)
+        }
+
+        if(data.subFormId){
+            data.subFormId = decodeId(data.subFormId)
         }
 
         if(data.formSectionId){
@@ -54,6 +62,11 @@ class FromFieldService extends BaseService{
         if (data.formId) {
             data.formId = decodeId(data.formId);
         }
+
+        if (data.subFormId) {
+            data.subFormId = decodeId(data.subFormId);
+        }
+
         if (data.formSectionId) {
             data.formSectionId = decodeId(data.formSectionId);
         }

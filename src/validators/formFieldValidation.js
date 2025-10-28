@@ -5,6 +5,10 @@ const createFormFieldSchema = Joi.object({
     'string.empty': 'Form Id is required',
     'any.required': 'Form ID is required'
   }),
+  subFormId: Joi.string().required().messages({
+    'string.empty': 'Sub Form ID is required',
+    'any.required': 'Sub Form ID is required'
+  }),
   formSectionId: Joi.string().required().messages({
     'string.empty': 'Form Section ID is required',
     'any.required': 'Form Section ID is required'
@@ -41,6 +45,10 @@ const updateFormFieldSchema = Joi.object({
   formId: Joi.string().optional().messages({
     'string.empty': 'Form Id cannot be empty',
     'any.required': 'Form ID is required'
+  }),
+  subFormId: Joi.string().optional().messages({
+    'string.empty': 'Sub Form Id cannot be empty',
+    'any.required': 'Sub Form ID is required'
   }),
   formSectionId: Joi.string().optional().messages({
     'string.empty': 'Form Section Id cannot be empty',
