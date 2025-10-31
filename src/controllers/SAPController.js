@@ -92,7 +92,7 @@ const getOrders = async (req, res) => {
 
 const createOrders = async (req, res) => {
   try {
-    const { formData: data, ...sapData } = req.body;
+    const { data: formData, ...sapData } = req.body;
 
     const response = await sapPostRequest(req, "/Orders", sapData);
 
@@ -120,7 +120,7 @@ const createOrders = async (req, res) => {
 const updateOrder = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
-    const { formData: data, ...sapData } = req.body;
+    const { data: formData, ...sapData } = req.body;
     
     const orderResponse = await sapGetRequest(req, `/Orders(${docEntry})`);
     const order = orderResponse.data;
@@ -132,26 +132,27 @@ const updateOrder = async (req, res) => {
     const sapResponse = await sapPutRequest(req, `/Orders(${docEntry})`, sapData);
     const existingFormData = (await formDataService.getAll()).find(fd => fd.DocEntry === docEntry);
 
+    let updatedFormData;
+
     if (existingFormData) {
-      await formDataService.update(existingFormData.id, {
+      updatedFormData = await formDataService.update(existingFormData.id, {
         module: "Sales Order",
         DocEntry: docEntry,
-        data: data || {}
+        data: formData || {}
       });
     } else {
-      await formDataService.create({
+      updatedFormData = await formDataService.create({
         module: "Sales Order",
         DocEntry: docEntry,
-        data: data || {}
+        data: formData || {}
       });
     }
 
-    const updatedFormData = await formDataService.getAll();
-    const formDataMap = updatedFormData.find(fd => fd.DocEntry === docEntry);
+    const getUpdatedFormData = await formDataService.getById(updatedFormData.id);
 
     const merged = {
       ...order,
-      formData: formDataMap?.data || null
+      formData: getUpdatedFormData?.data || null
     };
 
     res.status(200).json({
