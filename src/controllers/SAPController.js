@@ -65,7 +65,25 @@ const getOrders = async (req, res) => {
   try {
     const query = `/Orders?$orderby=DocEntry desc&$top=${top}&$skip=${skip}`;
     const response = await sapGetRequest(req, query);
-    res.status(200).json(response.data);
+    const sapOrders = response.data?.value || response.data || [];
+
+    const formDatas = await formDataService.getAll();
+
+    const formDataMap = {};
+    formDatas.forEach(fd => {
+      formDataMap[fd.DocEntry] = fd;
+    });
+
+    const merged = sapOrders.map(order => ({
+      ...order,
+      formData: formDataMap[order.DocEntry]?.data || null
+    }));
+
+    res.status(200).json({
+      count: merged.length,
+      data: merged
+    });
+
   } catch (err) {
     console.error('SAP error:', err.message);
     res.status(500).json({ message: 'Error fetching Orders', error: err.message });
@@ -74,15 +92,15 @@ const getOrders = async (req, res) => {
 
 const createOrders = async (req, res) => {
   try {
-    const payload = req.body;
+    const { data: formData, ...sapData } = req.body;
 
-    const response = await sapPostRequest(req, "/Orders", payload);
+    const response = await sapPostRequest(req, "/Orders", sapData);
 
     if (response && response.data.DocEntry) {
         await formDataService.create({
           module: "Sales Order",
           DocEntry: response.data.DocEntry,
-          data: payload.udf_data || {}
+          data: formData || {}
         });
     }
 
