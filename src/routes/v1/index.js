@@ -3,13 +3,15 @@ const router = express.Router();
 const { sequelize } = require('../../models');
 
 const adminRoutes = require('./admin/index');
+const userRoutes = require('./user/index');
 const authRoutes = require('./auth/index');
 const sapRoutes = require('./sap/index');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
 
-router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
 router.use('/auth', authRoutes);
+router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
+router.use('/user', userRoutes);
 router.use('/sap', sapRoutes);
 router.get('/health', async (req, res) => {
     try {

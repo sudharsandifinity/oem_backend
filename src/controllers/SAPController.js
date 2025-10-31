@@ -1,5 +1,9 @@
 const axios = require('axios');
 const https = require('https');
+const FormDataRepository = require('../repositories/FormDataRepository');
+const FormDataService = require('../services/FormDataService');
+const formDataRepository = new FormDataRepository();
+const formDataService = new FormDataService(formDataRepository);
 
 const sapGetRequest = async (req, endpoint) => {
   const sessionId = req.cookies.B1SESSION;
@@ -73,6 +77,14 @@ const createOrders = async (req, res) => {
     const payload = req.body;
 
     const response = await sapPostRequest(req, "/Orders", payload);
+
+    if (response && response.data.DocEntry) {
+        await formDataService.create({
+          module: "Sales Order",
+          DocEntry: response.data.DocEntry,
+          data: payload.udf_data || {}
+        });
+    }
 
     res.status(201).json({
       message: 'Order created successfully',
