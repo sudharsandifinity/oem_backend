@@ -92,7 +92,7 @@ const getOrders = async (req, res) => {
 
 const createOrders = async (req, res) => {
   try {
-    const { data: formData, ...sapData } = req.body;
+    const { formData: data, ...sapData } = req.body;
 
     const response = await sapPostRequest(req, "/Orders", sapData);
 
@@ -120,14 +120,45 @@ const createOrders = async (req, res) => {
 const updateOrder = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
-    const payload = req.body;
+    const { formData: data, ...sapData } = req.body;
+    
+    const orderResponse = await sapGetRequest(req, `/Orders(${docEntry})`);
+    const order = orderResponse.data;
 
-    const response = await sapPutRequest(req, `/Orders(${docEntry})`, payload);
+    if (!order) {
+      return res.status(404).json({ message: `Order with DocEntry ${docEntry} not found` });
+    }
+
+    const sapResponse = await sapPutRequest(req, `/Orders(${docEntry})`, sapData);
+    const existingFormData = (await formDataService.getAll()).find(fd => fd.DocEntry === docEntry);
+
+    if (existingFormData) {
+      await formDataService.update(existingFormData.id, {
+        module: "Sales Order",
+        DocEntry: docEntry,
+        data: data || {}
+      });
+    } else {
+      await formDataService.create({
+        module: "Sales Order",
+        DocEntry: docEntry,
+        data: data || {}
+      });
+    }
+
+    const updatedFormData = await formDataService.getAll();
+    const formDataMap = updatedFormData.find(fd => fd.DocEntry === docEntry);
+
+    const merged = {
+      ...order,
+      formData: formDataMap?.data || null
+    };
 
     res.status(200).json({
       message: 'Order updated successfully',
-      data: response.data
+      data: merged
     });
+
   } catch (err) {
     console.error('SAP Order update error:', err.message);
     res.status(500).json({
@@ -140,13 +171,32 @@ const updateOrder = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
+
     const response = await sapGetRequest(req, `/Orders(${docEntry})`);
-    res.status(200).json(response.data);
+    const order = response.data;
+
+    if (!order) {
+      return res.status(404).json({ message: `Order with DocEntry ${docEntry} not found` });
+    }
+
+    const formDatas = await formDataService.getAll();
+    const formDataMap = {};
+    formDatas.forEach(fd => {
+      formDataMap[fd.DocEntry] = fd;
+    });
+
+    const merged = {
+      ...order,
+      formData: formDataMap[order.DocEntry]?.data || null
+    };
+
+    res.status(200).json(merged);
   } catch (err) {
     console.error('SAP getOrderById error:', err.message);
     res.status(500).json({ message: 'Error fetching order', error: err.message });
   }
 };
+
 
 const getPurchaseOrders = async (req, res) => {
   try {
