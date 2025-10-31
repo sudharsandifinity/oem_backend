@@ -128,14 +128,15 @@ const updateOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: `Order with DocEntry ${docEntry} not found` });
     }
-
+    
     const sapResponse = await sapPutRequest(req, `/Orders(${docEntry})`, sapData);
-    const existingFormData = (await formDataService.getAll()).find(fd => fd.DocEntry === docEntry);
+    const FormDatas = await formDataService.getAll();
+    const existingFormData = await FormDatas.find(fd => fd.DocEntry === docEntry);
 
     let updatedFormData;
 
     if (existingFormData) {
-      updatedFormData = await formDataService.update(existingFormData.id, {
+      updatedFormData = await formDataService.update(decodeId(existingFormData.id), {
         module: "Sales Order",
         DocEntry: docEntry,
         data: formData || {}
@@ -148,7 +149,7 @@ const updateOrder = async (req, res) => {
       });
     }
 
-    const getUpdatedFormData = await formDataService.getById(updatedFormData.id);
+    const getUpdatedFormData = await formDataService.getById(decodeId(updatedFormData.id));
 
     const merged = {
       ...order,
