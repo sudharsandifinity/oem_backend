@@ -291,6 +291,26 @@ const getServices = async (req, res) => {
   }
 };
 
+const getSOTax = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "VatGroups?$filter=Category eq 'O'");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Services', error: err.message });
+  }
+};
+
+const getPOTax = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "VatGroups?$filter=Category eq 'I'");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Services', error: err.message });
+  }
+};
+
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
-  getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices
+  getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax
  };
