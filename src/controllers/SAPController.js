@@ -293,7 +293,7 @@ const getServices = async (req, res) => {
 
 const getSOTax = async (req, res) => {
   try {
-    const response = await sapGetRequest(req, "VatGroups?$filter=Category eq 'O'");
+    const response = await sapGetRequest(req, "/VatGroups?$filter=Category eq 'O'");
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
@@ -303,7 +303,7 @@ const getSOTax = async (req, res) => {
 
 const getPOTax = async (req, res) => {
   try {
-    const response = await sapGetRequest(req, "VatGroups?$filter=Category eq 'I'");
+    const response = await sapGetRequest(req, "/VatGroups?$filter=Category eq 'I'");
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
