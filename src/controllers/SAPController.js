@@ -311,6 +311,16 @@ const getPOTax = async (req, res) => {
   }
 };
 
+const getFreight = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "/AdditionalExpenses");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Services', error: err.message });
+  }
+};
+
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
-  getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax
+  getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax, getFreight
  };
