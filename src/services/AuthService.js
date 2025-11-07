@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Role, Permission, UserMenu, Branch, Company, Form, FormTab, SubForm, FormField } = require('../models');
+const { SAPSession, User, Role, Permission, UserMenu, Branch, Company, Form, FormTab, SubForm, FormField } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
@@ -8,6 +8,49 @@ const axios = require('axios');
 const https = require('https');
 
 class AuthService {
+
+    async sapLogin(userId) {
+        const payload = {
+            UserName: "manager",
+            Password: "Sap@1234",
+            CompanyDB: "GLD_Demo"
+        };
+
+        const response = await axios.post(
+            'https://192.168.100.82:50000/b1s/v2/Login',
+            payload,
+                {
+                    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 10000,
+                }
+        );
+
+        const sessionId = response.data.SessionId;
+        const cookies = response.headers['set-cookie'];
+        let routeId = '.node1';
+        if (cookies && Array.isArray(cookies)) {
+            const routeCookie = cookies.find(c => c.includes('ROUTEID'));
+            if (routeCookie) {
+                const match = routeCookie.match(/ROUTEID=([^;]+)/);
+                if (match) routeId = match[1];
+            }
+        }
+
+        await SAPSession.upsert({
+            user_id: userId,
+            sap_username: 'manager',
+            company_db: 'GLD_Demo',
+            b1_session: sessionId,
+            route_id: routeId,
+            created_at: new Date(),
+            updated_at: new Date(),
+            expires_at: new Date(Date.now() + 30 * 60 * 1000)
+        });
+
+        return { sessionId, routeId };
+    }
+
     async login(email, password) {
         const user = await User.findOne({
             where: { email },
@@ -73,47 +116,51 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        let externalLoginResponse = null;
-        let sapData;
+        // let externalLoginResponse = null;
+        // let sapData;
 
-        if (user.is_super_user === 0) {
-            try {
-                const externalPayload = {
-                    UserName: "manager",
-                    Password: "Sap@1234",
-                    CompanyDB: "GLD_Demo"
-                };
+        // if (user.is_super_user === 0) {
+        //     try {
+        //         const externalPayload = {
+        //             UserName: "manager",
+        //             Password: "Sap@1234",
+        //             CompanyDB: "GLD_Demo"
+        //         };
 
-                const response = await axios.post(
-                    'https://192.168.100.82:50000/b1s/v2/Login',
-                    externalPayload,
-                    {
-                        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        // timeout: 5000
-                    }
-                );
+        //         const response = await axios.post(
+        //             'https://192.168.100.82:50000/b1s/v2/Login',
+        //             externalPayload,
+        //             {
+        //                 httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+        //                 headers: {
+        //                     'Content-Type': 'application/json'
+        //                 },
+        //                 // timeout: 5000
+        //             }
+        //         );
 
-                externalLoginResponse = response;
+        //         externalLoginResponse = response;
 
-                if (!externalLoginResponse || externalLoginResponse.error) {
-                    console.error('SAP error response:', externalLoginResponse);
-                    throw new Error('External system login failed.');
-                }
+        //         if (!externalLoginResponse || externalLoginResponse.error) {
+        //             console.error('SAP error response:', externalLoginResponse);
+        //             throw new Error('External system login failed.');
+        //         }
 
-                console.log('SAP Login Successful:', externalLoginResponse.data);
+        //         console.log('SAP Login Successful:', externalLoginResponse.data);
                 
-                sapData = {
-                    B1SESSION: externalLoginResponse.data.SessionId,
-                    ROUTEID: '.node1'
-                }
+        //         sapData = {
+        //             B1SESSION: externalLoginResponse.data.SessionId,
+        //             ROUTEID: '.node1'
+        //         }
 
-            } catch (error) {
-                console.error('External SAP login error:', error.message);
-                throw new Error('Failed to authenticate with external system.');
-            }
+        //     } catch (error) {
+        //         console.error('External SAP login error:', error.message);
+        //         throw new Error('Failed to authenticate with external system.');
+        //     }
+        // }
+
+        if(user.is_super_user === 0){
+            this.sapLogin(user.id);
         }
 
         const data = user.toJSON();
@@ -147,7 +194,7 @@ class AuthService {
         })
         
 
-        return { token, user, data, sapData };
+        return { token, user, data };
     }
 
     async profile(id){

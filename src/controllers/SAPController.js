@@ -5,6 +5,7 @@ const FormDataService = require('../services/FormDataService');
 const { decodeId } = require('../utils/hashids');
 const formDataRepository = new FormDataRepository();
 const formDataService = new FormDataService(formDataRepository);
+const callSAP = require('../utils/sapRequest')
 
 const sapGetRequest = async (req, endpoint) => {
   const sessionId = req.cookies.B1SESSION;
@@ -263,8 +264,9 @@ const getPurchaseOrderById = async (req, res) => {
 
 const getVendors = async (req, res) => {
   try {
-    const response = await sapGetRequest(req, "/BusinessPartners?$filter=CardType eq 'cSupplier'");
-    res.status(200).json(response.data);
+    // const response = await sapGetRequest(req, "/BusinessPartners?$filter=CardType eq 'cSupplier'");
+    const data = await callSAP(userId, 'GET', `BusinessPartners?$filter=CardType eq 'cSupplier'`);
+    res.status(200).json(data);
   } catch (err) {
     console.error('SAP error:', err.message);
     res.status(500).json({ message: 'Error fetching BusinessPartners', error: err.message });
