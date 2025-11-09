@@ -8,47 +8,21 @@ const formDataService = new FormDataService(formDataRepository);
 const { callSAP } = require('../utils/sapRequest')
 
 const sapGetRequest = async (req, endpoint) => {
-  const sessionId = req.cookies.B1SESSION;
-  const routeId = req.cookies.ROUTEID;
-
-  const url = `https://192.168.100.82:50000/b1s/v2${endpoint}`;
-
-  return axios.get(url, {
-    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    headers: {
-      'Cookie': `B1SESSION=${sessionId}; ROUTEID=${routeId}`
-    }
-  });
+  const userId = req.user.id;
+  const data = await callSAP(userId, 'GET', endpoint);
+  return data;
 };
 
 const sapPostRequest = async (req, endpoint, payload) => {
-  const sessionId = req.cookies.B1SESSION;
-  const routeId = req.cookies.ROUTEID;
-
-  const url = `https://192.168.100.82:50000/b1s/v2${endpoint}`;
-
-  return axios.post(url, payload, {
-    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    headers: {
-      'Cookie': `B1SESSION=${sessionId}; ROUTEID=${routeId}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  const userId = req.user.id;
+  const data = await callSAP(userId, 'POST', endpoint, payload);
+  return data;
 };
 
 const sapPutRequest = async (req, endpoint, payload) => {
-  const sessionId = req.cookies.B1SESSION;
-  const routeId = req.cookies.ROUTEID;
-
-  const url = `https://192.168.100.82:50000/b1s/v2${endpoint}`;
-
-  return axios.patch(url, payload, {
-    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    headers: {
-      'Cookie': `B1SESSION=${sessionId}; ROUTEID=${routeId}`,
-      'Content-Type': 'application/json'
-    }
-  });
+    const userId = req.user.id;
+    const data = await callSAP(userId, 'PATCH', endpoint, payload);
+    return data;
 };
 
 const getBusinessPartners = async (req, res) => {
