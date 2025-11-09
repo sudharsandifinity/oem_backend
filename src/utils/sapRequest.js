@@ -24,11 +24,10 @@ async function callSAP(userId, method, endpoint, data = {}) {
       timeout: 10000,
     });
 
-    return res.data;
+    return res;
   } catch (error) {
     if ([401, 400].includes(error.response?.status)) {
       console.log('SAP session expired, refreshing...');
-      const { sapLogin } = await import('../services/AuthService.js');
       await authService.sapLogin(userId);
       return callSAP(userId, method, endpoint, data);
     }
