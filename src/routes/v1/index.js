@@ -12,7 +12,7 @@ const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
 router.use('/auth', authRoutes);
 router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
 router.use('/user', userRoutes);
-router.use('/sap', sapRoutes);
+router.use('/sap', authMiddleware, sapRoutes);
 router.get('/health', async (req, res) => {
     try {
         await sequelize.authenticate();
