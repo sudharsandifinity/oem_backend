@@ -9,7 +9,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      user_id: { type: Sequelize.INTEGER, allowNull: false, unique: true },
+      user_id: { type: Sequelize.INTEGER, allowNull: false },
       sap_username: { type: Sequelize.STRING, allowNull: false },
       company_db: { type: Sequelize.STRING, allowNull: false },
       b1_session: { type: Sequelize.STRING, allowNull: false },

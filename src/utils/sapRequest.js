@@ -1,10 +1,12 @@
-import axios from 'axios';
-import https from 'https';
+const axios = require('axios');
+const https = require('https');
 const { SAPSession } = require('../models');
+const AuthService = require('../services/AuthService.js');
+const authService = new AuthService();
 
 
-export async function callSAP(userId, method, endpoint, data = {}) {
-  const sapSession = await SAPSession.findOne({ where: { user_id: userId } });
+async function callSAP(userId, method, endpoint, data = {}) {
+  const sapSession = await SAPSession.findOne({ where: { user_id: userId }, order: [['createdAt', 'DESC']] });
   if (!sapSession) throw new Error('SAP session not found. Please log in.');
 
   const headers = {
@@ -27,10 +29,13 @@ export async function callSAP(userId, method, endpoint, data = {}) {
     if ([401, 400].includes(error.response?.status)) {
       console.log('SAP session expired, refreshing...');
       const { sapLogin } = await import('../services/AuthService.js');
-      await sapLogin(userId);
+      await authService.sapLogin(userId);
       return callSAP(userId, method, endpoint, data);
     }
 
     throw error;
   }
 }
+
+
+module.exports = { callSAP }

@@ -5,7 +5,7 @@ const FormDataService = require('../services/FormDataService');
 const { decodeId } = require('../utils/hashids');
 const formDataRepository = new FormDataRepository();
 const formDataService = new FormDataService(formDataRepository);
-const callSAP = require('../utils/sapRequest')
+const { callSAP } = require('../utils/sapRequest')
 
 const sapGetRequest = async (req, endpoint) => {
   const sessionId = req.cookies.B1SESSION;
