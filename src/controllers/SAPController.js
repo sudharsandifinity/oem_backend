@@ -5,7 +5,8 @@ const FormDataService = require('../services/FormDataService');
 const { decodeId } = require('../utils/hashids');
 const formDataRepository = new FormDataRepository();
 const formDataService = new FormDataService(formDataRepository);
-const { callSAP } = require('../utils/sapRequest')
+const { callSAP } = require('../utils/sapRequest');
+const FormData = require('form-data');
 
 const sapGetRequest = async (req, endpoint) => {
   const userId = req.user.id;
@@ -302,8 +303,18 @@ const uploadToSAP = async (req, res) => {
 
   try {
     const payload = req.file;
+    console.log('file data', payload);
+
+    const form = new FormData();
+    form.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype
+    });
+
+    console.log('form', form);
+    
     if (!payload) return res.status(400).json({ message: 'No file uploaded' });
-    const response = await sapPostRequest(req, "/Attachments2", payload);
+    const response = await sapPostRequest(req, "/Attachments2", form);
     res.status(201).json({
       message: 'Attachment created successfully',
       data: response.data
