@@ -14,7 +14,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   SAPSession.init({
-    user_id: DataTypes.STRING,
+    user_id: { 
+      type: DataTypes.INTEGER,
+      unique: true
+    },
     sap_username: DataTypes.STRING,
     company_db: DataTypes.STRING,
     b1_session: DataTypes.STRING,

@@ -37,7 +37,7 @@ class AuthService {
             }
         }
 
-        await SAPSession.create({
+        await SAPSession.upsert({
             user_id: userId,
             sap_username: 'manager',
             company_db: 'GLD_Demo',
