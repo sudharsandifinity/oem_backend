@@ -311,7 +311,7 @@ const uploadToSAP = async (req, res) => {
       contentType: req.file.mimetype
     });
 
-    console.log('form', form);
+    // console.log('form', form);
     
     if (!payload) return res.status(400).json({ message: 'No file uploaded' });
     const response = await sapPostRequest(req, "/Attachments2", form);
@@ -376,6 +376,33 @@ const uploadToSAP = async (req, res) => {
   // }
 };
 
+const attachementCreate = async(req, res) => {
+  try{
+    const payload = {
+      "Attachments2_Lines": [
+        {
+          "FileExtension": "jpg",
+          "FileName": "boy-ghost-walking-through-autumn-street",
+          "SourcePath": "C:\\Users\\adm_pam\\Downloads",
+          "UserID": "1"   // optional but often required by SAP B1 Service Layer
+        }
+      ]
+    };
+    console.log("Payload sent to SAP:", JSON.stringify(payload, null, 2));
+    const response = await sapPostRequest(req, "/Attachments2", payload);
+    res.status(201).json({
+      message: 'Attachment created successfully',
+      data: response.data
+    });
+  } catch (error){
+    console.error('Attachment creation error:', err.message);
+    res.status(500).json({
+      message: 'Attachment creating in SAP',
+      error: err
+    });
+  }
+}
+
 const getAttachments = async (req, res) => {  
   try {    
     const response = await sapGetRequest(req, "/Attachments2");    
@@ -438,5 +465,5 @@ const deleteAttachment = async (req, res) => {  try {    const response = await 
 
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
   getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax, getFreight,
-  getAttachments, getAttachment, createAttachments, uploadToSAP
+  getAttachments, getAttachment, createAttachments, uploadToSAP, attachementCreate
  };
