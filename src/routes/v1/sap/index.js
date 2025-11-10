@@ -7,6 +7,7 @@ const ItemRoutes = require('./itemRoutes');
 const ServiceRoutes = require('./serviceRoutes');
 const PurchaseOrderRoutes = require('./purchaseOrderRoutes');
 const TaxCodeRoutes = require('./taxCodeRoutes');
+const AttachmentRoutes = require('./attachmentRoutes');
 const OtherRoutes = require('./otherRoutes');
 
 router.use('/business-partners', BPRoutes);
@@ -15,6 +16,7 @@ router.use('/purchase-orders', PurchaseOrderRoutes);
 router.use('/items', ItemRoutes);
 router.use('/services', ServiceRoutes);
 router.use('/tax-code', TaxCodeRoutes);
+router.use('/attachments', AttachmentRoutes);
 router.use('/others', OtherRoutes);
 
 module.exports = router;
