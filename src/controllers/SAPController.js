@@ -347,9 +347,6 @@ const getAttachment = async (req, res) => {
       res.status(500).json({ message: 'Error fetching BusinessPartners', error: err.message
     });  
   }}
-  
-const updateAttachment = async (req, res) => {  try {    const response = await sapPutRequest(req, `/Attachments2/${req.params.id}`);    res.status(200).json(response.data);  } catch (err) {    console.error('SAP error:', err.message);    res.status(500).json({ message: 'Error updating Attachment', error: err.message });  }}
-const deleteAttachment = async (req, res) => {  try {    const response = await (req, `/Attachments2/${req.params.id}`);    res.status(200).json({ message: 'Attachment deleted successfully', data: response.data });  } catch (err) {    console.error('SAP error:', err.message);    res.status(500).json({ message: 'Error deleting Attachment', error: err.message });  }}
 
 const createAttachment = async (req, res) => {
   try {
@@ -373,8 +370,45 @@ const createAttachment = async (req, res) => {
   }
 };
 
+const updateAttachment = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const files = req.files;
+    if(!files) return;
+
+    const attachmentMeta = {
+      Attachments2_Lines: files.map(file =>
+        ({ 
+            FileName: file.originalname.split(".").shift(),
+            FileExtension: file.originalname.split(".").pop(), 
+            SourcePath: path.resolve(file.destination) 
+          })
+      ),
+    };
+
+    const response = await sapPutRequest(req, `/Attachments2(${id})`, attachmentMeta);
+    return response.data;
+  } catch (err) {
+    console.error('SAP Attachment update error:', err.message);
+    res.status(500).json({
+      message: 'Error updating Attachment in SAP',
+      error: err
+    });
+  }
+};
+
+// const deleteAttachment = async (req, res) => {  
+//   try {    
+//     const response = await (req, `/Attachments2/${req.params.id}`);   
+//     res.status(200).json({ message: 'Attachment deleted successfully', data: response.data });  
+//   } catch (err) {    
+//     console.error('SAP error:', err.message);    
+//     res.status(500).json({ message: 'Error deleting Attachment', error: err.message });  
+//   }
+// }
+
 
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
   getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax, getFreight,
-  getAttachments, getAttachment, createAttachment
+  getAttachments, getAttachment, createAttachment, updateAttachment
  };
