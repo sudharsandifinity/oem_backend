@@ -106,6 +106,7 @@ const createOrders = async (req, res) => {
     if (attachments) {
       payload = {
         ...sapData,  // Add sapData fields to payload
+        DocumentLines,
         AttachmentEntry: attachments.AbsoluteEntry,  // Attach the AbsoluteEntry for attachment
       };
     }
