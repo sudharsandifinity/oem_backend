@@ -1,8 +1,9 @@
 const router = require('express').Router();
 const SAPController = require('../../../controllers/SAPController');
+const upload = require('../../../middlewares/uploadMiddleware');
 
 router.get('/', SAPController.getOrders);
-router.post('/', SAPController.createOrders);
+router.post('/', upload.array('Attachments2_Lines'), SAPController.createOrders);
 router.patch('/:docEntry', SAPController.updateOrder);
 router.get('/:docEntry', SAPController.getOrderById);
 

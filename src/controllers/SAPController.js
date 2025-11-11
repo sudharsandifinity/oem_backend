@@ -71,9 +71,38 @@ const getOrders = async (req, res) => {
 
 const createOrders = async (req, res) => {
   try {
-    const { data: formData, ...sapData } = req.body;
+    // Check if `req.body` is parsed correctly
+    console.log('Request body:', req.body);
 
-    const response = await sapPostRequest(req, "/Orders", sapData);
+    // Destructure data from the body
+    const { data: formData, ...sapData } = req.body;
+    
+
+    let attachments = null;
+    console.log('Before checking files');
+
+    // Check if files are uploaded
+    if (req.files && req.files.length > 0) {
+      attachments = await createAttachment(req);
+      console.log('Attachments:', attachments);
+    }
+
+    console.log('After checking files');
+
+    // Initialize payload with sapData
+    let payload = { ...sapData };
+
+    // If attachments exist, add them to the payload
+    if (attachments) {
+      payload = {
+        ...sapData,  // Add sapData fields to payload
+        AttachmentEntry: attachments.AbsoluteEntry,  // Attach the AbsoluteEntry for attachment
+      };
+    }
+
+    console.log('Final Payload:', payload);
+    
+    const response = await sapPostRequest(req, "/Orders", payload);
 
     if (response && response.data.DocEntry) {
         await formDataService.create({
@@ -91,7 +120,7 @@ const createOrders = async (req, res) => {
     console.error('SAP Order creation error:', err.message);
     res.status(500).json({
       message: 'Error creating Order in SAP',
-      error: err.message
+      error: err
     });
   }
 };
@@ -327,11 +356,7 @@ const deleteAttachment = async (req, res) => {  try {    const response = await 
 const createAttachment = async (req, res) => {
   try {
     const files = req.files;
-
-    if (!files || files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
-    }
-
+    if(!files) return;
     const attachmentMeta = {
       Attachments2_Lines: files.map(file =>
         ({ 
@@ -343,7 +368,7 @@ const createAttachment = async (req, res) => {
     };
 
     const response = await sapPostRequest(req, '/Attachments2', attachmentMeta);            
-    res.status(200).json(response.data);
+    return response.data;
   } catch (error) {
     console.error(error.response?.data || error.message);
     res.status(500).json({ error: error.message });
