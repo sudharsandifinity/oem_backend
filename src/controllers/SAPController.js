@@ -71,9 +71,6 @@ const getOrders = async (req, res) => {
 
 const createOrders = async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-    console.log('Request body type:', typeof(req.body));
-
     let { data: formData, DocumentLines, ...sapData } = req.body;
 
     if (typeof DocumentLines === 'string') {
@@ -83,36 +80,25 @@ const createOrders = async (req, res) => {
         console.error('Failed to parse DocumentLines JSON:', err.message);
       }
     }
-    
-    console.log('Request DocumentLines:', DocumentLines);
-    console.log('Request DocumentLines type:', typeof(DocumentLines));
 
     let attachments = null;
-    console.log('Before checking files');
 
     if (req.files && req.files.length > 0) {
       attachments = await createAttachment(req);
-      console.log('Attachments:', attachments);
     }
-
-    console.log('After checking files');
 
     let payload = {
       ...sapData,
-      DocumentLines, // include parsed array
+      DocumentLines,
     };
 
-    // If attachments exist, add them to the payload
     if (attachments) {
       payload = {
-        ...sapData,  // Add sapData fields to payload
+        ...sapData,
         DocumentLines,
-        AttachmentEntry: attachments.AbsoluteEntry,  // Attach the AbsoluteEntry for attachment
+        AttachmentEntry: attachments.AbsoluteEntry,
       };
     }
-
-    console.log('Final Payload:', payload);
-    console.log('Final Payload type:', typeof(payload));
     
     const response = await sapPostRequest(req, "/Orders", payload);
 
