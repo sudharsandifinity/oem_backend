@@ -1,11 +1,11 @@
 router = require('express').Router();
 const SAPController = require('../../../controllers/SAPController');
 const multer = require('multer');
-const upload = multer({ dest: "uploads/" });
+const upload = require('../../../middlewares/uploadMiddleware');
 
 router.get('/', SAPController.getAttachments);
 router.get('/:id', SAPController.getAttachment);
-router.post('/', upload.single('Attachments2_Lines'), SAPController.newUploadMethod);
+router.post('/', upload.array('Attachments2_Lines'), SAPController.createAttachment);
 // router.put('/:id', SAPController.updateAttachment);
 // router.delete('/:id', SAPController.deleteAttachment);
 
