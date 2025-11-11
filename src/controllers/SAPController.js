@@ -7,6 +7,8 @@ const formDataRepository = new FormDataRepository();
 const formDataService = new FormDataService(formDataRepository);
 const { callSAP } = require('../utils/sapRequest');
 const FormData = require('form-data');
+const path = require('path');
+const fs = require('fs');
 
 const sapGetRequest = async (req, endpoint) => {
   const userId = req.user.id;
@@ -383,7 +385,7 @@ const attachementCreate = async(req, res) => {
         {
           "FileExtension": "jpg",
           "FileName": "boy-ghost-walking-through-autumn-street",
-          "SourcePath": "C:\\Users\\adm_pam\\Downloads",
+          "SourcePath": "C:\\\\Users\\\\adm_pam\\\\Downloads",
           "UserID": "1"   // optional but often required by SAP B1 Service Layer
         }
       ]
@@ -395,10 +397,10 @@ const attachementCreate = async(req, res) => {
       data: response.data
     });
   } catch (error){
-    console.error('Attachment creation error:', err.message);
+    console.error('Attachment creation error:', error.message);
     res.status(500).json({
       message: 'Attachment creating in SAP',
-      error: err
+      error: error
     });
   }
 }
@@ -462,8 +464,29 @@ const createAttachments = async (req, res) => {
 const updateAttachment = async (req, res) => {  try {    const response = await sapPutRequest(req, `/Attachments2/${req.params.id}`);    res.status(200).json(response.data);  } catch (err) {    console.error('SAP error:', err.message);    res.status(500).json({ message: 'Error updating Attachment', error: err.message });  }}
 const deleteAttachment = async (req, res) => {  try {    const response = await (req, `/Attachments2/${req.params.id}`);    res.status(200).json({ message: 'Attachment deleted successfully', data: response.data });  } catch (err) {    console.error('SAP error:', err.message);    res.status(500).json({ message: 'Error deleting Attachment', error: err.message });  }}
 
+const newUploadMethod = async (req, res) => {
+  try {
+    const file = req.file;
+    const absPath = path.resolve(file.destination);
+    console.log('file', file);
+    console.log('absPath', absPath);
+    
+    const attachmentMeta = {
+      Attachments2_Lines: [
+        { FileName: file.originalname, FileExtension: file.originalname.split(".").pop(), SourcePath: "C:\\temp" },
+      ],
+    };
+
+    const response = await sapPostRequest(req, '/Attachments2', attachmentMeta);            
+      res.status(200).json(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
   getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax, getFreight,
-  getAttachments, getAttachment, createAttachments, uploadToSAP, attachementCreate
+  getAttachments, getAttachment, createAttachments, uploadToSAP, attachementCreate, newUploadMethod
  };
