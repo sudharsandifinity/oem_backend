@@ -22,9 +22,15 @@ const sapPostRequest = async (req, endpoint, payload) => {
   return data;
 };
 
-const sapPutRequest = async (req, endpoint, payload) => {
+const sapPatchRequest = async (req, endpoint, payload) => {
     const userId = req.user.id;
     const data = await callSAP(userId, 'PATCH', endpoint, payload);
+    return data;
+};
+
+const sapDeleteRequest = async (req, endpoint, payload) => {
+    const userId = req.user.id;
+    const data = await callSAP(userId, 'DELETE', endpoint, payload);
     return data;
 };
 
@@ -126,8 +132,35 @@ const createOrders = async (req, res) => {
 const updateOrder = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
-    const { data: formData, ...sapData } = req.body;
+    const { data: formData, DocumentLines, ...sapData } = req.body;
     
+    if (typeof DocumentLines === 'string') {
+      try {
+        DocumentLines = JSON.parse(DocumentLines);
+      } catch (err) {
+        console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    let attachments = null;
+
+    if (req.files && req.files.length > 0) {
+      attachments = await updateAttachment(req);
+    }
+
+    let payload = {
+      ...sapData,
+      DocumentLines,
+    };
+
+    if (attachments) {
+      payload = {
+        ...sapData,
+        DocumentLines,
+        AttachmentEntry: attachments.AbsoluteEntry,
+      };
+    }
+
     const orderResponse = await sapGetRequest(req, `/Orders(${docEntry})`);
     const order = orderResponse.data;
 
@@ -135,7 +168,7 @@ const updateOrder = async (req, res) => {
       return res.status(404).json({ message: `Order with DocEntry ${docEntry} not found` });
     }
     
-    const sapResponse = await sapPutRequest(req, `/Orders(${docEntry})`, sapData);
+    const sapResponse = await sapPatchRequest(req, `/Orders(${docEntry})`, payload);
     const FormDatas = await formDataService.getAll();
     const existingFormData = await FormDatas.find(fd => fd.DocEntry === docEntry);
 
@@ -240,7 +273,7 @@ const updatePurchaseOrder = async (req, res) => {
     const docEntry = req.params.docEntry;
     const payload = req.body;
 
-    const response = await sapPutRequest(req, `/PurchaseOrders(${docEntry})`, payload);
+    const response = await sapPatchRequest(req, `/PurchaseOrders(${docEntry})`, payload);
 
     res.status(200).json({
       message: 'Order updated successfully',
@@ -386,7 +419,7 @@ const updateAttachment = async (req, res) => {
       ),
     };
 
-    const response = await sapPutRequest(req, `/Attachments2(${id})`, attachmentMeta);
+    const response = await sapPatchRequest(req, `/Attachments2(${id})`, attachmentMeta);
     return response.data;
   } catch (err) {
     console.error('SAP Attachment update error:', err.message);
@@ -397,18 +430,18 @@ const updateAttachment = async (req, res) => {
   }
 };
 
-// const deleteAttachment = async (req, res) => {  
-//   try {    
-//     const response = await (req, `/Attachments2/${req.params.id}`);   
-//     res.status(200).json({ message: 'Attachment deleted successfully', data: response.data });  
-//   } catch (err) {    
-//     console.error('SAP error:', err.message);    
-//     res.status(500).json({ message: 'Error deleting Attachment', error: err.message });  
-//   }
-// }
+const deleteAttachment = async (req, res) => {  
+  try {    
+    const response = await sapDeleteRequest(req, `/Attachments2/${req.params.id}`);   
+    res.status(200).json({ message: 'Attachment deleted successfully', data: response.data });  
+  } catch (err) {    
+    console.error('SAP error:', err.message);    
+    res.status(500).json({ message: 'Error deleting Attachment', error: err.message });  
+  }
+}
 
 
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
   getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax, getFreight,
-  getAttachments, getAttachment, createAttachment, updateAttachment
+  getAttachments, getAttachment, createAttachment, updateAttachment, deleteAttachment
  };
