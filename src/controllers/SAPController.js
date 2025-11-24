@@ -90,7 +90,7 @@ const createOrders = async (req, res) => {
     let attachments = null;
 
     if (req.files && req.files.length > 0) {
-      attachments = await createAttachment(req);
+      attachments = await createAttachment(req, res);
     }
 
     let payload = {
@@ -133,7 +133,10 @@ const updateOrder = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
     const { data: formData, DocumentLines, ...sapData } = req.body;
-    
+
+    const orderResponse = await sapGetRequest(req, `/Orders(${docEntry})`);
+    const order = orderResponse.data;
+
     if (typeof DocumentLines === 'string') {
       try {
         DocumentLines = JSON.parse(DocumentLines);
@@ -145,7 +148,7 @@ const updateOrder = async (req, res) => {
     let attachments = null;
 
     if (req.files && req.files.length > 0) {
-      attachments = await updateAttachment(req);
+      attachments = await updateAttachment(req, res, null, order.AttachmentEntry);
     }
 
     let payload = {
@@ -160,9 +163,6 @@ const updateOrder = async (req, res) => {
         AttachmentEntry: attachments.AbsoluteEntry,
       };
     }
-
-    const orderResponse = await sapGetRequest(req, `/Orders(${docEntry})`);
-    const order = orderResponse.data;
 
     if (!order) {
       return res.status(404).json({ message: `Order with DocEntry ${docEntry} not found` });
@@ -403,9 +403,9 @@ const createAttachment = async (req, res) => {
   }
 };
 
-const updateAttachment = async (req, res) => {
+const updateAttachment = async (req, res, next, attachmentId) => {
   try {
-    const id = req.params.id;
+    const id = attachmentId || req.params.id;
     const files = req.files;
     if(!files) return;
 
