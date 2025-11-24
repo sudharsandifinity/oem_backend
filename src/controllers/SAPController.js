@@ -209,6 +209,200 @@ const updateOrder = async (req, res) => {
   }
 };
 
+const getSalesQuotationById = async (req, res) => {
+  try {
+    const docEntry = req.params.docEntry;
+
+    const response = await sapGetRequest(req, `/Quotations(${docEntry})`);
+    const order = response.data;
+
+    if (!order) {
+      return res.status(404).json({ message: `SalesQuotations ${docEntry} not found` });
+    }
+
+    const formDatas = await formDataService.getAll();
+    const formDataMap = {};
+    formDatas.forEach(fd => {
+      formDataMap[fd.DocEntry] = fd;
+    });
+
+    const merged = {
+      ...order,
+      formData: formDataMap[order.DocEntry]?.data || null
+    };
+
+    res.status(200).json(merged);
+  } catch (err) {
+    console.error('SAP getSalesQuotationById error:', err.message);
+    res.status(500).json({ message: 'Error fetching order', error: err.message });
+  }
+};
+
+const getSalesQuotations = async (req, res) => {
+  const { top = 20, skip = 0 } = req.query;
+
+  try {
+    const query = `/Quotations?$orderby=DocEntry desc&$top=${top}&$skip=${skip}`;
+    const response = await sapGetRequest(req, query);
+    const sapQuotations = response.data?.value || response.data || [];
+
+    const formDatas = await formDataService.getAll();
+
+    const formDataMap = {};
+    formDatas.forEach(fd => {
+      formDataMap[fd.DocEntry] = fd;
+    });
+
+    const merged = sapQuotations.map(order => ({
+      ...order,
+      formData: formDataMap[order.DocEntry]?.data || null
+    }));
+
+    res.status(200).json({
+      count: merged.length,
+      data: merged
+    });
+
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Quotations', error: err.message });
+  }
+};
+
+const createSalesQuotations = async (req, res) => {
+  try {
+    let { data: formData, DocumentLines, ...sapData } = req.body;
+
+    if (typeof DocumentLines === 'string') {
+      try {
+        DocumentLines = JSON.parse(DocumentLines);
+      } catch (err) {
+        console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    let attachments = null;
+
+    if (req.files && req.files.length > 0) {
+      attachments = await createAttachment(req);
+    }
+
+    let payload = {
+      ...sapData,
+      DocumentLines,
+    };
+
+    if (attachments) {
+      payload = {
+        ...sapData,
+        DocumentLines,
+        AttachmentEntry: attachments.AbsoluteEntry,
+      };
+    }
+    
+    const response = await sapPostRequest(req, "/Quotations", payload);
+
+    if (response && response.data.DocEntry) {
+        await formDataService.create({
+          module: "SalesQuotation",
+          DocEntry: response.data.DocEntry,
+          data: formData || {}
+        });
+    }
+
+    res.status(201).json({
+      message: 'SalesQuotations created successfully',
+      data: response.data
+    });
+  } catch (err) {
+    console.error('SAP SalesQuotations creation error:', err.message);
+    res.status(500).json({
+      message: 'Error creating SalesQuotations in SAP',
+      error: err
+    });
+  }
+};
+
+const updateSalesQuotations = async (req, res) => {
+  try {
+    const docEntry = req.params.docEntry;
+    const { data: formData, DocumentLines, ...sapData } = req.body;
+    
+    if (typeof DocumentLines === 'string') {
+      try {
+        DocumentLines = JSON.parse(DocumentLines);
+      } catch (err) {
+        console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    let attachments = null;
+
+    if (req.files && req.files.length > 0) {
+      attachments = await updateAttachment(req);
+    }
+
+    let payload = {
+      ...sapData,
+      DocumentLines,
+    };
+
+    if (attachments) {
+      payload = {
+        ...sapData,
+        DocumentLines,
+        AttachmentEntry: attachments.AbsoluteEntry,
+      };
+    }
+
+    const orderResponse = await sapGetRequest(req, `/Quotations(${docEntry})`);
+    const order = orderResponse.data;
+
+    if (!order) {
+      return res.status(404).json({ message: `SalesQuotations ${docEntry} not found` });
+    }
+    
+    const sapResponse = await sapPatchRequest(req, `/Quotations(${docEntry})`, payload);
+    const FormDatas = await formDataService.getAll();
+    const existingFormData = await FormDatas.find(fd => fd.DocEntry === docEntry);
+
+    let updatedFormData;
+
+    if (existingFormData) {
+      updatedFormData = await formDataService.update(decodeId(existingFormData.id), {
+        module: "SalesQuotation",
+        DocEntry: docEntry,
+        data: formData || {}
+      });
+    } else {
+      updatedFormData = await formDataService.create({
+        module: "SalesQuotation",
+        DocEntry: docEntry,
+        data: formData || {}
+      });
+    }
+
+    const getUpdatedFormData = await formDataService.getById(decodeId(updatedFormData.id));
+
+    const merged = {
+      ...order,
+      formData: getUpdatedFormData?.data || null
+    };
+
+    res.status(200).json({
+      message: 'SalesQuotations updated successfully',
+      data: merged
+    });
+
+  } catch (err) {
+    console.error('SAP SalesQuotations update error:', err.message);
+    res.status(500).json({
+      message: 'Error updating SalesQuotations in SAP',
+      error: err.message
+    });
+  }
+};
+
 const getOrderById = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
@@ -443,5 +637,5 @@ const deleteAttachment = async (req, res) => {
 
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
   getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax, getFreight,
-  getAttachments, getAttachment, createAttachment, updateAttachment, deleteAttachment
+  getAttachments, getAttachment, createAttachment, updateAttachment, deleteAttachment, getSalesQuotationById, getSalesQuotations, createSalesQuotations, updateSalesQuotations
  };
