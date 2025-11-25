@@ -9,11 +9,12 @@ const https = require('https');
 
 class AuthService {
 
-    async sapLogin(userId) {
+    async sapLogin(user) {
+        
         const payload = {
-            UserName: "manager",
+            UserName: user.Branches[0].Company.sap_username,
             Password: "Sap@1234",
-            CompanyDB: "GLD_Demo"
+            CompanyDB: user.Branches[0].Company.company_db_name
         };
 
         const response = await axios.post(
@@ -38,9 +39,9 @@ class AuthService {
         }
 
         await SAPSession.upsert({
-            user_id: userId,
-            sap_username: 'manager',
-            company_db: 'GLD_Demo',
+            user_id: user.id,
+            sap_username: payload.UserName,
+            company_db: payload.CompanyDB,
             b1_session: sessionId,
             route_id: routeId,
             created_at: new Date(),
@@ -160,7 +161,7 @@ class AuthService {
         // }
 
         if(user.is_super_user === 0){
-            this.sapLogin(user.id);
+            this.sapLogin(user);
         }
 
         const data = user.toJSON();
