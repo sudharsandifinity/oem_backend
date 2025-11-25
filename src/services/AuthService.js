@@ -9,14 +9,72 @@ const https = require('https');
 
 class AuthService {
 
-    async sapLogin(user) {
-        
+    async sapLogin(req, res, next, user) {
+        const companyData = decodeId(req.body);
+        const userData = await User.findOne({
+            where: { email:user.email },
+            include: [
+                {
+                model: Role,
+                through: { attributes: [] },
+                include: [
+                    {
+                        model: Permission,
+                        through: { attributes: [] }
+                    },
+                    {
+                        model: UserMenu,
+                        include: [
+                            {
+                                model: Form,
+                                include: [
+                                    {
+                                        model: FormTab,
+                                        include: [{
+                                            model: SubForm,
+                                            include: [FormField]
+                                        }],
+                                    } 
+                                ]
+                            }
+                        ],
+                        attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
+                        through: {
+                            attributes: [
+                            'can_list_view',
+                            'can_create',
+                            'can_edit',
+                            'can_view',
+                            'can_delete'
+                            ]
+                        },
+                    }
+                ]
+                },
+                {
+                    model: Branch,
+                    through: { attributes: [] },
+                    attributes: {exclude: ['createdAt', 'updatedAt']},
+                    include: [
+                        {
+                            model: Company,
+                            attributes: {exclude: ['createdAt', 'updatedAt']},
+                        }
+                    ]
+                }
+            ]
+        });
+
+        const company = await Company.findOne({companyData});
+
         const payload = {
-            UserName: user.Branches[0].Company.sap_username,
+            UserName: company.sap_username,
             Password: "Sap@1234",
-            CompanyDB: user.Branches[0].Company.company_db_name
+            CompanyDB: company.company_db_name
         };
 
+        console.log('payload', payload);
+        
         const response = await axios.post(
             'https://192.168.100.82:50000/b1s/v2/Login',
             payload,
@@ -39,7 +97,7 @@ class AuthService {
         }
 
         await SAPSession.upsert({
-            user_id: user.id,
+            user_id: userData.id,
             sap_username: payload.UserName,
             company_db: payload.CompanyDB,
             b1_session: sessionId,
@@ -117,52 +175,9 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        // let externalLoginResponse = null;
-        // let sapData;
-
-        // if (user.is_super_user === 0) {
-        //     try {
-        //         const externalPayload = {
-        //             UserName: "manager",
-        //             Password: "Sap@1234",
-        //             CompanyDB: "GLD_Demo"
-        //         };
-
-        //         const response = await axios.post(
-        //             'https://192.168.100.82:50000/b1s/v2/Login',
-        //             externalPayload,
-        //             {
-        //                 httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-        //                 headers: {
-        //                     'Content-Type': 'application/json'
-        //                 },
-        //                 // timeout: 5000
-        //             }
-        //         );
-
-        //         externalLoginResponse = response;
-
-        //         if (!externalLoginResponse || externalLoginResponse.error) {
-        //             console.error('SAP error response:', externalLoginResponse);
-        //             throw new Error('External system login failed.');
-        //         }
-
-        //         console.log('SAP Login Successful:', externalLoginResponse.data);
-                
-        //         sapData = {
-        //             B1SESSION: externalLoginResponse.data.SessionId,
-        //             ROUTEID: '.node1'
-        //         }
-
-        //     } catch (error) {
-        //         console.error('External SAP login error:', error.message);
-        //         throw new Error('Failed to authenticate with external system.');
-        //     }
+        // if(user.is_super_user === 0){
+        //     this.sapLogin(user);
         // }
-
-        if(user.is_super_user === 0){
-            this.sapLogin(user);
-        }
 
         const data = user.toJSON();
         delete data.password;

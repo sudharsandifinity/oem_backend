@@ -6,6 +6,7 @@ const authMiddleware = require('../../../middlewares/authMiddleware');
 
 
 router.post('/login', validate(loginSchema), AuthController.login);
+router.post('/sap-login', authMiddleware, AuthController.sapLogin);
 router.post('/forgot-password', validate(forgotPassword), AuthController.forgotPassword);
 router.post('/reset-password', validate(resetPasswordSchema), AuthController.resetPassword);
 
