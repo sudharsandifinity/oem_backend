@@ -6,13 +6,16 @@ const { encodeId, decodeId } = require("../utils/hashids");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
 const axios = require('axios');
 const https = require('https');
+const { decrypt } = require('../utils/crypto');
 
 class AuthService {
 
-    async sapLogin(req, res, next, user) {
-        const companyData = decodeId(req.body);
+    async sapLogin(req, res, next, user=null) {
+        const authUser = user || req.user;
+        const companyData = req.body;
+
         const userData = await User.findOne({
-            where: { email:user.email },
+            where: { email:authUser.email },
             include: [
                 {
                 model: Role,
@@ -65,15 +68,16 @@ class AuthService {
             ]
         });
 
-        const company = await Company.findOne({companyData});
+        const company = await Company.findOne({where: {id: decodeId(companyData.companyId)}});
+
+        const companypassword = decrypt(company.secret_key)
+        const companyusername = decrypt(company.sap_username);
 
         const payload = {
-            UserName: company.sap_username,
-            Password: "Sap@1234",
+            UserName: companyusername,
+            Password: companypassword,
             CompanyDB: company.company_db_name
         };
-
-        console.log('payload', payload);
         
         const response = await axios.post(
             'https://192.168.100.82:50000/b1s/v2/Login',
