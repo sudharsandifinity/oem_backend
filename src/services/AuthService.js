@@ -11,7 +11,7 @@ const { decrypt } = require('../utils/crypto');
 class AuthService {
 
     async sapLogin(req, res, next, user=null) {
-        const authUser = user || req.user;
+        const authUser = req.user || user;
         const companyData = req.body;
 
         const userData = await User.findOne({
@@ -68,7 +68,13 @@ class AuthService {
             ]
         });
 
-        const company = await Company.findOne({where: {id: decodeId(companyData.companyId)}});
+        const decodedCompanyId = decodeId(companyData.company_id);
+
+        if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
+        throw new Error('Decoded company ID is invalid');
+        }
+
+        const company = await Company.findOne({where: {id: decodedCompanyId}});
 
         const companypassword = decrypt(company.secret_key)
         const companyusername = decrypt(company.sap_username);
