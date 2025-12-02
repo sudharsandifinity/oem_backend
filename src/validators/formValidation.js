@@ -36,7 +36,14 @@ const createFormSchema = Joi.object({
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
-    })
+    }),
+    FormTabs: Joi.array().items(
+        Joi.object({
+            name: Joi.string().required(),
+            display_name: Joi.string().optional().allow(null, ''),
+            status: Joi.number().valid(0, 1).optional().default(1)
+        })
+    ).optional(),
 });
 
 const updateFormSchema = Joi.object({
@@ -71,7 +78,15 @@ const updateFormSchema = Joi.object({
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
-    })
+    }),
+    FormTabs: Joi.array().items(
+        Joi.object({
+            id: Joi.string().optional(),
+            name: Joi.string().required(),
+            display_name: Joi.string().optional().allow(null, ''),
+            status: Joi.number().valid(0, 1).optional().default(1)
+        })
+    ).optional(),
 });
 
 const getByPkSchema = Joi.object({

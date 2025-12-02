@@ -3,6 +3,8 @@ const { encodeId, decodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
 const CompanyRepository = require("../repositories/CompanyRepository");
 const FromFieldRepository = require("../repositories/FromFieldRepository");
+const FormTabService = require("./FromTabService")
+const FromTabRepository = require("../repositories/FormTabRepository");
 
 class FormService extends BaseService{
 
@@ -10,6 +12,8 @@ class FormService extends BaseService{
         super(FormRepository);
         this.companyRepository = new CompanyRepository();
         this.fromFieldRepository = new FromFieldRepository();
+        this.formTabRepository = new FromTabRepository();
+        this.formTabService = new FormTabService(this.formTabRepository);
     }
 
     async getAll() {
@@ -121,46 +125,80 @@ class FormService extends BaseService{
         //     logger.warn('Form name is already exists', {Name: data.name});
         //     throw new Error('Form name is already exist!');
         // }
+        const {FormTabs, ...formPayload} = data;
 
         ["companyId", "branchId", "parentFormId"].forEach(key => {
-            if (data[key] === "" || data[key] === undefined) {
-                data[key] = null;
+            if (formPayload[key] === "" || formPayload[key] === undefined) {
+                formPayload[key] = null;
             }
         });
 
         ["companyId", "branchId", "parentFormId"].forEach(key => {
-            if(data[key]){
-                data[key] = decodeId(data[key]);
+            if(formPayload[key]){
+                formPayload[key] = decodeId(formPayload[key]);
             }
         });
 
-        const form = await this.repository.create(data);
+        const form = await this.repository.create(formPayload);
+        const formTabPayload = FormTabs.map(formtab => (
+            {
+                formId: form.id,
+                name: formtab.name,
+                display_name: formtab.display_name,
+                status: formtab.status,
+            }
+        ))  
+
+        await this.formTabService.create(formTabPayload)
         const formData = this.getById(form.id);
         return formData;
     }
 
     async update(id, data) {
-        if (data.name) {
-            const existing = await this.repository.findByName(data.name);
+
+        const {FormTabs, ...formPayload} = data;
+
+        if (formPayload.name) {
+            const existing = await this.repository.findByName(formPayload.name);
             if (existing && existing.id != id) {
-                logger.warn('Form name is already exists', {Name: data.name});
+                logger.warn('Form name is already exists', {Name: formPayload.name});
                 throw new Error('Form name is already exist!');
             }
         }
 
         ["companyId", "branchId", "parentFormId"].forEach(key => {
-            if (data[key] === "" || data[key] === undefined) {
-                data[key] = null;
+            if (formPayload[key] === "" || formPayload[key] === undefined) {
+                formPayload[key] = null;
             }
         });
 
         ["companyId", "branchId", "parentFormId"].forEach(key => {
-            if(data[key]){
-                data[key] = decodeId(data[key]);
+            if(formPayload[key]){
+                formPayload[key] = decodeId(formPayload[key]);
             }
         });
 
-        await this.repository.update(id, data);
+        await this.repository.update(id, formPayload);
+
+        if (Array.isArray(FormTabs)) {
+            for (const tab of FormTabs) {
+                if (tab.id) {
+                    await this.formTabService.update(decodeId(tab.id), {
+                        name: tab.name,
+                        display_name: tab.display_name,
+                        status: tab.status
+                    });
+                }
+                else {
+                    await this.formTabService.create({
+                        formId: id,
+                        name: tab.name,
+                        display_name: tab.display_name,
+                        status: tab.status
+                    });
+                }
+            }
+        }
         const formData = await this.getById(id);
         return formData;
     }

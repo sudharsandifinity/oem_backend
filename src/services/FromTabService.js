@@ -28,15 +28,30 @@ class FromTabService extends BaseService{
         return result;
     }
 
-    async create(data){
+    async create(data) {
 
-        if(data.formId){
-            data.formId = decodeId(data.formId)
+        if (Array.isArray(data)) {
+
+            const results = [];
+
+            for (const tab of data) {
+                let payload = { ...tab };
+
+                const created = await this.repository.create(payload);
+                const result = await this.getById(created.id);
+
+                results.push(result);
+            }
+
+            return results;
         }
 
-        const FormTab = await this.repository.create(data);
-        const result = await this.getById(FormTab.id)
-        return result;
+        if (data.formId) {
+            data.formId = decodeId(data.formId);
+        }
+
+        const createdTab = await this.repository.create(data);
+        return await this.getById(createdTab.id);
     }
 
     async update(id, data){
