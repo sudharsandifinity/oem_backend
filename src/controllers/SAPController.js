@@ -77,13 +77,21 @@ const getOrders = async (req, res) => {
 
 const createOrders = async (req, res) => {
   try {
-    let { data: formData, DocumentLines, ...sapData } = req.body;
+    let { data: formData, DocumentLines, DocumentAdditionalExpenses, ...sapData } = req.body;
 
     if (typeof DocumentLines === 'string') {
       try {
         DocumentLines = JSON.parse(DocumentLines);
       } catch (err) {
         console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    if (typeof DocumentAdditionalExpenses === 'string') {
+      try {
+        DocumentAdditionalExpenses = JSON.parse(DocumentAdditionalExpenses);
+      } catch (err) {
+        console.error('Failed to parse DocumentAdditionalExpenses JSON:', err.message);
       }
     }
 
@@ -96,12 +104,14 @@ const createOrders = async (req, res) => {
     let payload = {
       ...sapData,
       DocumentLines,
+      DocumentAdditionalExpenses
     };
 
     if (attachments) {
       payload = {
         ...sapData,
         DocumentLines,
+        DocumentAdditionalExpenses,
         AttachmentEntry: attachments.AbsoluteEntry,
       };
     }
@@ -132,7 +142,7 @@ const createOrders = async (req, res) => {
 const updateOrder = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
-    const { data: formData, DocumentLines, ...sapData } = req.body;
+    const { data: formData, DocumentLines, DocumentAdditionalExpenses, ...sapData } = req.body;
 
     const orderResponse = await sapGetRequest(req, `/Orders(${docEntry})`);
     const order = orderResponse.data;
@@ -145,6 +155,14 @@ const updateOrder = async (req, res) => {
       }
     }
 
+    if (typeof DocumentAdditionalExpenses === 'string') {
+      try {
+        DocumentAdditionalExpenses = JSON.parse(DocumentAdditionalExpenses);
+      } catch (err) {
+        console.error('Failed to parse DocumentAdditionalExpenses JSON:', err.message);
+      }
+    }
+
     let attachments = null;
 
     if (req.files && req.files.length > 0) {
@@ -153,6 +171,7 @@ const updateOrder = async (req, res) => {
 
     let payload = {
       ...sapData,
+      DocumentAdditionalExpenses,
       DocumentLines,
     };
 
@@ -160,6 +179,7 @@ const updateOrder = async (req, res) => {
       payload = {
         ...sapData,
         DocumentLines,
+        DocumentAdditionalExpenses,
         AttachmentEntry: attachments.AbsoluteEntry,
       };
     }
@@ -271,13 +291,21 @@ const getSalesQuotations = async (req, res) => {
 
 const createSalesQuotations = async (req, res) => {
   try {
-    let { data: formData, DocumentLines, ...sapData } = req.body;
+    let { data: formData, DocumentLines, DocumentAdditionalExpenses, ...sapData } = req.body;
 
     if (typeof DocumentLines === 'string') {
       try {
         DocumentLines = JSON.parse(DocumentLines);
       } catch (err) {
         console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    if (typeof DocumentAdditionalExpenses === 'string') {
+      try {
+        DocumentAdditionalExpenses = JSON.parse(DocumentAdditionalExpenses);
+      } catch (err) {
+        console.error('Failed to parse DocumentAdditionalExpenses JSON:', err.message);
       }
     }
 
@@ -289,6 +317,7 @@ const createSalesQuotations = async (req, res) => {
 
     let payload = {
       ...sapData,
+      DocumentAdditionalExpenses,
       DocumentLines,
     };
 
@@ -296,6 +325,7 @@ const createSalesQuotations = async (req, res) => {
       payload = {
         ...sapData,
         DocumentLines,
+        DocumentAdditionalExpenses,
         AttachmentEntry: attachments.AbsoluteEntry,
       };
     }
@@ -326,13 +356,21 @@ const createSalesQuotations = async (req, res) => {
 const updateSalesQuotations = async (req, res) => {
   try {
     const docEntry = req.params.docEntry;
-    const { data: formData, DocumentLines, ...sapData } = req.body;
+    const { data: formData, DocumentLines, DocumentAdditionalExpenses, ...sapData } = req.body;
     
     if (typeof DocumentLines === 'string') {
       try {
         DocumentLines = JSON.parse(DocumentLines);
       } catch (err) {
         console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    if (typeof DocumentAdditionalExpenses === 'string') {
+      try {
+        DocumentAdditionalExpenses = JSON.parse(DocumentAdditionalExpenses);
+      } catch (err) {
+        console.error('Failed to parse DocumentAdditionalExpenses JSON:', err.message);
       }
     }
 
@@ -344,6 +382,7 @@ const updateSalesQuotations = async (req, res) => {
 
     let payload = {
       ...sapData,
+      DocumentAdditionalExpenses,
       DocumentLines,
     };
 
@@ -352,6 +391,7 @@ const updateSalesQuotations = async (req, res) => {
         ...sapData,
         DocumentLines,
         AttachmentEntry: attachments.AbsoluteEntry,
+        DocumentAdditionalExpenses
       };
     }
 
@@ -400,6 +440,220 @@ const updateSalesQuotations = async (req, res) => {
       message: 'Error updating SalesQuotations in SAP',
       error: err.message
     });
+  }
+};
+
+const createPurchaseQuotations = async (req, res) => {
+  try {
+    let { data: formData, DocumentLines, DocumentAdditionalExpenses, ...sapData } = req.body;
+
+    if (typeof DocumentLines === 'string') {
+      try {
+        DocumentLines = JSON.parse(DocumentLines);
+      } catch (err) {
+        console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    if (typeof DocumentAdditionalExpenses === 'string') {
+      try {
+        DocumentAdditionalExpenses = JSON.parse(DocumentAdditionalExpenses);
+      } catch (err) {
+        console.error('Failed to parse DocumentAdditionalExpenses JSON:', err.message);
+      }
+    }
+
+    let attachments = null;
+
+    if (req.files && req.files.length > 0) {
+      attachments = await createAttachment(req);
+    }
+
+    let payload = {
+      ...sapData,
+      DocumentAdditionalExpenses,
+      DocumentLines,
+    };
+
+    if (attachments) {
+      payload = {
+        ...sapData,
+        DocumentLines,
+        DocumentAdditionalExpenses,
+        AttachmentEntry: attachments.AbsoluteEntry,
+      };
+    }
+    
+    const response = await sapPostRequest(req, "/PurchaseQuotations", payload);
+
+    if (response && response.data.DocEntry) {
+        await formDataService.create({
+          module: "PurchaseQuotation",
+          DocEntry: response.data.DocEntry,
+          data: formData || {}
+        });
+    }
+
+    res.status(201).json({
+      message: 'PurchaseQuotation created successfully',
+      data: response.data
+    });
+  } catch (err) {
+    console.error('SAP PurchaseQuotation creation error:', err.message);
+    res.status(500).json({
+      message: 'Error creating PurchaseQuotation in SAP',
+      error: err
+    });
+  }
+};
+
+const updatePurchaseQuotations = async (req, res) => {
+  try {
+    const docEntry = req.params.docEntry;
+    const { data: formData, DocumentLines, DocumentAdditionalExpenses, ...sapData } = req.body;
+    
+    if (typeof DocumentLines === 'string') {
+      try {
+        DocumentLines = JSON.parse(DocumentLines);
+      } catch (err) {
+        console.error('Failed to parse DocumentLines JSON:', err.message);
+      }
+    }
+
+    if (typeof DocumentAdditionalExpenses === 'string') {
+      try {
+        DocumentAdditionalExpenses = JSON.parse(DocumentAdditionalExpenses);
+      } catch (err) {
+        console.error('Failed to parse DocumentAdditionalExpenses JSON:', err.message);
+      }
+    }
+
+    let attachments = null;
+
+    if (req.files && req.files.length > 0) {
+      attachments = await updateAttachment(req);
+    }
+
+    let payload = {
+      ...sapData,
+      DocumentLines,
+      DocumentAdditionalExpenses,
+    };
+
+    if (attachments) {
+      payload = {
+        ...sapData,
+        DocumentLines,
+        DocumentAdditionalExpenses,
+        AttachmentEntry: attachments.AbsoluteEntry,
+      };
+    }
+
+    const orderResponse = await sapGetRequest(req, `/PurchaseQuotations(${docEntry})`);
+    const order = orderResponse.data;
+
+    if (!order) {
+      return res.status(404).json({ message: `PurchaseQuotations ${docEntry} not found` });
+    }
+    
+    const sapResponse = await sapPatchRequest(req, `/PurchaseQuotations(${docEntry})`, payload);
+    const FormDatas = await formDataService.getAll();
+    const existingFormData = await FormDatas.find(fd => fd.DocEntry === docEntry);
+
+    let updatedFormData;
+
+    if (existingFormData) {
+      updatedFormData = await formDataService.update(decodeId(existingFormData.id), {
+        module: "PurchaseQuotation",
+        DocEntry: docEntry,
+        data: formData || {}
+      });
+    } else {
+      updatedFormData = await formDataService.create({
+        module: "PurchaseQuotation",
+        DocEntry: docEntry,
+        data: formData || {}
+      });
+    }
+
+    const getUpdatedFormData = await formDataService.getById(decodeId(updatedFormData.id));
+
+    const merged = {
+      ...order,
+      formData: getUpdatedFormData?.data || null
+    };
+
+    res.status(200).json({
+      message: 'PurchaseQuotation updated successfully',
+      data: merged
+    });
+
+  } catch (err) {
+    console.error('SAP PurchaseQuotation update error:', err.message);
+    res.status(500).json({
+      message: 'Error updating PurchaseQuotation in SAP',
+      error: err.message
+    });
+  }
+};
+
+const getPurchaseQuotationById = async (req, res) => {
+  try {
+    const docEntry = req.params.docEntry;
+
+    const response = await sapGetRequest(req, `/PurchaseQuotations(${docEntry})`);
+    const order = response.data;
+
+    if (!order) {
+      return res.status(404).json({ message: `PurchaseQuotation ${docEntry} not found` });
+    }
+
+    const formDatas = await formDataService.getAll();
+    const formDataMap = {};
+    formDatas.forEach(fd => {
+      formDataMap[fd.DocEntry] = fd;
+    });
+
+    const merged = {
+      ...order,
+      formData: formDataMap[order.DocEntry]?.data || null
+    };
+
+    res.status(200).json(merged);
+  } catch (err) {
+    console.error('SAP getPurchaseQuotationById error:', err.message);
+    res.status(500).json({ message: 'Error fetching order', error: err.message });
+  }
+};
+
+const getPurchaseQuotations = async (req, res) => {
+  const { top = 20, skip = 0 } = req.query;
+
+  try {
+    const query = `/PurchaseQuotations?$orderby=DocEntry desc&$top=${top}&$skip=${skip}`;
+    const response = await sapGetRequest(req, query);
+    const sapQuotations = response.data?.value || response.data || [];
+
+    const formDatas = await formDataService.getAll();
+
+    const formDataMap = {};
+    formDatas.forEach(fd => {
+      formDataMap[fd.DocEntry] = fd;
+    });
+
+    const merged = sapQuotations.map(order => ({
+      ...order,
+      formData: formDataMap[order.DocEntry]?.data || null
+    }));
+
+    res.status(200).json({
+      count: merged.length,
+      data: merged
+    });
+
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching PurchaseQuotations', error: err.message });
   }
 };
 
@@ -637,5 +891,6 @@ const deleteAttachment = async (req, res) => {
 
 module.exports = { getBusinessPartners, getOrders, getItems, createOrders, updateOrder, getOrderById,
   getPurchaseOrders, createPurchaseOrders, updatePurchaseOrder, getPurchaseOrderById, getVendors, getServices, getSOTax, getPOTax, getFreight,
-  getAttachments, getAttachment, createAttachment, updateAttachment, deleteAttachment, getSalesQuotationById, getSalesQuotations, createSalesQuotations, updateSalesQuotations
- };
+  getAttachments, getAttachment, createAttachment, updateAttachment, deleteAttachment, getSalesQuotationById, getSalesQuotations, createSalesQuotations, updateSalesQuotations, createPurchaseQuotations, 
+  updatePurchaseQuotations, getPurchaseQuotations, getPurchaseQuotationById
+};
