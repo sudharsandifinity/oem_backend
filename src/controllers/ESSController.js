@@ -34,4 +34,24 @@ const getHolidays = async (req, res) => {
   }
 };
 
-module.exports = { getHolidays }
+const getProjects = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "/Projects");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Holidays', error: err.message });
+  }
+};
+
+const getEmployes = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "/EmployeesInfo?$select=EmployeeID,ExternalEmployeeNumber,LastName,FirstName,eMail,MobilePhone,Department,WorkStreet,WorkZipCode");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Holidays', error: err.message });
+  }
+};
+
+module.exports = { getHolidays, getProjects, getEmployes }
