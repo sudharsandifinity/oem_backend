@@ -6,6 +6,7 @@ const adminRoutes = require('./admin/index');
 const userRoutes = require('./user/index');
 const authRoutes = require('./auth/index');
 const sapRoutes = require('./sap/index');
+const essRoutes = require('./ess/index');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
 
@@ -13,6 +14,7 @@ router.use('/auth', authRoutes);
 router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
 router.use('/user', userRoutes);
 router.use('/sap', authMiddleware, sapRoutes);
+router.use('/ess', authMiddleware, essRoutes);
 router.get('/health', async (req, res) => {
     try {
         await sequelize.authenticate();

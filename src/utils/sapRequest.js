@@ -17,7 +17,7 @@ async function callSAP(userId, method, endpoint, data = {}) {
   try {
     const res = await axios({
       method,
-      url: `https://192.168.100.82:50000/b1s/v2/${endpoint}`,
+      url: `${process.env.SAP_BASE_URL}/${endpoint}`,
       data,
       headers,
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
