@@ -2,7 +2,7 @@ const { emploueeCheckIn, emploueeCheckOut } = require('../../../controllers/ESSC
 
 router = require('express').Router();
 
-router.get('/check-in', emploueeCheckIn);
-router.get('/check-out', emploueeCheckOut);
+router.post('/check-in', emploueeCheckIn);
+router.patch('/check-out', emploueeCheckOut);
 
 module.exports = router;
