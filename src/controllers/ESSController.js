@@ -54,4 +54,32 @@ const getEmployes = async (req, res) => {
   }
 };
 
-module.exports = { getHolidays, getProjects, getEmployes }
+const emploueeCheckIn = async (req, res) => {
+    try {
+        const payload = req.body;
+        const response = await sapPostRequest(req, '/U_HLB_OATT', payload);           
+        return response.data;
+    } catch (error) {
+        console.error(error.response?.data || error.message);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+const emploueeCheckOut = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const payload = req.body;
+        const response = await sapPatchRequest(req, `/U_HLB_OATT(${id})`, payload);    
+        res.status(200).json({
+            message: 'Check-Out updated successfully',
+            data: response.data
+        });       
+        return response.data;
+    } catch (error) {
+        console.error(error.response?.data || error.message);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+
+module.exports = { getHolidays, getProjects, getEmployes, emploueeCheckIn, emploueeCheckOut }
