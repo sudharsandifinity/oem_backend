@@ -45,6 +45,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             unique: true
         },
+        mobile: {type: DataTypes.STRING},
         is_super_user: {
             type: DataTypes.TINYINT,
             defaultValue: 0

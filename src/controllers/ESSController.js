@@ -1,4 +1,7 @@
 const { callSAP } = require("../utils/sapRequest");
+const UserController = require("./UserController");
+const UserService = require("../services/userService")
+const UserRepository = require("../repositories/userRepository");
 
 const sapGetRequest = async (req, endpoint) => {
   const userId = req.user.id;
@@ -50,7 +53,7 @@ const getEmployes = async (req, res) => {
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
-    res.status(500).json({ message: 'Error fetching Holidays', error: err.message });
+    res.status(500).json({ message: 'Error fetching Employees', error: err.message });
   }
 };
 
@@ -106,5 +109,69 @@ const findMissedCheckOuts = async (req, EmpId) => {
     }
 }
 
+const syncEmployees = async (req, res) => {
+  try {
+    const employees = await sapGetRequest(req, "/EmployeesInfo?$select=EmployeeID,ExternalEmployeeNumber,LastName,FirstName,eMail,MobilePhone,Department,WorkStreet,WorkZipCode");
+    const userRepository = new UserRepository();
+    const userService = new UserService(userRepository);
+    const userController = new UserController(userService);
 
-module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut }
+    let skippedEmployeeIDs = [];
+
+    for (const employee of employees.data.value) {
+      const { EmployeeID, eMail, FirstName, LastName, MobilePhone, Department } = employee;
+
+      if(!eMail){
+        console.log(`EmployeeID ${EmployeeID} skipped becuse of null Email`);
+        skippedEmployeeIDs.push(EmployeeID);
+        continue;
+      }
+
+      const existingUser = await userRepository.findByEmpId(EmployeeID);
+
+      if (existingUser) {
+        const updatedUserPayload = {
+          first_name: FirstName,
+          last_name: LastName,
+          email: eMail,
+          mobile: MobilePhone,
+          is_sap_user: 1,
+          department: Department
+        };
+        const data = await userController.updateSapEmployees(existingUser.id, updatedUserPayload);
+        if(data === "duplicate"){
+          skippedEmployeeIDs.push(EmployeeID);
+          continue
+        }
+        console.log(`Updated user: ${FirstName} ${LastName} (Email: ${eMail})`);
+      } else {
+        const userPayload = {
+          email: eMail,
+          first_name: FirstName,
+          last_name: LastName,
+          mobile: MobilePhone,
+          is_sap_user: 1,
+          sap_emp_id: EmployeeID,
+          department: Department,
+          roleId: 1,
+          password: 'NewUser@415',
+          status: 1
+        };
+        const result = await userController.syncSapEmployees(userPayload);
+        if(result === "duplicate"){
+            skippedEmployeeIDs.push(EmployeeID);
+            continue
+        }
+        console.log(`Created user: ${FirstName} ${LastName} (Email: ${eMail})`);
+      }
+    }
+    return res.status(200).json({ message: 'Employee synchronization completed successfully.', skippedIDs: skippedEmployeeIDs });
+
+  } catch (error) {
+    console.error('Error syncing employees:', error.message);
+    return res.status(500).json({ message: 'Error syncing employees', error: error.message });
+  }
+};
+
+
+module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut, syncEmployees }

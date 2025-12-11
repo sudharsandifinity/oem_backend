@@ -32,6 +32,9 @@ module.exports = {
         type: Sequelize.STRING,
         unique: true
       },
+      mobile: {
+        type: Sequelize.STRING
+      },
       password: {
         type: Sequelize.STRING
       },
