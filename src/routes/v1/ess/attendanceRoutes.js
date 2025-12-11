@@ -1,8 +1,8 @@
-const { emploueeCheckIn, emploueeCheckOut } = require('../../../controllers/ESSController');
+const { employeeCheckIn, employeeCheckOut } = require('../../../controllers/ESSController');
 
 router = require('express').Router();
 
-router.post('/check-in', emploueeCheckIn);
-router.patch('/check-out', emploueeCheckOut);
+router.post('/check-in', employeeCheckIn);
+router.patch('/check-out', employeeCheckOut);
 
 module.exports = router;

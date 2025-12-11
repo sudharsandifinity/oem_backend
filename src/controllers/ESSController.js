@@ -54,22 +54,32 @@ const getEmployes = async (req, res) => {
   }
 };
 
-const emploueeCheckIn = async (req, res) => {
+const employeeCheckIn = async (req, res) => {
     try {
-        const payload = req.body;
+        const user = req.user;
+        let payload = req.body;
+        payload.U_EmpID = user.id || 0;
         const response = await sapPostRequest(req, '/U_HLB_OATT', payload);           
-        return response.data;
+        res.status(200).json({
+            message: 'Check-In updated successfully',
+            data: response.data
+        });     
     } catch (error) {
         console.error(error.response?.data || error.message);
         res.status(500).json({ error: error.message });
     }
 }
 
-const emploueeCheckOut = async (req, res) => {
+const employeeCheckOut = async (req, res) => {
     try {
-        const id = req.params.id;
+        const user = req.user;
+        const missed = await findMissedCheckOuts(req, user.id);
+        if(!missed){
+          return res.status(404).json({message: 'entry not found'})
+        }
+        const code = missed.Code;
         const payload = req.body;
-        const response = await sapPatchRequest(req, `/U_HLB_OATT(${id})`, payload);    
+        const response = await sapPatchRequest(req, `/U_HLB_OATT(${code})`, payload);    
         res.status(200).json({
             message: 'Check-Out updated successfully',
             data: response.data
@@ -81,5 +91,20 @@ const emploueeCheckOut = async (req, res) => {
     }
 }
 
+const findMissedCheckOuts = async (req, EmpId) => {
+    try {
+        const response = await sapGetRequest(req, `/U_HLB_OATT?$select=Code,U_EmpID,U_AttDt,U_InTime &$filter=U_EmpID eq '${EmpId}' and U_OutTime eq null and U_InTime ne null`);
+        
+        const latest = response.data.value[response.data.value.length - 1];
+        if(!latest){
+          return null
+        }
+        return latest;
+    } catch (error) {
+        console.error(error.response?.data || error.message);
+        throw new Error(error.message);
+    }
+}
 
-module.exports = { getHolidays, getProjects, getEmployes, emploueeCheckIn, emploueeCheckOut }
+
+module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut }
