@@ -57,6 +57,20 @@ const getEmployes = async (req, res) => {
   }
 };
 
+const getEmployeeProfile = async (req, res) => {
+  try {
+    const employeeId = req.user.EmployeeId;
+    if(!employeeId){
+      res.status(404).json({message: "Employee Id not found!"});
+    }
+    const response = await sapGetRequest(req, `/EmployeesInfo(${employeeId})?$select=EmployeeID,ExternalEmployeeNumber,JobTitle, LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode`);
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Employee Profile', error: err.message });
+  }
+};
+
 const employeeCheckIn = async (req, res) => {
     try {
         const user = req.user;
@@ -154,7 +168,7 @@ const syncEmployees = async (req, res) => {
           sap_emp_id: EmployeeID,
           department: Department,
           roleId: 1,
-          password: 'NewUser@415',
+          password: eMail,
           status: 1
         };
         const result = await userController.syncSapEmployees(userPayload);
@@ -174,4 +188,4 @@ const syncEmployees = async (req, res) => {
 };
 
 
-module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut, syncEmployees }
+module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile }
