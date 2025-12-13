@@ -749,10 +749,8 @@ const getPurchaseOrderById = async (req, res) => {
 
 const getVendors = async (req, res) => {
   try {
-    const userId = req.user.id;
-    // const response = await sapGetRequest(req, "/BusinessPartners?$filter=CardType eq 'cSupplier'");
-    const data = await callSAP(userId, 'GET', `BusinessPartners?$filter=CardType eq 'cSupplier'`);
-    res.status(200).json(data);
+    const response = await sapGetRequest(req, `BusinessPartners?$filter=CardType eq 'cSupplier'`);
+    res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
     res.status(500).json({ message: 'Error fetching BusinessPartners', error: err.message });
