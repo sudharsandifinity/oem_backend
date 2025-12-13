@@ -68,7 +68,7 @@ class AuthService {
             ]
         });
 
-        const decodedCompanyId = decodeId(companyData.company_id);
+        const decodedCompanyId = decodeId(companyData.company_id || 'o3p6JX1K8q');
 
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
         throw new Error('Decoded company ID is invalid');
@@ -86,7 +86,7 @@ class AuthService {
         };
         
         const response = await axios.post(
-            'https://192.168.100.82:50000/b1s/v2/Login',
+            `${process.env.SAP_BASE_URL}/Login`,
             payload,
                 {
                     httpsAgent: new https.Agent({ rejectUnauthorized: false }),

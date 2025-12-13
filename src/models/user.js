@@ -29,6 +29,9 @@ module.exports = (sequelize) => {
             autoIncrement: true,
             primaryKey: true
         },
+        is_sap_user: {type: DataTypes.TINYINT},
+        sap_emp_id: {type: DataTypes.STRING},
+        department: {type: DataTypes.STRING},
         first_name: {
             type: DataTypes.STRING,
             allowNull: false
@@ -42,6 +45,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             unique: true
         },
+        mobile: {type: DataTypes.STRING},
         is_super_user: {
             type: DataTypes.TINYINT,
             defaultValue: 0

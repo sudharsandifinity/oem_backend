@@ -9,6 +9,19 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      is_sap_user: {
+        type: Sequelize.TINYINT,
+        comment: "0-false 1-true",
+        defaultValue: 0
+      },
+      sap_emp_id: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      department: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       first_name: {
         type: Sequelize.STRING
       },
@@ -18,6 +31,9 @@ module.exports = {
       email: {
         type: Sequelize.STRING,
         unique: true
+      },
+      mobile: {
+        type: Sequelize.STRING
       },
       password: {
         type: Sequelize.STRING

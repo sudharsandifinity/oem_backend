@@ -84,6 +84,10 @@ class UserRepository extends BaseRepository {
         return await this.model.findOne({ where: {email} });
     }
 
+    async findByEmpId(empId){
+        return await this.model.findOne({ where: {sap_emp_id: empId} });
+    }
+
 }
 
 module.exports = UserRepository;
