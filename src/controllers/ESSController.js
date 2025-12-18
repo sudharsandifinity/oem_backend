@@ -75,7 +75,7 @@ const employeeCheckIn = async (req, res) => {
     try {
         const user = req.user;
         let payload = req.body;
-        payload.U_EmpID = user.id || 0;
+        payload.U_EmpID = user.sap_emp_id || 0;
         const response = await sapPostRequest(req, '/U_HLB_OATT', payload);           
         res.status(200).json({
             message: 'Check-In updated successfully',
@@ -188,4 +188,75 @@ const syncEmployees = async (req, res) => {
 };
 
 
-module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile }
+const isCheckedIn = async (req, res) => {
+  const user = req.user;
+  const missedOut = await findMissedCheckOuts(req, user.id);
+  if(!missedOut){
+    return res.status(404).json({message: 'Checkin not found!'});
+  }
+
+  const currentDate = new Date().toISOString().split('T')[0];
+  const U_AttDt = missedOut.U_AttDt;
+  const isCheckedInToday = U_AttDt === currentDate;
+
+  res.status(200).send(isCheckedInToday);
+}
+
+const missedOutNotification = async (req, res) => {
+  const user = req.user;
+  const missedOut = await findMissedCheckOuts(req, user.id);
+  if(!missedOut){
+    return res.status(404).json({message: 'Missed outs not found!'});
+  }
+  const U_AttDt = missedOut.U_AttDt;
+
+  res.status(200).json({missedCheckout: U_AttDt});
+
+}
+
+const getAllExpType = async (req, res) => {
+  try {
+    const response = await sapGetRequest(req, "/HLB_EXPM?$select=U_ExpCode,U_ExpName");
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Expanse Type', error: err.message });
+  }
+}
+
+const createExpRequest = async (req, res) => {
+  try {
+    
+    const user = req.user;
+    const emp = await sapGetRequest(req, `/EmployeesInfo(${user.EmployeeId})?$select=EmployeeID,ExternalEmployeeNumber,JobTitle, LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode`);
+
+    let payload = req.body;
+    
+    payload.U_EmpID = user.EmployeeId || 0;
+    payload.U_EmpName = emp.data.FirstName +" "+ emp.data.LastName || "";
+
+    const response = await sapPostRequest(req, '/HLB_OECL', payload);         
+    res.status(200).json({
+        message: 'Expanse request submited successfully',
+        data: response.data
+    });     
+  } catch (error) {
+      console.error(error.response?.data || error.message);
+      res.status(500).json({ error: error.message });
+  }
+}
+
+const getAllExpList = async (req, res) => {
+  try {
+    const user = req.user;
+    console.log('user', user);
+    
+    const response = await sapGetRequest(req, `/HLB_OECL?$orderby=DocEntry desc&$filter=U_EmpID eq '${user.EmployeeId}'`);
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error('SAP error:', err.message);
+    res.status(500).json({ message: 'Error fetching Expanse Type', error: err.message });
+  }
+}
+
+module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, createExpRequest, getAllExpList }

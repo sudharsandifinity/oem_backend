@@ -77,6 +77,22 @@ class AuthController {
         }
     };
 
+    changePassword = async (req, res) => {
+        const userId = req.user;
+        const { currentPassword, newPassword } = req.body;
+
+        try{
+            if (!newPassword) {
+                return res.status(400).json({ message: 'New password is required.' });
+            }
+            await authService.changePassword(userId, currentPassword, newPassword);
+            return res.status(200).json({ message: 'Password reset successful' });
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
+        
+    }
+
     logout = async (req, res) => {
         res.clearCookie('token');
         res.json({ message: 'Logged out successfully' });

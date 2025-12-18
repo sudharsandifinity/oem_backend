@@ -11,8 +11,10 @@ const { decrypt } = require('../utils/crypto');
 class AuthService {
 
     async sapLogin(req, res, next, user=null) {
-        const authUser = req.user || user;
-        const companyData = req.body;
+        const authUser = user || (req ? req.user : null);
+        const companyData = req.body || 'o3p6JX1K8q';
+
+        console.log('user', authUser);
 
         const userData = await User.findOne({
             where: { email:authUser.email },
@@ -79,11 +81,16 @@ class AuthService {
         const companypassword = decrypt(company.secret_key)
         const companyusername = decrypt(company.sap_username);
 
+        console.log('companyusername', companyusername);
+        console.log('companypassword', companypassword);
+
         const payload = {
-            UserName: companyusername,
+            UserName: "HAMTINFOTECH\\sapserviceb1c",
             Password: companypassword,
             CompanyDB: company.company_db_name
         };
+
+        console.log('payload', payload);
         
         const response = await axios.post(
             `${process.env.SAP_BASE_URL}/Login`,
@@ -180,14 +187,14 @@ class AuthService {
         if (!isMatch) throw new Error('Invalid password!');
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, is_super_user: user.is_super_user },
+            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: user.sap_emp_id },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // if(user.is_super_user === 0){
-        //     this.sapLogin(user);
-        // }
+        if(user.is_super_user === 0){
+            this.sapLogin({}, {}, null, user);
+        }
 
         const data = user.toJSON();
         delete data.password;
@@ -265,6 +272,21 @@ class AuthService {
         }
     }
 
+    async changePassword(userId, currentPassword, newPassword) {
+        try {
+            const user = await User.findByPk(userId);
+            if (!user) throw new Error('User not found');
+
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!isMatch) throw new Error('Current password is incorrect');
+
+            user.password = newPassword;
+            await user.save();
+            return { success: true, message: "Password updated successfully" };
+        } catch (error) {
+            throw new Error(error.message || 'Failed to change password');
+        }
+    }
 }
 
 module.exports = AuthService;
