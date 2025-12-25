@@ -14,21 +14,23 @@ async function callSAP(userId, method, endpoint, data = {}) {
     'Cookie': `B1SESSION=${sapSession.b1_session}; ROUTEID=${sapSession.route_id}`,
   };
 
-  try {
-    const res = await axios({
+   try {
+    const config = {
       method,
       url: `${process.env.SAP_BASE_URL}/${endpoint}`,
-      data,
       headers,
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-      timeout: 10000,
-    });
+      httpsAgent: new https.Agent({ rejectUnauthorized: false })
+    };
+    if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+      config.data = data;
+    }
+    const res = await axios(config);
 
     return res;
   } catch (error) {
     if ([401].includes(error.response?.status)) {
       console.log('SAP session expired, refreshing...');
-      await authService.sapLogin(userId);
+      await authService.sapLogin(req, userId);
       return callSAP(userId, method, endpoint, data);
     }
 

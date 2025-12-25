@@ -10,9 +10,10 @@ const { decrypt } = require('../utils/crypto');
 
 class AuthService {
 
-    async sapLogin(req, res, next, user=null) {
-        const authUser = user || (req ? req.user : null);
-        const companyData = req.body || 'o3p6JX1K8q';
+    async sapLogin(req, user=null) {
+        const authUser =(req ? req.user : null) || user;
+        // const companyData = req.body || 'o3p6JX1K8q';
+        const companyData = req.body || 'RDP6E2d2YB';
 
         console.log('user', authUser);
 
@@ -85,7 +86,8 @@ class AuthService {
         console.log('companypassword', companypassword);
 
         const payload = {
-            UserName: "HAMTINFOTECH\\sapserviceb1c",
+            // UserName: "HAMTINFOTECH\\sapserviceb1c",
+            UserName: companyusername,
             Password: companypassword,
             CompanyDB: company.company_db_name
         };
@@ -102,6 +104,8 @@ class AuthService {
                 }
         );
 
+        console.log('cookie data', response.headers["set-cookie"].join(";"));
+        
         const sessionId = response.data.SessionId;
         const cookies = response.headers['set-cookie'];
         let routeId = '.node1';
@@ -112,6 +116,10 @@ class AuthService {
                 if (match) routeId = match[1];
             }
         }
+
+        console.log('login sessionid', sessionId);
+        console.log('login routeId', routeId);
+        
 
         await SAPSession.upsert({
             user_id: userData.id,
@@ -193,7 +201,7 @@ class AuthService {
         );
 
         if(user.is_super_user === 0){
-            this.sapLogin({}, {}, null, user);
+            this.sapLogin({}, user);
         }
 
         const data = user.toJSON();

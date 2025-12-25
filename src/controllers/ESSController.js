@@ -49,7 +49,7 @@ const getProjects = async (req, res) => {
 
 const getEmployes = async (req, res) => {
   try {
-    const response = await sapGetRequest(req, "/EmployeesInfo?$select=EmployeeID,ExternalEmployeeNumber,LastName,FirstName,eMail,MobilePhone,Department,WorkStreet,WorkZipCode,Position");
+    const response = await sapGetRequest(req, "/EmployeesInfo?$select=EmployeeID,ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode,LinkedVendor, CostCenterCode, U_BU, Position");
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
@@ -63,7 +63,7 @@ const getEmployeeProfile = async (req, res) => {
     if(!employeeId){
       res.status(404).json({message: "Employee Id not found!"});
     }
-    const response = await sapGetRequest(req, `/EmployeesInfo(${employeeId})?$select=EmployeeID,ExternalEmployeeNumber,JobTitle, LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode,Position`);
+    const response = await sapGetRequest(req, `/EmployeesInfo(${employeeId})EmployeesInfo?$select=EmployeeID,ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode,LinkedVendor, CostCenterCode, U_BU, Position`);
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
@@ -75,7 +75,7 @@ const employeeCheckIn = async (req, res) => {
     try {
         const user = req.user;
         let payload = req.body;
-        payload.U_EmpID = user.sap_emp_id || 0;
+        payload.U_EmpID = user.EmployeeId || 0;
         const response = await sapPostRequest(req, '/U_HLB_OATT', payload);           
         res.status(200).json({
             message: 'Check-In updated successfully',
@@ -90,7 +90,7 @@ const employeeCheckIn = async (req, res) => {
 const employeeCheckOut = async (req, res) => {
     try {
         const user = req.user;
-        const missed = await findMissedCheckOuts(req, user.id);
+        const missed = await findMissedCheckOuts(req, user.EmployeeId);
         if(!missed){
           return res.status(404).json({message: 'entry not found'})
         }
@@ -125,7 +125,7 @@ const findMissedCheckOuts = async (req, EmpId) => {
 
 const syncEmployees = async (req, res) => {
   try {
-    const employees = await sapGetRequest(req, "/EmployeesInfo?$select=EmployeeID,ExternalEmployeeNumber,LastName,FirstName,eMail,MobilePhone,Department,WorkStreet,WorkZipCode,Position");
+    const employees = await sapGetRequest(req, "/EmployeesInfo?$select=EmployeeID,ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode,LinkedVendor, CostCenterCode, U_BU, Position");
     const userRepository = new UserRepository();
     const userService = new UserService(userRepository);
     const userController = new UserController(userService);
@@ -190,7 +190,7 @@ const syncEmployees = async (req, res) => {
 
 const isCheckedIn = async (req, res) => {
   const user = req.user;
-  const missedOut = await findMissedCheckOuts(req, user.id);
+  const missedOut = await findMissedCheckOuts(req, user.EmployeeId);
   if(!missedOut){
     return res.status(404).json({message: 'Checkin not found!'});
   }
@@ -204,7 +204,7 @@ const isCheckedIn = async (req, res) => {
 
 const missedOutNotification = async (req, res) => {
   const user = req.user;
-  const missedOut = await findMissedCheckOuts(req, user.id);
+  const missedOut = await findMissedCheckOuts(req, user.EmployeeId);
   if(!missedOut){
     return res.status(404).json({message: 'Missed outs not found!'});
   }
@@ -228,7 +228,7 @@ const createExpRequest = async (req, res) => {
   try {
     
     const user = req.user;
-    const emp = await sapGetRequest(req, `/EmployeesInfo(${user.EmployeeId})?$select=EmployeeID,ExternalEmployeeNumber,JobTitle, LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode, Position`);
+    const emp = await sapGetRequest(req, `/EmployeesInfo(${user.EmployeeId})?$select=EmployeeID,ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode,LinkedVendor, CostCenterCode, U_BU, Position`);
     console.log('emp', emp.data);
     
     const app_lev = await sapGetRequest(req, `/HLB_OAPP?$select=*&$filter=U_Cate eq '${emp.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
@@ -244,6 +244,44 @@ console.log('app lev', app_lev.data);
     payload.U_ApprSts = isNeedApproval ? "P":"A";
 
     const response = await sapPostRequest(req, '/HLB_OECL', payload);  
+    
+    console.log('isneedapproval', isNeedApproval);
+
+    if(!isNeedApproval){
+      const APInvoicePayload = {
+          "DocType": "dDocument_Service",
+          "CardCode": emp.data.LinkedVendor,
+          "Project": response.data.U_PrjCode,
+          "DocTotal":response.data.U_ExpAmt,
+          "DocumentLines": [
+              {
+                  "LineNum":0,
+                  "ExpenseType": response.data.U_ExpType,
+                  "ProjectCode": response.data.U_PrjCode,
+                  "CostingCode2": emp.data.CostCenterCode,
+                  "CostingCode": emp.data.U_BU,
+                  "LineTotal":response.data.U_ExpAmt
+              }
+          ]
+        }
+        console.log('APInvoicePayload', APInvoicePayload);
+
+
+        try{
+          const APInvoiceStatus =  await sapPostRequest(req, `/PurchaseInvoices`, APInvoicePayload);
+           const patchPayload = {
+            "U_OPNo": APInvoiceStatus.data.DocEntry,
+            "U_PSts": APInvoiceStatus.data.DocEntry?"Success":APInvoiceStatus.data.error
+          }
+          await sapPatchRequest(req, `/HLB_OECL(${response.data.DocEntry})`, patchPayload);
+        } catch(err){
+          const patchPayload = {
+            "U_OPNo": "",
+            "U_PSts": err.response?.data?.error?.message?.value
+          }
+          await sapPatchRequest(req, `/HLB_OECL(${response.data.DocEntry})`, patchPayload);
+        }
+    }
     
     let logPayload = {
         "Name": payload.U_EmpName,
@@ -344,7 +382,7 @@ const RequestResponse = async (req, res) => {
     console.log('checkstaus', checkStatus.data);
     console.log('expreq', expReq.data);
     
-    const requester = await sapGetRequest(req, `/EmployeesInfo(${expReq.data.U_EmpID})?$select=EmployeeID,ExternalEmployeeNumber,JobTitle, LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode, Position`);
+    const requester = await sapGetRequest(req, `/EmployeesInfo(${expReq.data.U_EmpID})?$select=EmployeeID,ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode,LinkedVendor, CostCenterCode, U_BU, Position`);
     console.log('requester', requester.data);
     
     const app_lev = await sapGetRequest(req, `/HLB_OAPP?$select=*&$filter=U_Cate eq '${requester.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
@@ -376,7 +414,6 @@ const RequestResponse = async (req, res) => {
     const patchReq = await sapPatchRequest(req, `/U_HLB_OAPL(${id})`, payload);
     const updatedData = await sapGetRequest(req, `/U_HLB_OAPL(${id})`);
     console.log('updated data', updatedData.data);
-    // console.log('data', app_lev.data.value[0].HLB_APP1Collection[getLogs.data.value.length].U_ApprID);
 
     if(updatedData.data.U_AppSts == "R"){
       console.log('inside reject');
@@ -396,7 +433,46 @@ const RequestResponse = async (req, res) => {
          const empReqPayload = {
             "U_ApprSts":"A"
         }
-        await sapPatchRequest(req, `/HLB_OECL(${updatedData.data.U_DocNo})`, empReqPayload);
+        const updatedExpReq = await sapPatchRequest(req, `/HLB_OECL(${updatedData.data.U_DocNo})`, empReqPayload);
+
+        const APInvoicePayload = {
+          "DocType": "dDocument_Service",
+          "CardCode": requester.data.LinkedVendor,
+          "Project": expReq.data.U_PrjCode,
+          "DocTotal":expReq.data.U_ExpAmt,
+          "DocumentLines": [
+              {
+                  "LineNum":0,
+                  "ExpenseType": expReq.data.U_ExpType,
+                  "ProjectCode": expReq.data.U_PrjCode,
+                  "CostingCode2": requester.data.CostCenterCode,
+                  "CostingCode": requester.data.U_BU,
+                  "LineTotal":expReq.data.U_ExpAmt
+              }
+          ]
+        }
+        console.log('APInvoicePayload', APInvoicePayload);
+        
+        try{
+          console.log('updatedExpReq.data.DocEntry', updatedData.data.U_DocNo);
+          
+          const APInvoiceStatus =  await sapPostRequest(req, `/PurchaseInvoices`, APInvoicePayload);
+           const patchPayload = {
+            "U_OPNo": APInvoiceStatus.data.DocEntry,
+            "U_PSts": APInvoiceStatus.data.DocEntry?"Success":APInvoiceStatus.data.error
+          }
+          await sapPatchRequest(req, `/HLB_OECL(${updatedData.data.U_DocNo})`, patchPayload);
+        } catch(err){
+          console.log('updatedExpReq.data.DocEntry', updatedData.data.U_DocNo);
+          console.log('updarrrrrrrr', err.response?.data?.error?.message?.value);
+
+          const patchPayload = {
+            "U_OPNo": "",
+            "U_PSts": err.response?.data?.error?.message?.value
+          }
+          await sapPatchRequest(req, `/HLB_OECL(${updatedData.data.U_DocNo})`, patchPayload);
+        }
+
         return res.status(200).json({message: "Response submitted successfully!"})
       }
     }
