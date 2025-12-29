@@ -7,6 +7,7 @@ const EmployeeRoutes = require('./employeeRoutes');
 const AttendanceRoutes = require('./attendanceRoutes');
 const ExpanseRoutes = require('./expanseRoutes');
 const ApprovalRoutes = require('./approvalLogRoutes');
+const CurrencyRoutes = require('./currencyRoutes');
 
 router.use('/holidays', HolidayRoutes);
 router.use('/projects', ProjectRoutes);
@@ -14,5 +15,6 @@ router.use('/employees', EmployeeRoutes);
 router.use('/attendance', AttendanceRoutes);
 router.use('/expanses', ExpanseRoutes);
 router.use('/approvals', ApprovalRoutes);
+router.use('/currency', CurrencyRoutes);
 
 module.exports = router;
