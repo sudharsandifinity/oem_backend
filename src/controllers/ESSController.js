@@ -109,14 +109,18 @@ const employeeCheckIn = async (req, res) => {
 
 const employeeCheckOut = async (req, res) => {
     try {
+        const { date, time } = currentTime();
         const user = req.user;
         const missed = await findMissedCheckOuts(req, user.EmployeeId);
         if(!missed){
           return res.status(404).json({message: 'entry not found'})
         }
         const code = missed.Code;
-        const payload = req.body;
-        const response = await sapPatchRequest(req, `/U_HLB_OATT(${code})`, payload);    
+        const payload = {
+          "U_OutTime": time,
+          "U_OAttDt": date
+        };
+        const response = await sapPatchRequest(req, `${sapAPIs.Attendance}(${code})`, payload);    
         res.status(200).json({
             message: 'Check-Out updated successfully',
             data: response.data
@@ -246,9 +250,9 @@ const getAllExpType = async (req, res) => {
 }
 
 const createExpRequest = async (req, res) => {
-  const { date, time } = currentTime();
   try {
-    
+    const { date, time } = currentTime();
+        
     const user = req.user;
     const emp = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);
     console.log('emp', emp.data);
@@ -257,7 +261,8 @@ const createExpRequest = async (req, res) => {
     console.log('app lev', app_lev.data);
     // console.log('app_lev.data.value[0].HLB_APP1Collection',app_lev.data.value[0].HLB_APP1Collection);
 
-    const isNeedApproval = app_lev.data.value?.[0]?.HLB_APP1Collection?.length ?? 0;;
+    const approvalCollection = app_lev.data.value?.[0]?.HLB_APP1Collection;
+    const isNeedApproval = approvalCollection?.length ?? 0;
     
     let payload = req.body;
     
@@ -308,6 +313,29 @@ const createExpRequest = async (req, res) => {
           await sapPatchRequest(req, `${sapAPIs.Expanses}(${response.data.DocEntry})`, patchPayload);
         }
     }
+
+    const isDelegationId = approvalCollection?.[0]?.U_DlgID;
+    let isDelegationValid = false;
+
+    console.log('isDelegationId', isDelegationId);
+
+    if(isDelegationId){
+        const currentDate = new Date(
+          `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+            .toString()
+            .slice(6, 8)}`
+        );
+
+        const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
+        const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
+
+        console.log("currentDate", currentDate);
+        console.log("fromDate", fromDate);
+        console.log("toDate", toDate);
+      
+        isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+        console.log("isDelegationValid", isDelegationValid);
+    }
     
     let logPayload = {
         "Name": payload.U_EmpName,
@@ -315,10 +343,12 @@ const createExpRequest = async (req, res) => {
         "U_DocType": "E",
         "U_DocNo": response.data.DocNum,
         "U_Stg": isNeedApproval?"1":"",
-        "U_AppId": isNeedApproval?app_lev.data.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprID:"",
-        "U_ApprName": isNeedApproval?app_lev.data.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprName:"",
+        "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
+        "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
         "U_AppSts": isNeedApproval?"P":"A",
         "U_PosId": emp.data.Position,
+        "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
+        "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
         "U_CDt": date,
         "U_CTm": time
     } 
@@ -388,7 +418,7 @@ const getApprovalRequestsList = async (req, res) => {
   try{
     const user = req.user;
     const { top = 20, skip = 0 } = req.query;
-    const response = await sapGetRequest(req, `${sapAPIs.AllLogEntries}?$orderby=Code desc&$filter=U_AppId eq '${user.EmployeeId}'&$top=${top}&$skip=${skip}`);
+    const response = await sapGetRequest(req, `${sapAPIs.AllLogEntries}?$orderby=Code desc&$filter=U_AppId eq '${user.EmployeeId}' or U_DelID eq '${user.EmployeeId}'&$top=${top}&$skip=${skip}`);
     let requests = [];
 
     const promises = response.data.value.map(async (log) => {
@@ -412,10 +442,7 @@ const RequestResponse = async (req, res) => {
     const {id} = req.params;
     const payload = req.body;
 
-    payload.U_ApprDt = date;
-    payload.U_ApprTm = time;
 
-    console.log('payload', payload);
     
 
     const checkStatus = await sapGetRequest(req, `${sapAPIs.AllLogEntries}(${id})`);
@@ -426,6 +453,9 @@ const RequestResponse = async (req, res) => {
     
     const requester = await sapGetRequest(req, `${sapAPIs.Employees}(${expReq.data.U_EmpID})?${sapAPIs.EmployeesSelect}`);    
     console.log('requester', requester.data);
+
+    const approver = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);    
+    console.log('requester', approver.data);
     
     const app_lev = await sapGetRequest(req, `/HLB_OAPP?$select=*&$filter=U_Cate eq '${requester.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
 
@@ -433,7 +463,15 @@ const RequestResponse = async (req, res) => {
     
     console.log('app lev coll', app_lev.data.value?.[0]?.HLB_APP1Collection);
 
-    const totalAprLevs = app_lev.data.value?.[0]?.HLB_APP1Collection.length;
+    payload.U_ApprDt = date;
+    payload.U_ApprTm = time;
+    payload.U_AppByID = approver.data.EmployeeID,
+    payload.U_AppByName = `${approver.data.FirstName} ${approver.data.LastName}`,
+
+    console.log('payload', payload);
+
+    const approvalCollection = app_lev.data.value?.[0]?.HLB_APP1Collection;
+    const totalAprLevs = approvalCollection.length;
 
     const getLogs = await sapGetRequest(req, `${sapAPIs.AllLogEntries}?$filter=U_DocNo eq '${checkStatus.data.U_DocNo}'`);
 
@@ -462,9 +500,19 @@ const RequestResponse = async (req, res) => {
 
     console.log('toallog', totalLogs);
     console.log('totalAprLevs', totalAprLevs);
+    console.log('403 condition', user.EmployeeId !== checkStatus.data.U_AppId);
+    console.log('403 condition 2', user.EmployeeId !== checkStatus.data.U_DelID);
+    console.log('403 condition total', (user.EmployeeId !== checkStatus.data.U_AppId) || (user.EmployeeId !== (checkStatus.data.U_DelID || '')));
 
-    if(user.EmployeeId !== checkStatus.data.U_AppId){
-      return res.status(403).json({message: "You don't have permission to approve this request!"});
+    console.log('del id', checkStatus.data.U_DelID);
+    console.log('user.EmployeeId', user.EmployeeId);
+    console.log('checkStatus.data.U_DelID', checkStatus.data.U_DelID);
+    console.log('(checkStatus.data.U_DelID !== null && user.EmployeeId !== checkStatus.data.U_DelID)', (checkStatus.data.U_DelID != null && user.EmployeeId !== checkStatus.data.U_DelID));
+    
+
+    if ((user.EmployeeId !== checkStatus.data.U_AppId) || 
+        (checkStatus.data.U_DelID && user.EmployeeId !== checkStatus.data.U_DelID)) {
+      return res.status(403).json({ message: "You don't have permission to approve this request!" });
     }
 
     if(checkStatus.data.U_AppSts === "A"){
@@ -574,19 +622,45 @@ const RequestResponse = async (req, res) => {
     console.log('if condition', updatedData.data.U_AppSts == "A" && totalAprLevs > totalLogs);
     
     if(updatedData.data.U_AppSts == "A" && totalAprLevs > totalLogs){
+
+      const isDelegationId = approvalCollection?.[totalLogs]?.U_DlgID;
+      let isDelegationValid = false;
+
+      console.log('isDelegationId', isDelegationId);
+
+      if(isDelegationId){
+          const currentDate = new Date(
+            `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+              .toString()
+              .slice(6, 8)}`
+          );
+
+          const fromDate = new Date(approvalCollection?.[totalLogs]?.U_FrmDt);
+          const toDate = new Date(approvalCollection?.[totalLogs]?.U_ToDt);
+
+          console.log("currentDate", currentDate);
+          console.log("fromDate", fromDate);
+          console.log("toDate", toDate);
+        
+          isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+          console.log("isDelegationValid", isDelegationValid);
+      }
+      
       console.log('entry');
         let logPayload = {
           "Name": updatedData.data.Name,
           "U_DocType": "E",
           "U_DocNo": updatedData.data.U_DocNo,
-          "U_Stg": app_lev.data.value?.[0]?.HLB_APP1Collection?.[totalLogs].U_Stg,
-          "U_AppId": app_lev.data.value?.[0]?.HLB_APP1Collection?.[totalLogs].U_ApprID,
+          "U_Stg": approvalCollection?.[totalLogs].U_Stg,
+          "U_AppId": approvalCollection?.[totalLogs].U_ApprID,
           "U_AppSts": "P",
           "U_CDt": date,
           "U_CTm": time,
           "U_ReqID": requester?.data?.EmployeeID,
-          "U_ApprName": app_lev.data.value?.[0]?.HLB_APP1Collection?.[totalLogs].U_ApprName,
-          "U_PosId": requester?.data?.Position
+          "U_ApprName": approvalCollection?.[totalLogs].U_ApprName,
+          "U_PosId": requester?.data?.Position,
+          "U_DelID": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgID:"",
+          "U_DelName": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgName:"",
       }
       console.log('logpayload', logPayload);
       
