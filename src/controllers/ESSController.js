@@ -415,25 +415,34 @@ const creatLogEntry = async (req, res, payload) => {
 }
 
 const getApprovalRequestsList = async (req, res) => {
-  try{
+  try {
     const user = req.user;
     const { top = 20, skip = 0 } = req.query;
-    const response = await sapGetRequest(req, `${sapAPIs.AllLogEntries}?$orderby=Code desc&$filter=U_AppId eq '${user.EmployeeId}' or U_DelID eq '${user.EmployeeId}'&$top=${top}&$skip=${skip}`);
-    let requests = [];
 
-    const promises = response.data.value.map(async (log) => {
-      const expRequest = await sapGetRequest(req, `${sapAPIs.Expanses}(${log.U_DocNo})`);
-      const combinedData = {...log, RequstData:expRequest.data}
+    const logResponse = await sapGetRequest(
+      req,
+      `${sapAPIs.AllLogEntries}?$orderby=Code desc&$filter=U_AppId eq '${user.EmployeeId}' or U_DelID eq '${user.EmployeeId}'&$top=${top}&$skip=${skip}`
+    );
+    const logs = logResponse.data.value;
+    
+    const allExpansesResponse = await sapGetRequest(req, `${sapAPIs.Expanses}?$orderby=DocEntry desc`);
+    const allExpanses = allExpansesResponse.data.value;
+    
+    
+    const combinedRequests = logs.map(async (log) => {
+      const correspondingExpense = allExpanses.find((expanse) => expanse.DocEntry == log.U_DocNo);
+      
+      const combinedData = { ...log, ExpenseData: correspondingExpense || null };
       return combinedData;
     });
 
-    requests = await Promise.all(promises);
-    res.status(200).json(requests);
-  } catch(err){
+    const result = await Promise.all(combinedRequests);
+    res.status(200).json(result);
+  } catch (err) {
     console.error('SAP error:', err.message);
     res.status(500).json({ message: 'Error while getting requests', error: err.message });
   }
-}
+};
 
 const RequestResponse = async (req, res) => {
   const { date, time } = currentTime();
