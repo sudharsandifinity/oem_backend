@@ -2,6 +2,7 @@ const { callSAP } = require("../utils/sapRequest");
 const UserController = require("./UserController");
 const UserService = require("../services/userService")
 const UserRepository = require("../repositories/userRepository");
+const SAPController = require("./SAPController");
 const { currentTime } = require("../utils/currentTime");
 
 const sapAPIs = {
@@ -149,7 +150,7 @@ const findMissedCheckOuts = async (req, EmpId) => {
 
 const syncEmployees = async (req, res) => {
   try {
-    const employees = await sapGetRequest(req, `${sapAPIs.Employees}?${sapAPIs.EmployeesSelect}`);
+    const employees = await sapGetRequest(req, `${sapAPIs.Employees}?${sapAPIs.EmployeesSelect}&$orderby=EmployeeID desc`);
     const userRepository = new UserRepository();
     const userService = new UserService(userRepository);
     const userController = new UserController(userService);
@@ -160,7 +161,7 @@ const syncEmployees = async (req, res) => {
       const { EmployeeID, eMail, FirstName, LastName, MobilePhone, Department } = employee;
 
       if(!eMail){
-        console.log(`EmployeeID ${EmployeeID} skipped becuse of null Email`);
+        // console.log(`EmployeeID ${EmployeeID} skipped becuse of null Email`);
         skippedEmployeeIDs.push(EmployeeID);
         continue;
       }
@@ -181,7 +182,7 @@ const syncEmployees = async (req, res) => {
           skippedEmployeeIDs.push(EmployeeID);
           continue
         }
-        console.log(`Updated user: ${FirstName} ${LastName} (Email: ${eMail})`);
+        // console.log(`Updated user: ${FirstName} ${LastName} (Email: ${eMail})`);
       } else {
         const userPayload = {
           email: eMail,
@@ -200,7 +201,7 @@ const syncEmployees = async (req, res) => {
             skippedEmployeeIDs.push(EmployeeID);
             continue
         }
-        console.log(`Created user: ${FirstName} ${LastName} (Email: ${eMail})`);
+        // console.log(`Created user: ${FirstName} ${LastName} (Email: ${eMail})`);
       }
     }
     return res.status(200).json({ message: 'Employee synchronization completed successfully.', skippedIDs: skippedEmployeeIDs });
@@ -255,14 +256,26 @@ const createExpRequest = async (req, res) => {
         
     const user = req.user;
     const emp = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);
-    console.log('emp', emp.data);
+    // console.log('emp', emp.data);
     
     const app_lev = await sapGetRequest(req, `${sapAPIs.ApprovalLevels}?$select=*&$filter=U_Cate eq '${emp.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
-    console.log('app lev', app_lev.data);
+    // console.log('app lev', app_lev.data);
     // console.log('app_lev.data.value[0].HLB_APP1Collection',app_lev.data.value[0].HLB_APP1Collection);
 
     const approvalCollection = app_lev.data.value?.[0]?.HLB_APP1Collection;
     const isNeedApproval = approvalCollection?.length ?? 0;
+
+    // console.log('req.files', req.files);
+    
+
+    let attachments = null;
+
+    if (req.files && req.files.length > 0) {
+      attachments = await SAPController.createAttachment(req, res);
+    }
+
+    // console.log("attachments", attachments );
+    
     
     let payload = req.body;
     
@@ -272,11 +285,15 @@ const createExpRequest = async (req, res) => {
     payload.U_CDt = date,
     payload.U_CTm = time
     payload.U_Udt = date,
-    payload.U_UTm = time
+    payload.U_UTm = time,
+    payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
+
+    // console.log('payload', payload);
+    
 
     const response = await sapPostRequest(req, `${sapAPIs.Expanses}`, payload);  
     
-    console.log('isneedapproval', isNeedApproval);
+    // console.log('isneedapproval', isNeedApproval);
 
     if(!isNeedApproval){
       const APInvoicePayload = {
@@ -295,7 +312,7 @@ const createExpRequest = async (req, res) => {
               }
           ]
         }
-        console.log('APInvoicePayload', APInvoicePayload);
+        // console.log('APInvoicePayload', APInvoicePayload);
 
 
         try{
@@ -317,7 +334,7 @@ const createExpRequest = async (req, res) => {
     const isDelegationId = approvalCollection?.[0]?.U_DlgID;
     let isDelegationValid = false;
 
-    console.log('isDelegationId', isDelegationId);
+    // console.log('isDelegationId', isDelegationId);
 
     if(isDelegationId){
         const currentDate = new Date(
@@ -329,12 +346,12 @@ const createExpRequest = async (req, res) => {
         const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
         const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
 
-        console.log("currentDate", currentDate);
-        console.log("fromDate", fromDate);
-        console.log("toDate", toDate);
+        // console.log("currentDate", currentDate);
+        // console.log("fromDate", fromDate);
+        // console.log("toDate", toDate);
       
         isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-        console.log("isDelegationValid", isDelegationValid);
+        // console.log("isDelegationValid", isDelegationValid);
     }
     
     let logPayload = {
@@ -368,7 +385,6 @@ const getAllExpList = async (req, res) => {
   try {
     const user = req.user;
     const { top=20, skip=0 } = req.query;
-    console.log('topskip', top, skip);
     
     const response = await sapGetRequest(req, `${sapAPIs.Expanses}?${sapAPIs.AllExpansesOrderBy}&$filter=U_EmpID eq '${user.EmployeeId}'&$top=${top}&$skip=${skip}`);
     res.status(200).json(response.data);
@@ -393,8 +409,8 @@ const getAllLogsList = async (req, res) => {
   try {
     const user = req.user;
     const { top = 20, skip = 0 } = req.query;
-    console.log('top', top);
-    console.log('skip', skip);
+    // console.log('top', top);
+    // console.log('skip', skip);
     
     const response = await sapGetRequest(req, `${sapAPIs.AllLogEntries}?$orderby=Code desc`);
     res.status(200).json(response.data);
@@ -457,34 +473,34 @@ const RequestResponse = async (req, res) => {
     const checkStatus = await sapGetRequest(req, `${sapAPIs.AllLogEntries}(${id})`);
     
     const expReq = await sapGetRequest(req, `${sapAPIs.Expanses}(${checkStatus.data.U_DocNo})`);
-    console.log('checkstaus', checkStatus.data);
-    console.log('expreq', expReq.data);
+    // console.log('checkstaus', checkStatus.data);
+    // console.log('expreq', expReq.data);
     
     const requester = await sapGetRequest(req, `${sapAPIs.Employees}(${expReq.data.U_EmpID})?${sapAPIs.EmployeesSelect}`);    
-    console.log('requester', requester.data);
+    // console.log('requester', requester.data);
 
     const approver = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);    
-    console.log('requester', approver.data);
+    // console.log('requester', approver.data);
     
     const app_lev = await sapGetRequest(req, `/HLB_OAPP?$select=*&$filter=U_Cate eq '${requester.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
 
-    console.log('app_lev', app_lev.data);
+    // console.log('app_lev', app_lev.data);
     
-    console.log('app lev coll', app_lev.data.value?.[0]?.HLB_APP1Collection);
+    // console.log('app lev coll', app_lev.data.value?.[0]?.HLB_APP1Collection);
 
     payload.U_ApprDt = date;
     payload.U_ApprTm = time;
     payload.U_AppByID = approver.data.EmployeeID,
-    payload.U_AppByName = `${approver.data.FirstName} ${approver.data.LastName}`,
+    payload.U_AppByName = `${approver.data.FirstName} ${approver.data.LastName}`
 
-    console.log('payload', payload);
+    // console.log('payload', payload);
 
     const approvalCollection = app_lev.data.value?.[0]?.HLB_APP1Collection;
     const totalAprLevs = approvalCollection.length;
 
     const getLogs = await sapGetRequest(req, `${sapAPIs.AllLogEntries}?$filter=U_DocNo eq '${checkStatus.data.U_DocNo}'`);
 
-    console.log('getlogs', getLogs.data);
+    // console.log('getlogs', getLogs.data);
 
     const isResubmitted = expReq.data.U_IsReSub === "Y";
     
@@ -500,23 +516,23 @@ const RequestResponse = async (req, res) => {
       });
 
     }
-    console.log('latest log', latestLogs);
+    // console.log('latest log', latestLogs);
     
 
-    console.log('checkStatus', checkStatus.data);
-    console.log('getLogs', getLogs.data.value.length);
+    // console.log('checkStatus', checkStatus.data);
+    // console.log('getLogs', getLogs.data.value.length);
     const totalLogs = isResubmitted?latestLogs.length:getLogs.data.value.length;
 
-    console.log('toallog', totalLogs);
-    console.log('totalAprLevs', totalAprLevs);
-    console.log('403 condition', user.EmployeeId !== checkStatus.data.U_AppId);
-    console.log('403 condition 2', user.EmployeeId !== checkStatus.data.U_DelID);
-    console.log('403 condition total', (user.EmployeeId !== checkStatus.data.U_AppId) || (user.EmployeeId !== (checkStatus.data.U_DelID || '')));
+    // console.log('toallog', totalLogs);
+    // console.log('totalAprLevs', totalAprLevs);
+    // console.log('403 condition', user.EmployeeId !== checkStatus.data.U_AppId);
+    // console.log('403 condition 2', user.EmployeeId !== checkStatus.data.U_DelID);
+    // console.log('403 condition total', (user.EmployeeId !== checkStatus.data.U_AppId) || (user.EmployeeId !== (checkStatus.data.U_DelID || '')));
 
-    console.log('del id', checkStatus.data.U_DelID);
-    console.log('user.EmployeeId', user.EmployeeId);
-    console.log('checkStatus.data.U_DelID', checkStatus.data.U_DelID);
-    console.log('(checkStatus.data.U_DelID !== null && user.EmployeeId !== checkStatus.data.U_DelID)', (checkStatus.data.U_DelID != null && user.EmployeeId !== checkStatus.data.U_DelID));
+    // console.log('del id', checkStatus.data.U_DelID);
+    // console.log('user.EmployeeId', user.EmployeeId);
+    // console.log('checkStatus.data.U_DelID', checkStatus.data.U_DelID);
+    // console.log('(checkStatus.data.U_DelID !== null && user.EmployeeId !== checkStatus.data.U_DelID)', (checkStatus.data.U_DelID != null && user.EmployeeId !== checkStatus.data.U_DelID));
     
 
     if ((user.EmployeeId !== checkStatus.data.U_AppId) || 
@@ -534,10 +550,10 @@ const RequestResponse = async (req, res) => {
 
     const patchReq = await sapPatchRequest(req, `${sapAPIs.AllLogEntries}(${id})`, payload);
     const updatedData = await sapGetRequest(req, `${sapAPIs.AllLogEntries}(${id})`);
-    console.log('updated data', updatedData.data);
+    // console.log('updated data', updatedData.data);
 
     if(updatedData.data.U_AppSts == "R"){
-      console.log('inside reject');
+      // console.log('inside reject');
       
         const empReqPayload = {
             "U_ApprSts":"R",
@@ -548,12 +564,12 @@ const RequestResponse = async (req, res) => {
         return res.status(200).json({message: "Response submitted successfully!"})   
     }
 
-    console.log('totalAprLevs', totalAprLevs);
-    console.log('totalLogs', totalLogs);
+    // console.log('totalAprLevs', totalAprLevs);
+    // console.log('totalLogs', totalLogs);
     
 
     if(totalAprLevs == totalLogs){
-      console.log('inside final approval');
+      // console.log('inside final approval');
 
       const getLatestLogs = await sapGetRequest(req, `${sapAPIs.AllLogEntries}?$filter=U_DocNo eq '${checkStatus.data.U_DocNo}'`);
 
@@ -572,9 +588,9 @@ const RequestResponse = async (req, res) => {
 
       const pending = isResubmitted ? latestUpdatedLogs.filter(val => val.U_AppSts === "R" || val.U_AppSts === "P"):getLatestLogs.data.value.filter(val => val.U_AppSts === "R" || val.U_AppSts === "P");
 
-      console.log('pendings', pending);
-      console.log('pendings len', pending.length);
-      console.log('pendings len condition', pending.length <= 0);
+      // console.log('pendings', pending);
+      // console.log('pendings len', pending.length);
+      // console.log('pendings len condition', pending.length <= 0);
       
       if(pending.length <= 0){
          const empReqPayload = {
@@ -600,10 +616,10 @@ const RequestResponse = async (req, res) => {
               }
           ]
         }
-        console.log('APInvoicePayload', APInvoicePayload);
+        // console.log('APInvoicePayload', APInvoicePayload);
         
         try{
-          console.log('updatedExpReq.data.DocEntry', updatedData.data.U_DocNo);
+          // console.log('updatedExpReq.data.DocEntry', updatedData.data.U_DocNo);
           
           const APInvoiceStatus =  await sapPostRequest(req, `/PurchaseInvoices`, APInvoicePayload);
            const patchPayload = {
@@ -612,8 +628,8 @@ const RequestResponse = async (req, res) => {
           }
           await sapPatchRequest(req, `${sapAPIs.Expanses}(${updatedData.data.U_DocNo})`, patchPayload);
         } catch(err){
-          console.log('updatedExpReq.data.DocEntry', updatedData.data.U_DocNo);
-          console.log('updarrrrrrrr', err.response?.data?.error?.message?.value);
+          // console.log('updatedExpReq.data.DocEntry', updatedData.data.U_DocNo);
+          // console.log('updarrrrrrrr', err.response?.data?.error?.message?.value);
 
           const patchPayload = {
             "U_OPNo": "",
@@ -625,17 +641,17 @@ const RequestResponse = async (req, res) => {
         return res.status(200).json({message: "Response submitted successfully!"})
       }
     }
-    console.log('status', updatedData.data.U_AppSts);
-    console.log('status val', totalAprLevs > totalLogs);
-    console.log('condition', totalAprLevs, totalLogs);
-    console.log('if condition', updatedData.data.U_AppSts == "A" && totalAprLevs > totalLogs);
+    // console.log('status', updatedData.data.U_AppSts);
+    // console.log('status val', totalAprLevs > totalLogs);
+    // console.log('condition', totalAprLevs, totalLogs);
+    // console.log('if condition', updatedData.data.U_AppSts == "A" && totalAprLevs > totalLogs);
     
     if(updatedData.data.U_AppSts == "A" && totalAprLevs > totalLogs){
 
       const isDelegationId = approvalCollection?.[totalLogs]?.U_DlgID;
       let isDelegationValid = false;
 
-      console.log('isDelegationId', isDelegationId);
+      // console.log('isDelegationId', isDelegationId);
 
       if(isDelegationId){
           const currentDate = new Date(
@@ -647,15 +663,15 @@ const RequestResponse = async (req, res) => {
           const fromDate = new Date(approvalCollection?.[totalLogs]?.U_FrmDt);
           const toDate = new Date(approvalCollection?.[totalLogs]?.U_ToDt);
 
-          console.log("currentDate", currentDate);
-          console.log("fromDate", fromDate);
-          console.log("toDate", toDate);
+          // console.log("currentDate", currentDate);
+          // console.log("fromDate", fromDate);
+          // console.log("toDate", toDate);
         
           isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-          console.log("isDelegationValid", isDelegationValid);
+          // console.log("isDelegationValid", isDelegationValid);
       }
       
-      console.log('entry');
+      // console.log('entry');
         let logPayload = {
           "Name": updatedData.data.Name,
           "U_DocType": "E",
@@ -671,7 +687,7 @@ const RequestResponse = async (req, res) => {
           "U_DelID": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgID:"",
           "U_DelName": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgName:"",
       }
-      console.log('logpayload', logPayload);
+      // console.log('logpayload', logPayload);
       
       await creatLogEntry(req, res, logPayload)
     }
@@ -712,8 +728,8 @@ const resubmitExpReq = async (req, res) => {
    
     const expanse = await sapGetRequest(req, `${sapAPIs.Expanses}(${id})`);
     if(expanse.data.U_ApprSts === "R" && expanse.data.U_EmpID == user.EmployeeId){
-      console.log('we can procees with this');
-      console.log('payload', payload);
+      // console.log('we can procees with this');
+      // console.log('payload', payload);
       
       await sapPatchRequest(req, `${sapAPIs.Expanses}(${id})`, payload);
     }else{
@@ -734,13 +750,13 @@ const resubmitLogEntry = async (req, res, docEntry) => {
   try {
     const user = req.user;
     const emp = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);
-    console.log('emp', emp.data);
+    // console.log('emp', emp.data);
     
     const app_lev = await sapGetRequest(req, `${sapAPIs.ApprovalLevels}?$select=*&$filter=U_Cate eq '${emp.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
-    console.log('app lev', app_lev.data);
+    // console.log('app lev', app_lev.data);
 
     const isNeedApproval = app_lev.data.value?.[0]?.HLB_APP1Collection?.length ?? 0;
-    console.log('isneedapproval', isNeedApproval);
+    // console.log('isneedapproval', isNeedApproval);
     
     let logPayload = {
         "Name": `${emp.data.FirstName} ${emp.data.LastName}`,
@@ -756,7 +772,7 @@ const resubmitLogEntry = async (req, res, docEntry) => {
         "U_CTm": time
     } 
 
-    console.log('logpyalod', logPayload);
+    // console.log('logpyalod', logPayload);
     
     await creatLogEntry(req, res, logPayload)
   

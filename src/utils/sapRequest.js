@@ -5,12 +5,12 @@ const AuthService = require('../services/AuthService.js');
 const authService = new AuthService();
 
 
-async function callSAP(userId, method, endpoint, data = {}) {
+async function callSAP(userId, method, endpoint, data = {}, headerCont = {}) {
   const sapSession = await SAPSession.findOne({ where: { user_id: userId }, order: [['createdAt', 'DESC']] });
   if (!sapSession) throw new Error('SAP session not found. Please log in.');
 
   const headers = {
-    'Content-Type': 'application/json',
+    headerCont,
     'Cookie': `B1SESSION=${sapSession.b1_session}; ROUTEID=${sapSession.route_id}`,
   };
 

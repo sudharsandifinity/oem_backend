@@ -16,9 +16,9 @@ const sapGetRequest = async (req, endpoint) => {
   return data;
 };
 
-const sapPostRequest = async (req, endpoint, payload) => {
+const sapPostRequest = async (req, endpoint, payload, headers = {}) => {
   const userId = req.user.id;
-  const data = await callSAP(userId, 'POST', endpoint, payload);
+  const data = await callSAP(userId, 'POST', endpoint, payload, headers);
   return data;
 };
 
@@ -832,22 +832,46 @@ const getAttachment = async (req, res) => {
 const createAttachment = async (req, res) => {
   try {
     const files = req.files;
-    if(!files) return;
-    const attachmentMeta = {
-      Attachments2_Lines: files.map(file =>
-        ({ 
-            FileName: file.originalname.split(".").shift(),
-            FileExtension: file.originalname.split(".").pop(), 
-            SourcePath: path.resolve(file.destination) 
-          })
-      ),
-    };
 
-    const response = await sapPostRequest(req, '/Attachments2', attachmentMeta);            
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        message: "No files uploaded"
+      });
+    }
+
+    const form = new FormData();
+
+    files.forEach(file => {
+      const ext = path.extname(file.originalname);
+      const base = path.basename(file.originalname, ext);
+
+      const uniqueName = `${base}_${Date.now()}_${crypto.randomUUID()}${ext}`;
+
+      form.append(
+        "file",
+        fs.createReadStream(file.path),
+        {
+          filename: uniqueName,
+          contentType: file.mimetype
+        }
+      );
+    });
+
+    const response = await sapPostRequest(
+      req,
+      "/Attachments2",
+      form,
+      form.getHeaders()
+    );
+
     return response.data;
+
   } catch (error) {
     console.error(error.response?.data || error.message);
-    res.status(500).json({ error: error.message });
+
+    return res.status(500).json({
+      error: error.response?.data || error.message
+    });
   }
 };
 
