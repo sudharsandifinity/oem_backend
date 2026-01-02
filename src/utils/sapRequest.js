@@ -5,7 +5,7 @@ const AuthService = require('../services/AuthService.js');
 const authService = new AuthService();
 
 
-async function callSAP(userId, method, endpoint, data = {}, headerCont = {}) {
+async function callSAP(userId, method, endpoint, data = {}, headerCont = {}, options = {}) {
   const sapSession = await SAPSession.findOne({ where: { user_id: userId }, order: [['createdAt', 'DESC']] });
   if (!sapSession) throw new Error('SAP session not found. Please log in.');
 
@@ -19,7 +19,8 @@ async function callSAP(userId, method, endpoint, data = {}, headerCont = {}) {
       method,
       url: `${process.env.SAP_BASE_URL}/${endpoint}`,
       headers,
-      httpsAgent: new https.Agent({ rejectUnauthorized: false })
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      responseType: options.responseType || 'json'
     };
     if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
       config.data = data;
@@ -30,6 +31,9 @@ async function callSAP(userId, method, endpoint, data = {}, headerCont = {}) {
   } catch (error) {
     if ([401].includes(error.response?.status)) {
       console.log('SAP session expired, refreshing...');
+      console.log('req', req.user);
+      console.log('userId', req.userId);
+      
       await authService.sapLogin(req, userId);
       return callSAP(userId, method, endpoint, data);
     }

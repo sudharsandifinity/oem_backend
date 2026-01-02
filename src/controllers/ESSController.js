@@ -14,12 +14,13 @@ const sapAPIs = {
   AllExpansesOrderBy: "$orderby=DocEntry desc",
   ExpanseTypes: "HLB_EXPM",
   ApprovalLevels: "HLB_OAPP",
-  Currency: "Currencies"
+  Currency: "Currencies",
+  Attachments: "Attachments2"
 }
 
-const sapGetRequest = async (req, endpoint) => {
+const sapGetRequest = async (req, endpoint, payload, headers, options = { responseType: "json" } ) => {
   const userId = req.user.id;
-  const data = await callSAP(userId, 'GET', endpoint);
+  const data = await callSAP(userId, 'GET', endpoint, payload, headers, options);
   return data;
 };
 
@@ -387,7 +388,22 @@ const getAllExpList = async (req, res) => {
     const { top=20, skip=0 } = req.query;
     
     const response = await sapGetRequest(req, `${sapAPIs.Expanses}?${sapAPIs.AllExpansesOrderBy}&$filter=U_EmpID eq '${user.EmployeeId}'&$top=${top}&$skip=${skip}`);
-    res.status(200).json(response.data);
+
+    const expanseRequests = response.data.value;
+
+    const allAttachments = await sapGetRequest(req, `${sapAPIs.Attachments}?$orderby=AbsoluteEntry desc`);
+    const Attachments = allAttachments.data.value;
+
+    const combinedRequests = expanseRequests.map(async (expanse) => {
+      const correspondingExpense = Attachments.find((attachment) => attachment.AbsoluteEntry == expanse.U_Atch);
+      
+      const combinedData = { ...expanse, AttachmentData: correspondingExpense || null };
+      return combinedData;
+    });
+
+    const result = await Promise.all(combinedRequests);
+    
+    res.status(200).json(result);
   } catch (err) {
     console.error('SAP error:', err.message);
     res.status(500).json({ message: 'Error fetching Expanse List', error: err.message });
@@ -796,4 +812,28 @@ const currencyList = async (req, res) => {
   }
 }
 
-module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList }
+const viewAttachment = async (req, res) => {
+  try {
+    const { id, filename, ext } = req.params;
+    console.log('params', id, filename, ext);
+
+    const attachmentUrl = `${sapAPIs.Attachments}(${id})/$value?filename='${filename}.${ext}'`;
+    console.log('attachment link', attachmentUrl);
+
+    const response = await sapGetRequest(req, attachmentUrl, {}, {}, {
+      responseType: 'stream'
+    });
+
+    res.setHeader('Content-Disposition', `inline; filename="${filename}.${ext}"`);
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+
+    response.data.pipe(res);
+
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: error.response?.data || error.message });
+  }
+};
+
+
+module.exports = { getHolidays, getProjects, getEmployes, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment }
