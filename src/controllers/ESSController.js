@@ -455,14 +455,26 @@ const getApprovalRequestsList = async (req, res) => {
       req,
       `${sapAPIs.AllLogEntries}?$orderby=Code desc&$filter=U_AppId eq '${user.EmployeeId}' or U_DelID eq '${user.EmployeeId}'&$top=${top}&$skip=${skip}`
     );
-    const logs = logResponse.data.value;
     
     const allExpansesResponse = await sapGetRequest(req, `${sapAPIs.Expanses}?$orderby=DocEntry desc`);
+
+    const allAttachments = await sapGetRequest(req, `${sapAPIs.Attachments}?$orderby=AbsoluteEntry desc`);
+
+    const Attachments = allAttachments.data.value;
+    const logs = logResponse.data.value;
     const allExpanses = allExpansesResponse.data.value;
-    
+
+    const combinedwithAtt = allExpanses.map(async (expanse) => {
+      const correspondingExpense = Attachments.find((attachment) => attachment.AbsoluteEntry == expanse.U_Atch);
+      
+      const combinedData = { ...expanse, AttachmentData: correspondingExpense || null };
+      return combinedData;
+    });
+
+    const RequestsResult = await Promise.all(combinedwithAtt);
     
     const combinedRequests = logs.map(async (log) => {
-      const correspondingExpense = allExpanses.find((expanse) => expanse.DocEntry == log.U_DocNo);
+      const correspondingExpense = RequestsResult.find((expanse) => expanse.DocEntry == log.U_DocNo);
       
       const combinedData = { ...log, ExpenseData: correspondingExpense || null };
       return combinedData;
