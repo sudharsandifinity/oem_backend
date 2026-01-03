@@ -300,15 +300,19 @@ const createExpRequest = async (req, res) => {
       const APInvoicePayload = {
           "DocType": "dDocument_Service",
           "CardCode": emp.data.LinkedVendor,
+          "DocCurrency": response.data.U_CUR,
+          "JournalMemo": `${response.data.U_ExpType} - ${emp.data.FirstName} ${emp.data.LastName}`,
           "Project": response.data.U_PrjCode,
           "DocTotal":response.data.U_ExpAmt,
           "DocumentLines": [
               {
                   "LineNum":0,
+                  "ItemDescription": `${response.data.U_ExpType} - ${emp.data.FirstName} ${emp.data.LastName}`,
                   "ExpenseType": response.data.U_ExpType,
                   "ProjectCode": response.data.U_PrjCode,
                   "CostingCode2": emp.data.CostCenterCode,
                   "CostingCode": emp.data.U_BU,
+                  "Currency": response.data.U_CUR,
                   "LineTotal":response.data.U_ExpAmt
               }
           ]
@@ -631,15 +635,19 @@ const RequestResponse = async (req, res) => {
         const APInvoicePayload = {
           "DocType": "dDocument_Service",
           "CardCode": requester.data.LinkedVendor,
+          "DocCurrency": expReq.data.U_CUR,
+          "JournalMemo": `${expReq.data.U_ExpType} - ${requester.data.FirstName} ${requester.data.LastName}`,
           "Project": expReq.data.U_PrjCode,
           "DocTotal":expReq.data.U_ExpAmt,
           "DocumentLines": [
               {
                   "LineNum":0,
+                  "ItemDescription": `${expReq.data.U_ExpType} - ${requester.data.FirstName} ${requester.data.LastName}`,
                   "ExpenseType": expReq.data.U_ExpType,
                   "ProjectCode": expReq.data.U_PrjCode,
                   "CostingCode2": requester.data.CostCenterCode,
                   "CostingCode": requester.data.U_BU,
+                  "Currency": expReq.data.U_CUR,
                   "LineTotal":expReq.data.U_ExpAmt
               }
           ]
