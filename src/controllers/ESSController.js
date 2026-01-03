@@ -749,12 +749,25 @@ const resubmitExpReq = async (req, res) => {
     const user = req.user;
     let payload = req.body;
 
+    let attachments = null;
+
+    if (req.files && req.files.length > 0) {
+      attachments = await SAPController.createAttachment(req, res);
+    }
+
     payload.U_ApprSts = "P"
     payload.U_IsReSub = "Y"
     payload.U_Udt = date
     payload.U_UTm = time
+    payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
+
+    console.log('payu', payload);
+    
    
     const expanse = await sapGetRequest(req, `${sapAPIs.Expanses}(${id})`);
+
+    console.log('expanse', expanse.data);
+    
     if(expanse.data.U_ApprSts === "R" && expanse.data.U_EmpID == user.EmployeeId){
       // console.log('we can procees with this');
       // console.log('payload', payload);
