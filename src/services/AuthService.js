@@ -11,11 +11,15 @@ const { decrypt } = require('../utils/crypto');
 class AuthService {
 
     async sapLogin(req, user=null) {
-        const authUser =(req ? req.user : null) || user;
-        // const companyData = req.body || 'o3p6JX1K8q';
-        const companyData = req.body || 'RDP6E2d2YB';
 
-        console.log('user', authUser);
+        // console.log('req', req.user);
+        // console.log('user', user);
+
+        const userValues = user ? await User.findByPk(user): "";
+        const authUser = req.user ?? userValues.dataValues;
+        const companyData = req.body || 'o3p6JX1K8q';
+
+        // console.log('user', authUser);
 
         const userData = await User.findOne({
             where: { email:authUser.email },
@@ -82,8 +86,8 @@ class AuthService {
         const companypassword = decrypt(company.secret_key)
         const companyusername = decrypt(company.sap_username);
 
-        console.log('companyusername', companyusername);
-        console.log('companypassword', companypassword);
+        // console.log('companyusername', companyusername);
+        // console.log('companypassword', companypassword);
 
         const payload = {
             // UserName: "HAMTINFOTECH\\sapserviceb1c",
@@ -103,8 +107,6 @@ class AuthService {
                     timeout: 10000,
                 }
         );
-
-        console.log('cookie data', response.headers["set-cookie"].join(";"));
         
         const sessionId = response.data.SessionId;
         const cookies = response.headers['set-cookie'];
@@ -116,11 +118,7 @@ class AuthService {
                 if (match) routeId = match[1];
             }
         }
-
-        console.log('login sessionid', sessionId);
-        console.log('login routeId', routeId);
         
-
         await SAPSession.upsert({
             user_id: userData.id,
             sap_username: payload.UserName,
@@ -201,7 +199,7 @@ class AuthService {
         );
 
         if(user.is_super_user === 0){
-            this.sapLogin({}, user);
+            this.sapLogin({}, user.id);
         }
 
         const data = user.toJSON();
@@ -232,6 +230,10 @@ class AuthService {
             branch.id = encodeId(branch.id)
             branch.companyId = encodeId(branch.companyId)
             branch.Company.id = encodeId(branch.Company.id)
+            delete branch.Company.company_db_name;
+            delete branch.Company.base_url;
+            delete branch.Company.sap_username;
+            delete branch.Company.secret_key;
         })
         
 
