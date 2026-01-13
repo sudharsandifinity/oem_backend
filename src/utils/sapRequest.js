@@ -12,6 +12,7 @@ async function callSAP(userId, method, endpoint, data = {}, headerCont = {}, opt
   const headers = {
     headerCont,
     'Cookie': `B1SESSION=${sapSession.b1_session}; ROUTEID=${sapSession.route_id}`,
+    'Prefer': 'odata.maxpagesize=0'
   };
 
    try {

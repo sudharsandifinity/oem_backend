@@ -75,7 +75,7 @@ class AuthService {
             ]
         });
 
-        const decodedCompanyId = decodeId(companyData.company_id || 'o3p6JX1K8q');
+        const decodedCompanyId = decodeId(companyData.company_id || 'RDP6E2d2YB');
 
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
         throw new Error('Decoded company ID is invalid');
@@ -90,8 +90,8 @@ class AuthService {
         // console.log('companypassword', companypassword);
 
         const payload = {
-            // UserName: "HAMTINFOTECH\\sapserviceb1c",
-            UserName: companyusername,
+            UserName: "HAMTINFOTECH\\sapserviceb1c",
+            // UserName: companyusername,
             Password: companypassword,
             CompanyDB: company.company_db_name
         };

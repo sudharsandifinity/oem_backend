@@ -6,6 +6,10 @@ const logFormat = printf(({ level, message, timestamp, ...meta }) => {
   return `[${timestamp}] ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
 });
 
+const sapFilter = format((info) => {
+  return info.service === 'SAP' ? info : false;
+});
+
 const logger = createLogger({
   level: 'info',
   format: combine(
@@ -15,14 +19,21 @@ const logger = createLogger({
   transports: [
     new transports.File({ filename: path.join('logs', 'error.log'), level: 'error' }),
     new transports.File({ filename: path.join('logs', 'combined.log') }),
+    new transports.File({
+      filename: path.join('logs', 'sap.log'),
+      format: combine(sapFilter(), timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), logFormat)
+    }),
   ],
 });
 
-// In development, also log to console
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(new transports.Console({
-    format: combine(colorize(), logFormat)
-  }));
+  logger.add(
+    new transports.Console({
+      format: combine(colorize(), logFormat)
+    })
+  );
 }
 
-module.exports = logger;
+const sapLogger = logger.child({ service: 'SAP' });
+
+module.exports = { logger, sapLogger };

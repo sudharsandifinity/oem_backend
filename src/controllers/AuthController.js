@@ -1,4 +1,4 @@
-const logger = require('../config/logger');
+const { logger } = require('../config/logger');
 const AuthService = require('../services/AuthService');
 const authService = new AuthService();
 
