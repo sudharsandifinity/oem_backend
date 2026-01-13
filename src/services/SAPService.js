@@ -24,52 +24,53 @@ class SAPService extends SAPClient{
 
     async getReqByEmpId(req, EmpId, query) {
         const response = await this.getReqByEmp(req, EmpId, query);
-        const myLogs = await this.getMyLogs(req, EmpId);
+        // const myLogs = await this.getMyLogs(req, EmpId);
 
-        switch(query.endpoint) {
-            case "HLB_OTRV":
-                const filLogTR = myLogs.value.filter((log) => log.U_DocType == "TR");
-                const logdatasTR = response.data.value.map((data) => {
-                    const logs = filLogTR.filter((log) => log.U_DocNo == data.DocEntry);
-                    return { ...data, Logs: logs };
-                });
-                return logdatasTR;
+        // switch(query.endpoint) {
+        //     case "HLB_OTRV":
+        //         const filLogTR = myLogs.value.filter((log) => log.U_DocType == "TR");
+        //         const logdatasTR = response.data.value.map((data) => {
+        //             const logs = filLogTR.filter((log) => log.U_DocNo == data.DocEntry);
+        //             return { ...data, Logs: logs };
+        //         });
+        //         return logdatasTR;
 
-            case "HLB_OOTRQ":
-                const filLogOT = myLogs.value.filter((log) => log.U_DocType == "OT");
-                const logdatasOT = response.data.value.map((data) => {
-                    const logs = filLogOT.filter((log) => log.U_DocNo == data.DocEntry);
-                    return { ...data, Logs: logs };
-                });
-                return logdatasOT;
+        //     case "HLB_OOTRQ":
+        //         const filLogOT = myLogs.value.filter((log) => log.U_DocType == "OT");
+        //         const logdatasOT = response.data.value.map((data) => {
+        //             const logs = filLogOT.filter((log) => log.U_DocNo == data.DocEntry);
+        //             return { ...data, Logs: logs };
+        //         });
+        //         return logdatasOT;
 
-            case "OLVA":
-                const filLogLv = myLogs.value.filter((log) => log.U_DocType == "L");
-                const logdatasLv = response.data.value.map((data) => {
-                    const logs = filLogLv.filter((log) => log.U_DocNo == data.DocEntry);
-                    return { ...data, Logs: logs };
-                });
-                return logdatasLv;
+        //     case "OLVA":
+        //         const filLogLv = myLogs.value.filter((log) => log.U_DocType == "L");
+        //         const logdatasLv = response.data.value.map((data) => {
+        //             const logs = filLogLv.filter((log) => log.U_DocNo == data.DocEntry);
+        //             return { ...data, Logs: logs };
+        //         });
+        //         return logdatasLv;
 
-            case "HLB_OATR":
-                const filLogAT = myLogs.value.filter((log) => log.U_DocType == "AT");
-                const logdatasAT = response.data.value.map((data) => {
-                    const logs = filLogAT.filter((log) => log.U_DocNo == data.DocEntry);
-                    return { ...data, Logs: logs };
-                });
-                return logdatasAT;
+        //     case "HLB_OATR":
+        //         const filLogAT = myLogs.value.filter((log) => log.U_DocType == "AT");
+        //         const logdatasAT = response.data.value.map((data) => {
+        //             const logs = filLogAT.filter((log) => log.U_DocNo == data.DocEntry);
+        //             return { ...data, Logs: logs };
+        //         });
+        //         return logdatasAT;
 
-            case "HLB_OECL":
-                const filLogE = myLogs.value.filter((log) => log.U_DocType == "E");
-                const logdatasE = response.data.value.map((data) => {
-                    const logs = filLogE.filter((log) => log.U_DocNo == data.DocEntry);
-                    return { ...data, Logs: logs };
-                });
-                return logdatasE;
+        //     case "HLB_OECL":
+        //         const filLogE = myLogs.value.filter((log) => log.U_DocType == "E");
+        //         const logdatasE = response.data.value.map((data) => {
+        //             const logs = filLogE.filter((log) => log.U_DocNo == data.DocEntry);
+        //             return { ...data, Logs: logs };
+        //         });
+        //         return logdatasE;
 
-            default:
-                return [];
-        }
+        //     default:
+        //         return [];
+        // }
+        return response.data;
     }
 
 
@@ -121,7 +122,7 @@ class SAPService extends SAPClient{
     }
 
     async patchReq(req, endpoint, docEntry, payload){
-        const response = await this.patchLv(req, endpoint, docEntry, payload);
+        const response = await this.patchRq(req, endpoint, docEntry, payload);
         return response.data;
     }
 

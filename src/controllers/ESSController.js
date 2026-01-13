@@ -965,7 +965,7 @@ const getTravelExpanse = async (req, res) => {
 const createRequest = async (req, res) => {
   try {
     const DocType = "TR"
-    const data = await sapService.createRequest(req, res, DocType);
+    const data = await sapService.createRequest(req, DocType);
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while creating request';
@@ -1012,7 +1012,7 @@ const getOTRequest = async (req, res) => {
 const createOTRequest = async (req, res) => {
   try {
     const DocType = "OT"
-    const data = await sapService.createRequest(req, res, DocType);
+    const data = await sapService.createRequest(req, DocType);
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while creating OT Request!';
@@ -1070,7 +1070,7 @@ const getLeaveequest = async (req, res) => {
 const createLeaveRequest = async (req, res) => {
   try {
     const DocType = "L"
-    const data = await sapService.createRequest(req, res, DocType);
+    const data = await sapService.createRequest(req, DocType);
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while creating Leave Request!';
