@@ -25,7 +25,7 @@ router.patch('/resubmit/leave-request/:id', upload.array('Attachments2_Lines'), 
 router.get('/air-tickets', getAirTickets);
 router.get('/air-ticket/:id', getAirTicket);
 router.post('/air-ticket', upload.array('Attachments2_Lines'), createAirTicket);
-router.patch('/resubmit/leave-request/:id', upload.array('Attachments2_Lines'), resubmitAirTicket);
+router.patch('/resubmit/air-ticket/:id', upload.array('Attachments2_Lines'), resubmitAirTicket);
 
 router.get('/expanse/types', getAllExpType);
 router.get('/expanses', getExpanses);

@@ -171,9 +171,9 @@ const findMissedCheckOuts = async (req, EmpId) => {
 const syncEmployees = async (req, res) => {
   try {
     const employees = await sapGetRequest(req, `${sapAPIs.Employees}?${sapAPIs.EmployeesSelect}&$orderby=EmployeeID desc`);
-    console.log('employees.data.value', employees.data.value);
+    // console.log('employees.data.value', employees.data.value);
     
-    res.send(employees.data.value);
+    // res.send(employees.data.value);
     const userRepository = new UserRepository();
     const userService = new UserService(userRepository);
     const userController = new UserController(userService);
