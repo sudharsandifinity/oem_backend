@@ -25,6 +25,15 @@ class CompanyService extends BaseService{
         })
     }
 
+    async getActiveList(){
+        const datas = await this.repository.findAllActive();
+        return datas.map((data) => {
+            const json = data.toJSON();
+            json.id = encodeId(json.id);
+            return json;
+        })
+    }
+
     async getById(id){
         const company = await this.repository.findById(id);
         if(!company) return null;

@@ -5,12 +5,14 @@ const { sequelize } = require('../../models');
 const adminRoutes = require('./admin/index');
 const userRoutes = require('./user/index');
 const authRoutes = require('./auth/index');
+const baseRoutes = require('./baseRoutes');
 const sapRoutes = require('./sap/index');
 const essRoutes = require('./ess/index');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
 
 router.use('/auth', authRoutes);
+router.use('/base', baseRoutes);
 router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
 router.use('/user', userRoutes);
 router.use('/sap', authMiddleware, sapRoutes);
