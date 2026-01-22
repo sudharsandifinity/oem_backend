@@ -4,6 +4,6 @@ router = require('express').Router();
 
 router.get('/', getAllEmployees);
 router.get('/me', getEmployeeProfile);
-router.get('/sync', syncEmployees);
+router.post('/sync', syncEmployees);
 
 module.exports = router;

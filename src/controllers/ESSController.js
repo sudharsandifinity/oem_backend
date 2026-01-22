@@ -7,6 +7,7 @@ const { currentTime } = require("../utils/currentTime");
 const SAPService = require("../services/SAPService");
 const { sapLogger } = require("../config/logger");
 const { Endpoints } = require("../utils/sapEndPoints");
+const { decodeId, encodeId } = require("../utils/hashids");
 const sapService = new SAPService();
 
 const sapAPIs = {
@@ -170,6 +171,7 @@ const findMissedCheckOuts = async (req, EmpId) => {
 
 const syncEmployees = async (req, res) => {
   try {
+    const { roleIds, branchIds }= req.body;
     const employees = await sapGetRequest(req, `${sapAPIs.Employees}?${sapAPIs.EmployeesSelect}&$orderby=EmployeeID desc`);
     // console.log('employees.data.value', employees.data.value);
     
@@ -188,24 +190,36 @@ const syncEmployees = async (req, res) => {
         skippedEmployeeIDs.push(EmployeeID);
         continue;
       }
-
+      
       const existingUser = await userRepository.findByEmpId(EmployeeID);
 
       if (existingUser) {
-        const updatedUserPayload = {
-          first_name: FirstName,
-          last_name: LastName,
-          email: eMail,
-          mobile: MobilePhone,
-          is_sap_user: 1,
-          department: Department
-        };
-        const data = await userController.updateSapEmployees(existingUser.id, updatedUserPayload);
-        if(data === "duplicate"){
-          skippedEmployeeIDs.push(EmployeeID);
-          continue
-        }
-        // console.log(`Updated user: ${FirstName} ${LastName} (Email: ${eMail})`);
+
+          let newRoleIds;
+          let newBranchIds;
+
+          const existingRoleIds = existingUser.Roles.map(r => encodeId(r.id));
+          newRoleIds = roleIds
+            .filter(roleId => !existingRoleIds.includes(roleId));
+
+          const existingBranchIds = existingUser.Branches.map(b => encodeId(b.id));
+          newBranchIds = branchIds.filter(branchid => !existingBranchIds.includes(branchid));
+
+          const updatedUserPayload = {
+            first_name: FirstName,
+            last_name: LastName,
+            email: eMail,
+            mobile: MobilePhone,
+            is_sap_user: 1,
+            department: Department,
+            roleIds: newRoleIds,
+            branchIds: newBranchIds,
+          };
+          const data = await userController.updateSapEmployees(existingUser.id, updatedUserPayload);
+          if(data === "duplicate"){
+            skippedEmployeeIDs.push(EmployeeID);
+            continue
+          }
       } else {
         const userPayload = {
           email: eMail,
@@ -215,8 +229,9 @@ const syncEmployees = async (req, res) => {
           is_sap_user: 1,
           sap_emp_id: EmployeeID,
           department: Department,
-          roleId: 1,
           password: eMail,
+          roleIds: roleIds,
+          branchIds: branchIds,
           status: 1
         };
         const result = await userController.syncSapEmployees(userPayload);
