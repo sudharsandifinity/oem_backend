@@ -12,7 +12,7 @@ class AuthController {
     login = async (req, res) => {
         try {
             const { email, password } = req.body;
-            const result = await authService.login(email, password);
+            const result = await authService.login(req, email, password);
             logger.info('Login in successfully!', {email: email});
 
             res.cookie('token', result.token, {

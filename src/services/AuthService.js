@@ -11,13 +11,19 @@ const { decrypt } = require('../utils/crypto');
 class AuthService {
 
     async sapLogin(req, user=null) {
-
         // console.log('req', req.user);
         // console.log('user', user);
-
         const userValues = user ? await User.findByPk(user): "";
         const authUser = req.user ?? userValues.dataValues;
-        const companyData = req.body || 'o3p6JX1K8q';
+        // console.log('authuser', authUser);
+        
+        const companyId = req.body?.company_id;
+        // console.log('companyidd', companyId);
+        // console.log('body', req.body);
+        
+        if(!companyId){
+            return ('Company ID is not found!');
+        }
 
         // console.log('user', authUser);
 
@@ -75,7 +81,7 @@ class AuthService {
             ]
         });
 
-        const decodedCompanyId = decodeId(companyData.company_id || 'RDP6E2d2YB');
+        const decodedCompanyId = decodeId(companyId);
 
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
         throw new Error('Decoded company ID is invalid');
@@ -84,22 +90,23 @@ class AuthService {
         const company = await Company.findOne({where: {id: decodedCompanyId}});
 
         const companypassword = decrypt(company.secret_key)
-        const companyusername = decrypt(company.sap_username);
-
+        const companyusername = decrypt(company.sap_username).replace(/\\\\/g, "\\");
         // console.log('companyusername', companyusername);
         // console.log('companypassword', companypassword);
 
         const payload = {
-            UserName: "HAMTINFOTECH\\sapserviceb1c",
-            // UserName: companyusername,
+            UserName: companyusername,
             Password: companypassword,
             CompanyDB: company.company_db_name
         };
 
         console.log('payload', payload);
+        // console.log('process.env.SAP_BASE_URL', process.env.SAP_BASE_URL);
+        console.log('company', company.base_url);
+
         
         const response = await axios.post(
-            `${process.env.SAP_BASE_URL}/Login`,
+            `${company.base_url}/Login`,
             payload,
                 {
                     httpsAgent: new https.Agent({ rejectUnauthorized: false }),
@@ -133,7 +140,7 @@ class AuthService {
         return { sessionId, routeId };
     }
 
-    async login(email, password) {
+    async login(req, email, password) {
         const user = await User.findOne({
             where: { email },
             include: [
@@ -199,7 +206,7 @@ class AuthService {
         );
 
         if(user.is_super_user === 0){
-            this.sapLogin({}, user.id);
+            await this.sapLogin(req, user.id);
         }
 
         const data = user.toJSON();
