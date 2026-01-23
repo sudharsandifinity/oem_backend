@@ -21,7 +21,7 @@ class AuthService {
         // console.log('companyidd', companyId);
         // console.log('body', req.body);
         
-        if(!companyId){
+        if(!companyId && !authUser.is_super_user){
             throw new Error ('Company ID is not found!');
         }
 
@@ -84,15 +84,17 @@ class AuthService {
         // console.log('getCompany', getCompany);
         const decodedCompanyId = decodeId(companyId);
         // console.log('decodedCompanyId', decodedCompanyId);
-        const checkAcc = getCompany.find(id => id === decodedCompanyId);
-        // console.log('checkAcc', checkAcc);
-
-        if(!checkAcc){
-            throw new Error("You dont have a access to login");
-        }
-
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
             throw new Error('Decoded company ID is invalid');
+        }
+
+        if(!userData.is_super_user){
+            const checkAcc = getCompany.find(id => id === decodedCompanyId);
+            // console.log('checkAcc', checkAcc);
+    
+            if(!checkAcc){
+                throw new Error("You dont have a access to login");
+            }
         }
 
         const company = await Company.findOne({where: {id: decodedCompanyId}});

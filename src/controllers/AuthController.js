@@ -1,5 +1,6 @@
 const { logger } = require('../config/logger');
 const AuthService = require('../services/AuthService');
+const { syncEmployees } = require('./ESSController');
 const authService = new AuthService();
 
 class AuthController {
@@ -35,9 +36,25 @@ class AuthController {
 
     sapLogin = async (req, res) => {
         try{
-            const login = await authService.sapLogin(req, res, null, req.user);
-            res.status(200).json({response: login});
+            const login = await authService.sapLogin(req, req.user.id);
+            return login;
         } catch(error){
+            return res.status(400).json({ message: error.message });
+        }
+    }
+
+    sapEmpSync = async (req, res) => {
+        try{
+            console.log(1);
+            
+            const saploginData = await this.sapLogin(req, req.user.id);
+            console.log(2);
+            if(!saploginData?.sessionId){
+                throw new Error ("sap login issue!")
+            }
+            const syncemp = await syncEmployees(req, res)
+            return syncemp
+        }catch(error){
             return res.status(400).json({ message: error.message });
         }
     }
