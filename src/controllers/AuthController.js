@@ -25,7 +25,8 @@ class AuthController {
             return res.status(200).json({
                 message: 'Login successful',
                 token: result.token,
-                user: result.data
+                user: result.data,
+                sap: result?.sapLogin?.sessionId ?  "SAP Login was Successfull!":result.sapLogin
             });
         } catch (error) {
             return res.status(400).json({ message: error.message });

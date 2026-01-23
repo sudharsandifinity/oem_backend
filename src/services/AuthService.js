@@ -22,7 +22,7 @@ class AuthService {
         // console.log('body', req.body);
         
         if(!companyId){
-            return ('Company ID is not found!');
+            throw new Error ('Company ID is not found!');
         }
 
         // console.log('user', authUser);
@@ -80,11 +80,19 @@ class AuthService {
                 }
             ]
         });
-
+        const getCompany = userData.Branches.map(bch => bch.Company.id)
+        // console.log('getCompany', getCompany);
         const decodedCompanyId = decodeId(companyId);
+        // console.log('decodedCompanyId', decodedCompanyId);
+        const checkAcc = getCompany.find(id => id === decodedCompanyId);
+        // console.log('checkAcc', checkAcc);
+
+        if(!checkAcc){
+            throw new Error("You dont have a access to login");
+        }
 
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
-        throw new Error('Decoded company ID is invalid');
+            throw new Error('Decoded company ID is invalid');
         }
 
         const company = await Company.findOne({where: {id: decodedCompanyId}});
@@ -101,20 +109,25 @@ class AuthService {
         };
 
         console.log('payload', payload);
-        // console.log('process.env.SAP_BASE_URL', process.env.SAP_BASE_URL);
         console.log('company', company.base_url);
 
-        
-        const response = await axios.post(
-            `${company.base_url}/Login`,
-            payload,
-                {
-                    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-                    headers: { 'Content-Type': 'application/json' },
-                    timeout: 10000,
-                }
-        );
-        
+        let response;
+
+        try {
+            response = response = await axios.post(
+                `${company.base_url}/Login`,
+                payload,
+                    {
+                        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+                        headers: { 'Content-Type': 'application/json' },
+                        timeout: 10000,
+                    }
+            );
+        } catch (err) {
+            console.error(err?.response?.data || err.message);
+            throw new Error ("SAP login failed!");
+        }
+
         const sessionId = response.data.SessionId;
         const cookies = response.headers['set-cookie'];
         let routeId = '.node1';
@@ -205,8 +218,9 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
+        let sapLogin;
         if(user.is_super_user === 0){
-            await this.sapLogin(req, user.id);
+            sapLogin = await this.sapLogin(req, user.id);
         }
 
         const data = user.toJSON();
@@ -244,7 +258,7 @@ class AuthService {
         })
         
 
-        return { token, user, data };
+        return { token, user, data, sapLogin };
     }
 
     async profile(id){
