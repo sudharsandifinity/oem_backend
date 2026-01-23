@@ -1,4 +1,4 @@
-const logger = require("../config/logger");
+const {logger} = require("../config/logger");
 const { encodeId, decodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
 const CompanyRepository = require("../repositories/CompanyRepository");

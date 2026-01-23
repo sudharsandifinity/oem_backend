@@ -1,4 +1,4 @@
-const logger = require("../config/logger");
+const {logger} = require("../config/logger");
 const { encrypt } = require("../utils/crypto");
 const { encodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
@@ -21,6 +21,15 @@ class CompanyService extends BaseService{
                     companyId: encodeId(branch.companyId)
                 }))
             }
+            return json;
+        })
+    }
+
+    async getActiveList(){
+        const datas = await this.repository.findAllActive();
+        return datas.map((data) => {
+            const json = data.toJSON();
+            json.id = encodeId(json.id);
             return json;
         })
     }

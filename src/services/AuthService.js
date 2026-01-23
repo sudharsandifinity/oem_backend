@@ -10,9 +10,22 @@ const { decrypt } = require('../utils/crypto');
 
 class AuthService {
 
-    async sapLogin(req, res, next, user=null) {
-        const authUser = req.user || user;
-        const companyData = req.body;
+    async sapLogin(req, user=null) {
+        // console.log('req', req.user);
+        // console.log('user', user);
+        const userValues = user ? await User.findByPk(user): "";
+        const authUser = req.user ?? userValues.dataValues;
+        // console.log('authuser', authUser);
+        
+        const companyId = req.body?.company_id;
+        // console.log('companyidd', companyId);
+        // console.log('body', req.body);
+        
+        if(!companyId && !authUser.is_super_user){
+            throw new Error ('Company ID is not found!');
+        }
+
+        // console.log('user', authUser);
 
         const userData = await User.findOne({
             where: { email:authUser.email },
@@ -67,33 +80,55 @@ class AuthService {
                 }
             ]
         });
-
-        const decodedCompanyId = decodeId(companyData.company_id || 'o3p6JX1K8q');
-
+        const getCompany = userData.Branches.map(bch => bch.Company.id)
+        // console.log('getCompany', getCompany);
+        const decodedCompanyId = decodeId(companyId);
+        // console.log('decodedCompanyId', decodedCompanyId);
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
-        throw new Error('Decoded company ID is invalid');
+            throw new Error('Decoded company ID is invalid');
+        }
+
+        if(!userData.is_super_user){
+            const checkAcc = getCompany.find(id => id === decodedCompanyId);
+            // console.log('checkAcc', checkAcc);
+    
+            if(!checkAcc){
+                throw new Error("You dont have a access to login");
+            }
         }
 
         const company = await Company.findOne({where: {id: decodedCompanyId}});
 
         const companypassword = decrypt(company.secret_key)
-        const companyusername = decrypt(company.sap_username);
+        const companyusername = decrypt(company.sap_username).replace(/\\\\/g, "\\");
+        // console.log('companyusername', companyusername);
+        // console.log('companypassword', companypassword);
 
         const payload = {
             UserName: companyusername,
             Password: companypassword,
             CompanyDB: company.company_db_name
         };
-        
-        const response = await axios.post(
-            `${process.env.SAP_BASE_URL}/Login`,
-            payload,
-                {
-                    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-                    headers: { 'Content-Type': 'application/json' },
-                    timeout: 10000,
-                }
-        );
+
+        console.log('payload', payload);
+        console.log('company', company.base_url);
+
+        let response;
+
+        try {
+            response = response = await axios.post(
+                `${company.base_url}/Login`,
+                payload,
+                    {
+                        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+                        headers: { 'Content-Type': 'application/json' },
+                        timeout: 10000,
+                    }
+            );
+        } catch (err) {
+            console.error(err?.response?.data || err.message);
+            throw new Error ("SAP login failed!");
+        }
 
         const sessionId = response.data.SessionId;
         const cookies = response.headers['set-cookie'];
@@ -105,7 +140,7 @@ class AuthService {
                 if (match) routeId = match[1];
             }
         }
-
+        
         await SAPSession.upsert({
             user_id: userData.id,
             sap_username: payload.UserName,
@@ -120,7 +155,7 @@ class AuthService {
         return { sessionId, routeId };
     }
 
-    async login(email, password) {
+    async login(req, email, password) {
         const user = await User.findOne({
             where: { email },
             include: [
@@ -180,14 +215,15 @@ class AuthService {
         if (!isMatch) throw new Error('Invalid password!');
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, is_super_user: user.is_super_user },
+            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: user.sap_emp_id },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // if(user.is_super_user === 0){
-        //     this.sapLogin(user);
-        // }
+        let sapLogin;
+        if(user.is_super_user === 0){
+            sapLogin = await this.sapLogin(req, user.id);
+        }
 
         const data = user.toJSON();
         delete data.password;
@@ -217,10 +253,14 @@ class AuthService {
             branch.id = encodeId(branch.id)
             branch.companyId = encodeId(branch.companyId)
             branch.Company.id = encodeId(branch.Company.id)
+            delete branch.Company.company_db_name;
+            delete branch.Company.base_url;
+            delete branch.Company.sap_username;
+            delete branch.Company.secret_key;
         })
         
 
-        return { token, user, data };
+        return { token, user, data, sapLogin };
     }
 
     async profile(id){
@@ -265,6 +305,21 @@ class AuthService {
         }
     }
 
+    async changePassword(userId, currentPassword, newPassword) {
+        try {
+            const user = await User.findByPk(userId);
+            if (!user) throw new Error('User not found');
+
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!isMatch) throw new Error('Current password is incorrect');
+
+            user.password = newPassword;
+            await user.save();
+            return { success: true, message: "Password updated successfully" };
+        } catch (error) {
+            throw new Error(error.message || 'Failed to change password');
+        }
+    }
 }
 
 module.exports = AuthService;

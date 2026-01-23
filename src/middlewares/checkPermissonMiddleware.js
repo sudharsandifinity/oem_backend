@@ -1,4 +1,4 @@
-const logger = require('../config/logger');
+const {logger} = require('../config/logger');
 const { Role, Permission, UserRole } = require('../models');
 
 const checkPermisson = async (req, res, next) => {

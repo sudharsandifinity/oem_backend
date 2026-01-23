@@ -3,6 +3,7 @@ const UserController = require('../../../controllers/UserController');
 const UserRepository = require('../../../repositories/userRepository');
 const UserService = require('../../../services/userService');
 const { validate, createUserSchema, validateParams, getByPkSchema } = require('../../../validators/userValidator');
+const { sapEmpSync } = require('../../../controllers/AuthController');
 
 const userRepository = new UserRepository();
 const userService = new UserService(userRepository);
@@ -118,5 +119,6 @@ router.put('/:id', validateParams(getByPkSchema), userController.update);
  */
 
 router.delete('/:id', validateParams(getByPkSchema), userController.delete);
+router.post('/sync', sapEmpSync);
 
 module.exports = router;

@@ -1,5 +1,6 @@
-const logger = require('../config/logger');
+const { logger } = require('../config/logger');
 const AuthService = require('../services/AuthService');
+const { syncEmployees } = require('./ESSController');
 const authService = new AuthService();
 
 class AuthController {
@@ -12,7 +13,7 @@ class AuthController {
     login = async (req, res) => {
         try {
             const { email, password } = req.body;
-            const result = await authService.login(email, password);
+            const result = await authService.login(req, email, password);
             logger.info('Login in successfully!', {email: email});
 
             res.cookie('token', result.token, {
@@ -25,7 +26,8 @@ class AuthController {
             return res.status(200).json({
                 message: 'Login successful',
                 token: result.token,
-                user: result.data
+                user: result.data,
+                sap: result?.sapLogin?.sessionId ?  "SAP Login was Successfull!":result.sapLogin
             });
         } catch (error) {
             return res.status(400).json({ message: error.message });
@@ -34,9 +36,25 @@ class AuthController {
 
     sapLogin = async (req, res) => {
         try{
-            const login = await authService.sapLogin(req, res, null, req.user);
-            res.status(200).json({response: login});
+            const login = await authService.sapLogin(req, req.user.id);
+            return login;
         } catch(error){
+            return res.status(400).json({ message: error.message });
+        }
+    }
+
+    sapEmpSync = async (req, res) => {
+        try{
+            console.log(1);
+            
+            const saploginData = await this.sapLogin(req, req.user.id);
+            console.log(2);
+            if(!saploginData?.sessionId){
+                throw new Error ("sap login issue!")
+            }
+            const syncemp = await syncEmployees(req, res)
+            return syncemp
+        }catch(error){
             return res.status(400).json({ message: error.message });
         }
     }
@@ -76,6 +94,22 @@ class AuthController {
             return res.status(400).json({ message: error.message });
         }
     };
+
+    changePassword = async (req, res) => {
+        const userId = req.user;
+        const { currentPassword, newPassword } = req.body;
+
+        try{
+            if (!newPassword) {
+                return res.status(400).json({ message: 'New password is required.' });
+            }
+            await authService.changePassword(userId, currentPassword, newPassword);
+            return res.status(200).json({ message: 'Password reset successful' });
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
+        
+    }
 
     logout = async (req, res) => {
         res.clearCookie('token');

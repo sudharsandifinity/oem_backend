@@ -9,6 +9,7 @@ router.post('/login', validate(loginSchema), AuthController.login);
 router.post('/sap-login', authMiddleware, AuthController.sapLogin);
 router.post('/forgot-password', validate(forgotPassword), AuthController.forgotPassword);
 router.post('/reset-password', validate(resetPasswordSchema), AuthController.resetPassword);
+router.post('/change-password', validate(resetPasswordSchema), AuthController.changePassword);
 
 router.get('/profile', authMiddleware, AuthController.profile);
 router.post('/logout', AuthController.logout);
