@@ -37,7 +37,7 @@ class AuthController {
     sapLogin = async (req, res) => {
         try{
             const login = await authService.sapLogin(req, req.user.id);
-            return login;
+            res.status(200).json("login successfull");
         } catch(error){
             return res.status(400).json({ message: error.message });
         }
