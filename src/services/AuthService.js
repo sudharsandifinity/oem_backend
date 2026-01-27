@@ -21,9 +21,9 @@ class AuthService {
         // console.log('companyidd', companyId);
         // console.log('body', req.body);
         
-        if(!companyId && !authUser.is_super_user){
-            throw new Error ('Company ID is not found!');
-        }
+        // if(!companyId && !authUser.is_super_user){
+        //     throw new Error ('Company ID is not found!');
+        // }
 
         // console.log('user', authUser);
 
@@ -80,22 +80,22 @@ class AuthService {
                 }
             ]
         });
-        const getCompany = userData.Branches.map(bch => bch.Company.id)
+        // const getCompany = userData.Branches.map(bch => bch.Company.id)
         // console.log('getCompany', getCompany);
-        const decodedCompanyId = decodeId(companyId);
-        // console.log('decodedCompanyId', decodedCompanyId);
+        const decodedCompanyId = decodeId(companyId) ?? userData?.Branches?.[0]?.Company.id;
+        console.log('decodedCompanyId', decodedCompanyId);
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
             throw new Error('Decoded company ID is invalid');
         }
 
-        if(!userData.is_super_user){
-            const checkAcc = getCompany.find(id => id === decodedCompanyId);
-            // console.log('checkAcc', checkAcc);
+        // if(!userData.is_super_user){
+        //     const checkAcc = getCompany.find(id => id === decodedCompanyId);
+        //     // console.log('checkAcc', checkAcc);
     
-            if(!checkAcc){
-                throw new Error("You dont have a access to login");
-            }
-        }
+        //     if(!checkAcc){
+        //         throw new Error("You dont have a access to login");
+        //     }
+        // }
 
         const company = await Company.findOne({where: {id: decodedCompanyId}});
 
