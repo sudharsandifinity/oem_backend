@@ -45,10 +45,7 @@ class AuthController {
 
     sapEmpSync = async (req, res) => {
         try{
-            console.log(1);
-            
-            const saploginData = await this.sapLogin(req, req.user.id);
-            console.log(2);
+            const saploginData = await this.authService.sapLogin(req, req.user.id);
             if(!saploginData?.sessionId){
                 throw new Error ("sap login issue!")
             }
