@@ -13,6 +13,7 @@ module.exports = {
       sap_username: { type: Sequelize.STRING, allowNull: false },
       company_db: { type: Sequelize.STRING, allowNull: false },
       b1_session: { type: Sequelize.STRING, allowNull: false },
+      base_url: { type: Sequelize.STRING, allowNull: false },
       route_id: { type: Sequelize.STRING, allowNull: false },
       createdAt: {
         allowNull: false,

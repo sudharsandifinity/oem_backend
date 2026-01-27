@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     sap_username: DataTypes.STRING,
     company_db: DataTypes.STRING,
     b1_session: DataTypes.STRING,
+    base_url: DataTypes.STRING,
     route_id: DataTypes.STRING,
     expires_at: DataTypes.DATE
   }, {

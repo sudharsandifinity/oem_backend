@@ -11,26 +11,22 @@ const path = require('path');
 const fs = require('fs');
 
 const sapGetRequest = async (req, endpoint) => {
-  const userId = req.user.id;
-  const data = await callSAP(userId, 'GET', endpoint);
+  const data = await callSAP(req, 'GET', endpoint);
   return data;
 };
 
 const sapPostRequest = async (req, endpoint, payload, headers = {}) => {
-  const userId = req.user.id;
-  const data = await callSAP(userId, 'POST', endpoint, payload, headers);
+  const data = await callSAP(req, 'POST', endpoint, payload, headers);
   return data;
 };
 
 const sapPatchRequest = async (req, endpoint, payload) => {
-    const userId = req.user.id;
-    const data = await callSAP(userId, 'PATCH', endpoint, payload);
+    const data = await callSAP(req, 'PATCH', endpoint, payload);
     return data;
 };
 
 const sapDeleteRequest = async (req, endpoint, payload) => {
-    const userId = req.user.id;
-    const data = await callSAP(userId, 'DELETE', endpoint, payload);
+    const data = await callSAP(req, 'DELETE', endpoint, payload);
     return data;
 };
 
@@ -749,9 +745,8 @@ const getPurchaseOrderById = async (req, res) => {
 
 const getVendors = async (req, res) => {
   try {
-    const userId = req.user.id;
     // const response = await sapGetRequest(req, "/BusinessPartners?$filter=CardType eq 'cSupplier'");
-    const data = await callSAP(userId, 'GET', `BusinessPartners?$filter=CardType eq 'cSupplier'`);
+    const data = await callSAP(req, 'GET', `BusinessPartners?$filter=CardType eq 'cSupplier'`);
     res.status(200).json(data);
   } catch (err) {
     console.error('SAP error:', err.message);

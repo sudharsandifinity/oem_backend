@@ -146,6 +146,7 @@ class AuthService {
             sap_username: payload.UserName,
             company_db: payload.CompanyDB,
             b1_session: sessionId,
+            base_url: company.base_url,
             route_id: routeId,
             created_at: new Date(),
             updated_at: new Date(),
