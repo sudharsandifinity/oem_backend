@@ -2,6 +2,9 @@ const { currentTime } = require('../utils/currentTime');
 const { Endpoints } = require('../utils/sapEndPoints');
 const { sapPatchRequest } = require('../utils/sapRequestMethods');
 const { AttendanceRegularizationDraft } = require('../models');
+const FormData = require('form-data');
+const path = require('path');
+const fs = require('fs');
 const SAPClient = require('./SAPClient');
 
 class SAPService extends SAPClient{
@@ -199,6 +202,11 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
+    async createAtta(req, data, header){
+        const response = await this.createAtt(req, data, header);
+        return response.data;
+    }
+
     async getAllTExp(req){
         const response = await this.getTExpanses(req);
         return response.data;
@@ -277,6 +285,45 @@ class SAPService extends SAPClient{
 
         return diffDays + 1;
     }
+
+    async createAttachment (req) {
+        try {
+            const files = req.files;
+        
+            if (!files || files.length === 0) {
+                return { message: "No files uploaded" };
+            }
+    
+            const form = new FormData();
+        
+            files.forEach(file => {
+            const ext = path.extname(file.originalname);
+            const base = path.basename(file.originalname, ext);
+        
+            const uniqueName = `${base}_${Date.now()}_${crypto.randomUUID()}${ext}`;
+        
+            form.append(
+                "file",
+                fs.createReadStream(file.path),
+                {
+                    filename: uniqueName,
+                    contentType: file.mimetype
+                }
+            );
+            });
+        
+            const response = await this.createAtta(
+                req,
+                form,
+                form.getHeaders()
+            );
+        
+            return response;
+    
+        } catch (error) {
+            console.error(error.response?.data || error.message);
+        }
+    };
 
     async checkModule(DocType){
         
@@ -358,9 +405,9 @@ class SAPService extends SAPClient{
         let attachments = null;
 
         if (req.files && req.files.length > 0) {
-            attachments = await SAPController.createAttachment(req, res);
+            attachments = await this.createAttachment(req);
         }
-        // console.log("attachments", attachments );
+        console.log("attachments", attachments );
         
         
         let payload = req.body;
@@ -786,7 +833,7 @@ class SAPService extends SAPClient{
         let attachments = null;
     
         if (req.files && req.files.length > 0) {
-          attachments = await SAPController.createAttachment(req, res);
+          attachments = await this.createAttachment(req);;
         }
     
         payload.U_ApprSts = "P"
@@ -967,7 +1014,7 @@ class SAPService extends SAPClient{
         let attachments = null;
 
         if (req.files && req.files.length > 0) {
-            attachments = await SAPController.createAttachment(req, res);
+            attachments = await this.createAttachment(req);
         }
         // console.log("attachments", attachments );
         

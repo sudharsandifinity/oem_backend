@@ -61,6 +61,14 @@ class SAPClient {
 
 // ----------------------------------------
 
+    async attendance(req, EmpId){
+        console.log('att empid', EmpId);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Attendance}?${SAP_QUERIES.FilByUempId}'${EmpId}'`
+        );
+    }
+
     async checkApprovalLevels(req, position, model) {
         console.log('position', position);
         console.log('model', model);
@@ -88,6 +96,15 @@ class SAPClient {
         return await sapGetRequest(
             req,
             `${Endpoints.Attachments}(${id})`
+        );
+    }
+
+    async createAtt(req, data, header) {
+        return await sapPostRequest(
+            req,
+            `${Endpoints.Attachments}`,
+            data,
+            header
         );
     }
 
