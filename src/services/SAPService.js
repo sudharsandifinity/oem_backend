@@ -796,23 +796,77 @@ class SAPService extends SAPClient{
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
         const isNeedApproval = approvalCollection?.length ?? 0;
-        
-        let logPayload = {
-            "Name": `${emp.FirstName} ${emp.LastName}`,
-            "U_ReqID": user.EmployeeId,
-            "U_DocType": DocType,
-            "U_DocNo": docEntry,
-            "U_Stg": isNeedApproval?"1":"",
-            "U_AppId": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprID:"",
-            "U_ApprName": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprName:"",
-            "U_AppSts": isNeedApproval?"P":"A",
-            "U_PosId": emp.Position,
-            "U_CDt": date,
-            "U_CTm": time
-        } 
 
-        console.log('logpyalod', logPayload);
-        await this.createLog(req, logPayload);
+        let stg_1;
+        if(isNeedApproval){
+            stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
+            // console.log('stg1', stg_1);
+        }
+
+        if(isNeedApproval){
+            for (const element of stg_1) {
+
+                const isDelegationId = element.U_DlgID;
+                let isDelegationValid = false;
+
+                console.log('isDelegationId', isDelegationId);
+
+                if(isDelegationId){
+                    console.log('inside dele');
+                
+                    const currentDate = new Date(
+                    `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                        .toString()
+                        .slice(6, 8)}`
+                    );
+
+                    const fromDate = new Date(element.U_FrmDt);
+                    const toDate = new Date(element.U_ToDt);
+
+                    // console.log("currentDate", currentDate);
+                    // console.log("fromDate", fromDate);
+                    // console.log("toDate", toDate);
+                
+                    isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                    console.log("isDelegationValid", isDelegationValid);
+                }
+
+                let logPayload = {
+                    "Name": `${emp.FirstName} ${emp.LastName}`,
+                    "U_ReqID": user.EmployeeId,
+                    "U_DocType": DocType,
+                    "U_DocNo": docEntry,
+                    "U_Stg": isNeedApproval?"1":"",
+                    "U_AppId": isNeedApproval?element.U_ApprID:"",
+                    "U_ApprName": isNeedApproval?element.U_ApprName:"",
+                    "U_AppSts": isNeedApproval?"P":"A",
+                    "U_PosId": emp.Position,
+                    "U_DelID": isDelegationValid?element.U_DlgID:"",
+                    "U_DelName": isDelegationValid?element.U_DlgName:"",
+                    "U_CDt": date,
+                    "U_CTm": time
+                } 
+                console.log('logPayload', logPayload);
+                await this.createLog(req, logPayload)
+            };
+        }
+        
+        // let logPayload = {
+        //     "Name": `${emp.FirstName} ${emp.LastName}`,
+        //     "U_ReqID": user.EmployeeId,
+        //     "U_DocType": DocType,
+        //     "U_DocNo": docEntry,
+        //     "U_Stg": isNeedApproval?"1":"",
+        //     "U_AppId": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprID:"",
+        //     "U_ApprName": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprName:"",
+        //     "U_AppSts": isNeedApproval?"P":"A",
+        //     "U_PosId": emp.Position,
+        //     "U_CDt": date,
+        //     "U_CTm": time
+        // } 
+
+        // console.log('logpyalod', logPayload);
+        // await this.createLog(req, logPayload);
         
         return {
             message: 'resubmit request log submited successfully'
