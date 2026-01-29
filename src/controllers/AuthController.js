@@ -93,7 +93,7 @@ class AuthController {
     };
 
     changePassword = async (req, res) => {
-        const userId = req.user;
+        const userId = req.user.id;
         const { currentPassword, newPassword } = req.body;
 
         try{
@@ -101,7 +101,7 @@ class AuthController {
                 return res.status(400).json({ message: 'New password is required.' });
             }
             await authService.changePassword(userId, currentPassword, newPassword);
-            return res.status(200).json({ message: 'Password reset successful' });
+            return res.status(200).json({ message: 'Password changed successful' });
         } catch (error) {
             return res.status(400).json({ message: error.message });
         }

@@ -74,7 +74,7 @@ const getProjects = async (req, res) => {
     res.status(200).json(response.data);
   } catch (err) {
     console.error('SAP error:', err.message);
-    res.status(500).json({ message: 'Error fetching Holidays', error: err.message });
+    res.status(500).json({ message: 'Error fetching Projects', error: err.message });
   }
 };
 

@@ -316,7 +316,7 @@ class AuthService {
 
             user.password = newPassword;
             await user.save();
-            return { success: true, message: "Password updated successfully" };
+            return { message: "Password updated successfully" };
         } catch (error) {
             throw new Error(error.message || 'Failed to change password');
         }
