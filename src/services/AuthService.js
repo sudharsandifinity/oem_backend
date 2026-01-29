@@ -146,6 +146,7 @@ class AuthService {
             sap_username: payload.UserName,
             company_db: payload.CompanyDB,
             b1_session: sessionId,
+            base_url: company.base_url,
             route_id: routeId,
             created_at: new Date(),
             updated_at: new Date(),
@@ -315,7 +316,7 @@ class AuthService {
 
             user.password = newPassword;
             await user.save();
-            return { success: true, message: "Password updated successfully" };
+            return { message: "Password updated successfully" };
         } catch (error) {
             throw new Error(error.message || 'Failed to change password');
         }

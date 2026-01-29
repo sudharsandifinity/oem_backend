@@ -13,6 +13,33 @@ const loginSchema = Joi.object({
     })
 });
 
+const changePasswordValidator = Joi.object({
+    currentPassword: Joi.string()
+        .required()
+        .messages({
+            'string.empty': 'Current password is required',
+            'any.required': 'Current password is required',
+        }),
+
+    newPassword: Joi.string()
+        .min(8)
+        .required()
+        .messages({
+            'string.empty': 'New password is required',
+            'string.min': 'New password must be at least 8 characters long',
+            'any.required': 'New password is required',
+        }),
+
+    confirmPassword: Joi.string()
+        .valid(Joi.ref('newPassword'))
+        .required()
+        .messages({
+            'any.only': 'Confirm password must match new password',
+            'string.empty': 'Confirm password is required',
+            'any.required': 'Confirm password is required',
+        }),
+});
+
 const forgotPassword = Joi.object({
     email: Joi.string().email().required().messages({
         'string.empty': 'Email is required',
@@ -36,4 +63,4 @@ function validate(schema) {
     };
 }
 
-module.exports = { loginSchema, forgotPassword, resetPasswordSchema, validate };
+module.exports = { loginSchema, changePasswordValidator, forgotPassword, resetPasswordSchema, validate };

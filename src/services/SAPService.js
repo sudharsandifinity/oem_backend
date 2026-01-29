@@ -1,6 +1,10 @@
 const { currentTime } = require('../utils/currentTime');
 const { Endpoints } = require('../utils/sapEndPoints');
 const { sapPatchRequest } = require('../utils/sapRequestMethods');
+const { AttendanceRegularizationDraft } = require('../models');
+const FormData = require('form-data');
+const path = require('path');
+const fs = require('fs');
 const SAPClient = require('./SAPClient');
 
 class SAPService extends SAPClient{
@@ -128,6 +132,11 @@ class SAPService extends SAPClient{
 
     // -----------------------------
 
+    async attendanceData(req, EmpId){
+        const response = await this.attendance(req, EmpId);
+        return response.data;
+    }
+
     async checkAppvalLvs(req, position, model){
         const response = await this.checkApprovalLevels(req, position, model);
         return response.data;
@@ -190,6 +199,11 @@ class SAPService extends SAPClient{
 
     async getAttachment(req, id){
         const response = await this.getAtt(req, id);
+        return response.data;
+    }
+
+    async createAtta(req, data, header){
+        const response = await this.createAtt(req, data, header);
         return response.data;
     }
 
@@ -272,6 +286,45 @@ class SAPService extends SAPClient{
         return diffDays + 1;
     }
 
+    async createAttachment (req) {
+        try {
+            const files = req.files;
+        
+            if (!files || files.length === 0) {
+                return { message: "No files uploaded" };
+            }
+    
+            const form = new FormData();
+        
+            files.forEach(file => {
+            const ext = path.extname(file.originalname);
+            const base = path.basename(file.originalname, ext);
+        
+            const uniqueName = `${base}_${Date.now()}_${crypto.randomUUID()}${ext}`;
+        
+            form.append(
+                "file",
+                fs.createReadStream(file.path),
+                {
+                    filename: uniqueName,
+                    contentType: file.mimetype
+                }
+            );
+            });
+        
+            const response = await this.createAtta(
+                req,
+                form,
+                form.getHeaders()
+            );
+        
+            return response;
+    
+        } catch (error) {
+            console.error(error.response?.data || error.message);
+        }
+    };
+
     async checkModule(DocType){
         
         switch (DocType) {
@@ -340,22 +393,24 @@ class SAPService extends SAPClient{
         // console.log('app lev', app_lev);return
         const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
         const isNeedApproval = approvalCollection?.length ?? 0;
-        // console.log('approvalCollection', approvalCollection);
-        // console.log('isNeedApproval', isNeedApproval);
-        // console.log('req.files', req.files);
+
+        let stg_1;
+        if(isNeedApproval){
+            stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
+            // console.log('stg1', stg_1);
+        }
+
+        // return stg_1
 
         let attachments = null;
 
         if (req.files && req.files.length > 0) {
-            attachments = await SAPController.createAttachment(req, res);
+            attachments = await this.createAttachment(req);
         }
-        // console.log("attachments", attachments );
+        console.log("attachments", attachments );
         
         
         let payload = req.body;
-        console.log('body', payload);
-        
-        
         payload.U_EmpID = user.EmployeeId || 0;
         payload.U_EmpName = emp.FirstName +" "+ emp.LastName || "";
         payload.U_ApprSts = isNeedApproval ? "P":"A";
@@ -388,64 +443,74 @@ class SAPService extends SAPClient{
         }
 
         console.log('payload', payload);
-
+        // return payload
         const response = await create(req, endpoint, payload);  
         // const response = await this.createTravelExpReq(req, payload);  
         console.log('form response', response);
+        // return response
         
         
         // console.log('isneedapproval', isNeedApproval);
 
         if(!isNeedApproval){
-            await this.APInvoice(req, emp, response)
+            await this.APInvoice(req, emp, response, DocType)
         }
 
-        const isDelegationId = approvalCollection?.[0]?.U_DlgID;
-        let isDelegationValid = false;
+        if(isNeedApproval){
+            for (const element of stg_1) {
 
-        // console.log('isDelegationId', isDelegationId);
+                const isDelegationId = element.U_DlgID;
+                let isDelegationValid = false;
 
-        if(isDelegationId){
-            const currentDate = new Date(
-            `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
-                .toString()
-                .slice(6, 8)}`
-            );
+                console.log('isDelegationId', isDelegationId);
 
-            const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
-            const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
+                if(isDelegationId){
+                    console.log('inside dele');
+                
+                    const currentDate = new Date(
+                    `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                        .toString()
+                        .slice(6, 8)}`
+                    );
 
-            // console.log("currentDate", currentDate);
-            // console.log("fromDate", fromDate);
-            // console.log("toDate", toDate);
-        
-            isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-            // console.log("isDelegationValid", isDelegationValid);
+                    const fromDate = new Date(element.U_FrmDt);
+                    const toDate = new Date(element.U_ToDt);
+
+                    // console.log("currentDate", currentDate);
+                    // console.log("fromDate", fromDate);
+                    // console.log("toDate", toDate);
+                
+                    isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                    console.log("isDelegationValid", isDelegationValid);
+                }
+
+                let logPayload = {
+                    "Name": payload.U_EmpName,
+                    "U_ReqID": user.EmployeeId,
+                    "U_DocType": DocType,
+                    "U_DocNo": response.DocEntry,
+                    "U_Stg": isNeedApproval?"1":"",
+                    "U_AppId": isNeedApproval?element.U_ApprID:"",
+                    "U_ApprName": isNeedApproval?element.U_ApprName:"",
+                    "U_AppSts": isNeedApproval?"P":"A",
+                    "U_PosId": emp.Position,
+                    "U_DelID": isDelegationValid?element.U_DlgID:"",
+                    "U_DelName": isDelegationValid?element.U_DlgName:"",
+                    "U_CDt": date,
+                    "U_CTm": time
+                } 
+                console.log('logPayload', logPayload);
+                await this.createLog(req, logPayload)
+            };
         }
-        
-        let logPayload = {
-            "Name": payload.U_EmpName,
-            "U_ReqID": user.EmployeeId,
-            "U_DocType": DocType,
-            "U_DocNo": response.DocEntry,
-            "U_Stg": isNeedApproval?"1":"",
-            "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
-            "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
-            "U_AppSts": isNeedApproval?"P":"A",
-            "U_PosId": emp.Position,
-            "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
-            "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
-            "U_CDt": date,
-            "U_CTm": time
-        } 
-
-        console.log('logpayload', logPayload);
-        
-        await this.createLog(req, logPayload)  
         return response;
-    }
+    } 
 
-    async APInvoice (req, emp, response){
+    async APInvoice (req, emp, response, U_DocType){
+        const { endpoint, patch } = await this.checkModule(U_DocType);
+        // console.log('respos', response);
+        // console.log('respos', response.DocEntry);
+
         const APInvoicePayload = {
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
@@ -475,14 +540,14 @@ class SAPService extends SAPClient{
                 "U_OPNo": APInvoiceStatus.DocEntry,
                 "U_PSts": APInvoiceStatus.DocEntry?"Success":APInvoiceStatus.error
             }
-            await this.patchTExp(req, response.DocEntry, patchPayload); 
+            await patch(req, endpoint, response.DocEntry, patchPayload); 
             // await sapPatchRequest(req, `${Endpoints.Expanses}(${response.DocEntry})`, patchPayload);
             } catch(err){
             const patchPayload = {
                 "U_OPNo": "",
                 "U_PSts": err.response?.data?.error?.message?.value
             }
-            await this.patchTExp(req, response.DocEntry, patchPayload); 
+            await patch(req, endpoint, response.DocEntry, patchPayload); 
             // await sapPatchRequest(req, `${Endpoints.Expanses}(${response.DocEntry})`, patchPayload);
         }
     }
@@ -528,6 +593,8 @@ class SAPService extends SAPClient{
         console.log('totalAprLevs', totalAprLevs);
     
         const getLogs = await this.getLogByDoc(req, checkStatus);
+
+        const get_sm_stg = getLogs.value.filter(i => i.U_Stg == checkStatus.U_Stg);
     
         const isResubmitted = expReq.U_IsReSub === "Y";
         
@@ -578,6 +645,14 @@ class SAPService extends SAPClient{
         }
     
         const patchReq = await this.patchLogData(req, id, payload);
+
+        for(const item of get_sm_stg){
+            if(item.Code == id){
+                continue
+            }
+            await this.patchLogData(req, item.Code, payload)
+        }
+
         const updatedData = await this.getLogById(req, id);
 
         console.log('updated data', updatedData);
@@ -650,7 +725,7 @@ class SAPService extends SAPClient{
             console.log('empReqPayload', empReqPayload);
             
             await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
-            await this.APInvoice(req, requester, updatedExpReq)
+            await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType)
             return
           }
         }
@@ -660,50 +735,54 @@ class SAPService extends SAPClient{
         // console.log('if condition', updatedData.data.U_AppSts == "A" && totalAprLevs > totalLogs);
         
         if(updatedData.U_AppSts == "A" && totalAprLevs > totalLogs){
-    
-          const isDelegationId = approvalCollection?.[totalLogs]?.U_DlgID;
-          let isDelegationValid = false;
-    
-          console.log('isDelegationId', isDelegationId);
-    
-          if(isDelegationId){
-              const currentDate = new Date(
-                `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
-                  .toString()
-                  .slice(6, 8)}`
-              );
-    
-              const fromDate = new Date(approvalCollection?.[totalLogs]?.U_FrmDt);
-              const toDate = new Date(approvalCollection?.[totalLogs]?.U_ToDt);
-    
-              // console.log("currentDate", currentDate);
-              // console.log("fromDate", fromDate);
-              // console.log("toDate", toDate);
-            
-              isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-              // console.log("isDelegationValid", isDelegationValid);
-          }
-          
-          // console.log('entry');
-            let logPayload = {
-              "Name": updatedData.Name,
-              "U_DocType": checkStatus.U_DocType,
-              "U_DocNo": updatedData.U_DocNo,
-              "U_Stg": approvalCollection?.[totalLogs].U_Stg,
-              "U_AppId": approvalCollection?.[totalLogs].U_ApprID,
-              "U_AppSts": "P",
-              "U_CDt": date,
-              "U_CTm": time,
-              "U_ReqID": requester?.EmployeeID,
-              "U_ApprName": approvalCollection?.[totalLogs].U_ApprName,
-              "U_PosId": requester?.Position,
-              "U_DelID": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgID:"",
-              "U_DelName": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgName:"",
-          }
-          console.log('logpayload', logPayload);
-          
-          await this.createLog(req, logPayload) 
-        //   await creatLogEntry(req, res, logPayload)
+
+            const nextStg = Number(checkStatus.U_Stg) + 1;
+            const nextStgApr = approvalCollection.filter(i => i.U_Stg == nextStg);
+
+            for(const i of nextStgApr){
+                // console.log('entry');
+                const isDelegationId = i.U_DlgID;
+                let isDelegationValid = false;
+
+                // console.log('isDelegationId', isDelegationId);
+
+                if(isDelegationId){
+                    const currentDate = new Date(
+                        `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                        .toString()
+                        .slice(6, 8)}`
+                    );
+
+                    const fromDate = new Date(i.U_FrmDt);
+                    const toDate = new Date(i.U_ToDt);
+
+                    // console.log("currentDate", currentDate);
+                    // console.log("fromDate", fromDate);
+                    // console.log("toDate", toDate);
+                    
+                    isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                    // console.log("isDelegationValid", isDelegationValid);
+                }
+
+                let logPayload = {
+                    "Name": updatedData.Name,
+                    "U_DocType": checkStatus.U_DocType,
+                    "U_DocNo": updatedData.U_DocNo,
+                    "U_Stg": i.U_Stg,
+                    "U_AppId": i.U_ApprID,
+                    "U_AppSts": "P",
+                    "U_CDt": date,
+                    "U_CTm": time,
+                    "U_ReqID": requester?.EmployeeID,
+                    "U_ApprName": i.U_ApprName,
+                    "U_PosId": requester?.Position,
+                    "U_DelID": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgID:"",
+                    "U_DelName": isDelegationValid?approvalCollection?.[totalLogs]?.U_DlgName:"",
+                }
+                // console.log('logpayload', logPayload);
+                
+               await this.createLog(req, logPayload) 
+            }
         }
         return;
     }
@@ -717,23 +796,77 @@ class SAPService extends SAPClient{
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
         const isNeedApproval = approvalCollection?.length ?? 0;
-        
-        let logPayload = {
-            "Name": `${emp.FirstName} ${emp.LastName}`,
-            "U_ReqID": user.EmployeeId,
-            "U_DocType": DocType,
-            "U_DocNo": docEntry,
-            "U_Stg": isNeedApproval?"1":"",
-            "U_AppId": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprID:"",
-            "U_ApprName": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprName:"",
-            "U_AppSts": isNeedApproval?"P":"A",
-            "U_PosId": emp.Position,
-            "U_CDt": date,
-            "U_CTm": time
-        } 
 
-        console.log('logpyalod', logPayload);
-        await this.createLog(req, logPayload);
+        let stg_1;
+        if(isNeedApproval){
+            stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
+            // console.log('stg1', stg_1);
+        }
+
+        if(isNeedApproval){
+            for (const element of stg_1) {
+
+                const isDelegationId = element.U_DlgID;
+                let isDelegationValid = false;
+
+                console.log('isDelegationId', isDelegationId);
+
+                if(isDelegationId){
+                    console.log('inside dele');
+                
+                    const currentDate = new Date(
+                    `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                        .toString()
+                        .slice(6, 8)}`
+                    );
+
+                    const fromDate = new Date(element.U_FrmDt);
+                    const toDate = new Date(element.U_ToDt);
+
+                    // console.log("currentDate", currentDate);
+                    // console.log("fromDate", fromDate);
+                    // console.log("toDate", toDate);
+                
+                    isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                    console.log("isDelegationValid", isDelegationValid);
+                }
+
+                let logPayload = {
+                    "Name": `${emp.FirstName} ${emp.LastName}`,
+                    "U_ReqID": user.EmployeeId,
+                    "U_DocType": DocType,
+                    "U_DocNo": docEntry,
+                    "U_Stg": isNeedApproval?"1":"",
+                    "U_AppId": isNeedApproval?element.U_ApprID:"",
+                    "U_ApprName": isNeedApproval?element.U_ApprName:"",
+                    "U_AppSts": isNeedApproval?"P":"A",
+                    "U_PosId": emp.Position,
+                    "U_DelID": isDelegationValid?element.U_DlgID:"",
+                    "U_DelName": isDelegationValid?element.U_DlgName:"",
+                    "U_CDt": date,
+                    "U_CTm": time
+                } 
+                console.log('logPayload', logPayload);
+                await this.createLog(req, logPayload)
+            };
+        }
+        
+        // let logPayload = {
+        //     "Name": `${emp.FirstName} ${emp.LastName}`,
+        //     "U_ReqID": user.EmployeeId,
+        //     "U_DocType": DocType,
+        //     "U_DocNo": docEntry,
+        //     "U_Stg": isNeedApproval?"1":"",
+        //     "U_AppId": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprID:"",
+        //     "U_ApprName": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprName:"",
+        //     "U_AppSts": isNeedApproval?"P":"A",
+        //     "U_PosId": emp.Position,
+        //     "U_CDt": date,
+        //     "U_CTm": time
+        // } 
+
+        // console.log('logpyalod', logPayload);
+        // await this.createLog(req, logPayload);
         
         return {
             message: 'resubmit request log submited successfully'
@@ -754,7 +887,7 @@ class SAPService extends SAPClient{
         let attachments = null;
     
         if (req.files && req.files.length > 0) {
-          attachments = await SAPController.createAttachment(req, res);
+          attachments = await this.createAttachment(req);;
         }
     
         payload.U_ApprSts = "P"
@@ -786,30 +919,60 @@ class SAPService extends SAPClient{
     }
 
     async getAprRqstList(req, EmpId, query) {
-        const [
-            logResponse,
-            allExpansesResponse,
-            allTExpsResponse,
-            allLeaveRequests,
-            allAttachmentsResponse,
-            allOTExp
-        ] = await Promise.all([
+        
+        // const [
+        //     logResponse,
+        //     allExpansesResponse,
+        //     // allTExpsResponse,
+        //     allLeaveRequests,
+        //     allAttachmentsResponse,
+        //     allOTExp
+        // ] = await Promise.all([
+        //     this.getMyAprLogs(req, EmpId, query),
+        //     this.getAllExpReq(req),
+        //     // this.getAllTExp(req),
+        //     this.getAllLvReq(req),
+        //     this.getAllAtts(req),
+        //     this.getAllOTR(req)
+        // ]);
+        
+        // const logs = logResponse.value || [];
+        // const allExpanses = allExpansesResponse.value || [];
+        // // const allTExpsReq = allTExpsResponse.value || [];
+        // const allLeaveRq = allLeaveRequests.value || [];
+        // const attachments = allAttachmentsResponse.value || [];
+        // const OTs = allOTExp.value || [];
+
+        const results = await Promise.allSettled([
             this.getMyAprLogs(req, EmpId, query),
             this.getAllExpReq(req),
-            this.getAllTExp(req),
+            this.getAllTExp(req), 
             this.getAllLvReq(req),
             this.getAllAtts(req),
             this.getAllOTR(req)
         ]);
 
-        const logs = logResponse.value || [];
-        const allExpanses = allExpansesResponse.value || [];
-        const allTExpsReq = allTExpsResponse.value || [];
-        const allLeaveRq = allLeaveRequests.value || [];
-        const attachments = allAttachmentsResponse.value || [];
-        const OTs = allOTExp.value || [];
+        const [
+            logResult,
+            expResult,
+            tExpResult,
+            leaveResult,
+            attResult,
+            otResult
+        ] = results;
 
-        // return allTExpsReq;
+        const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
+        const allExpanses = expResult.status === 'fulfilled' ? expResult.value.value || [] : [];
+        const allTExpsReq = tExpResult.status === 'fulfilled' ? expResult.value.value || [] : [];
+        const allLeaveRq = leaveResult.status === 'fulfilled' ? leaveResult.value.value || [] : [];
+        const attachments = attResult.status === 'fulfilled' ? attResult.value.value || [] : [];
+        const OTs = otResult.status === 'fulfilled' ? otResult.value.value || [] : [];
+
+        results.forEach((r, i) => {
+            if (r.status === 'rejected') {
+            console.warn(`Service ${i} failed:`, r.reason?.message || r.reason);
+            }
+        });
 
         const attachmentMap = new Map(
             attachments.map(att => [att.AbsoluteEntry, att])
@@ -882,6 +1045,85 @@ class SAPService extends SAPClient{
         });
 
         return result;
+    }
+
+    async createRegularization (req) {
+
+        const { date, time } = currentTime();
+        const { endpoint, create, checkAprv } = await this.checkModule("OT");
+        console.log('endpoint',  endpoint,);
+        console.log('date', date, time);
+        console.log('checkAprv',checkAprv);
+
+        const user = req.user;
+        const emp = await this.getEmployeeDetail(req, user.EmployeeId);
+        const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
+        // console.log('app lev', app_lev);return
+        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        const isNeedApproval = approvalCollection?.length ?? 0;
+        // console.log('approvalCollection', approvalCollection);
+        // console.log('isNeedApproval', isNeedApproval);
+        // console.log('req.files', req.files);
+
+        let attachments = null;
+
+        if (req.files && req.files.length > 0) {
+            attachments = await this.createAttachment(req);
+        }
+        // console.log("attachments", attachments );
+        
+        let payload = req.body;
+        console.log('body', payload);
+
+        const createdData = await AttendanceRegularizationDraft.create(payload);
+        console.log('createdata', createdData);
+
+        const isDelegationId = approvalCollection?.[0]?.U_DlgID;
+        let isDelegationValid = false;
+
+        // console.log('isDelegationId', isDelegationId);
+
+        if(isDelegationId){
+            const currentDate = new Date(
+            `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                .toString()
+                .slice(6, 8)}`
+            );
+
+            const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
+            const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
+
+            // console.log("currentDate", currentDate);
+            // console.log("fromDate", fromDate);
+            // console.log("toDate", toDate);
+        
+            isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+            // console.log("isDelegationValid", isDelegationValid);
+        }
+        
+        let logPayload = {
+            "Name": payload.Name,
+            "U_ReqID": user.EmployeeId,
+            "U_DocType": "OT",
+            "U_DocNo": payload.Code,
+            "U_Stg": isNeedApproval?"1":"",
+            "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
+            "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
+            "U_AppSts": isNeedApproval?"P":"A",
+            "U_PosId": emp.Position,
+            "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
+            "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
+            "U_CDt": date,
+            "U_CTm": time
+        } 
+        console.log('logpayload', logPayload);
+        
+        await this.createLog(req, logPayload)  
+        return "Request submited successfully!";
+    }
+
+    async regularizationResponse (req) {
+        
     }
 
 }
