@@ -21,7 +21,7 @@ class SAPService extends SAPClient{
 
     async getEmployeeDetail(req, id) {
         const response = await this.getEmployee(req, id);
-        return response.data;
+        return response.data.value[0];
     }
 
     // dynamic
@@ -386,7 +386,7 @@ class SAPService extends SAPClient{
         console.log('date', date, time);
         console.log('DocType', DocType);
         console.log('checkAprv',checkAprv);
-
+        
         const user = req.user;
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);

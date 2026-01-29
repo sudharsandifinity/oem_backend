@@ -6,8 +6,8 @@ const SAPController = require("./SAPController");
 const { currentTime } = require("../utils/currentTime");
 const SAPService = require("../services/SAPService");
 const { sapLogger } = require("../config/logger");
-const { Endpoints } = require("../utils/sapEndPoints");
 const { decodeId, encodeId } = require("../utils/hashids");
+const { Endpoints, SAP_QUERIES } = require('../utils/sapEndPoints');
 const sapService = new SAPService();
 
 const sapAPIs = {
@@ -168,7 +168,7 @@ const findMissedCheckOuts = async (req, EmpId) => {
 const syncEmployees = async (req, res) => {
   try {
     const { roleIds, branchIds }= req.body;
-    const employees = await sapGetRequest(req, `${sapAPIs.Employees}?${sapAPIs.EmployeesSelect}&$orderby=EmployeeID desc`);
+    const employees = await sapGetRequest(req, `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc`);
     // console.log('employees.data.value', employees.data.value);
     
     // res.send(employees.data.value);
@@ -179,15 +179,15 @@ const syncEmployees = async (req, res) => {
     let skippedEmployeeIDs = [];
 
     for (const employee of employees.data.value) {
-      const { EmployeeID, eMail, FirstName, LastName, MobilePhone, Department } = employee;
+      const { EmployeeCode, eMail, FirstName, LastName, MobilePhone, Department } = employee;
 
       if(!eMail){
         // console.log(`EmployeeID ${EmployeeID} skipped becuse of null Email`);
-        skippedEmployeeIDs.push(EmployeeID);
+        skippedEmployeeIDs.push(EmployeeCode);
         continue;
       }
       
-      const existingUser = await userRepository.findByEmpId(EmployeeID);
+      const existingUser = await userRepository.findByEmpId(EmployeeCode);
 
       if (existingUser) {
 
@@ -213,7 +213,7 @@ const syncEmployees = async (req, res) => {
           };
           const data = await userController.updateSapEmployees(existingUser.id, updatedUserPayload);
           if(data === "duplicate"){
-            skippedEmployeeIDs.push(EmployeeID);
+            skippedEmployeeIDs.push(EmployeeCode);
             continue
           }
       } else {
@@ -223,7 +223,7 @@ const syncEmployees = async (req, res) => {
           last_name: LastName,
           mobile: MobilePhone,
           is_sap_user: 1,
-          sap_emp_id: EmployeeID,
+          sap_emp_id: EmployeeCode,
           department: Department,
           password: eMail,
           roleIds: roleIds,
@@ -232,7 +232,7 @@ const syncEmployees = async (req, res) => {
         };
         const result = await userController.syncSapEmployees(userPayload);
         if(result === "duplicate"){
-            skippedEmployeeIDs.push(EmployeeID);
+            skippedEmployeeIDs.push(EmployeeCode);
             continue
         }
         // console.log(`Created user: ${FirstName} ${LastName} (Email: ${eMail})`);
