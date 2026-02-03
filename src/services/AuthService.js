@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { SAPSession, User, Role, Permission, UserMenu, Branch, Company, Form, FormTab, SubForm, FormField } = require('../models');
+const { SAPSession, User, Role, Permission, UserMenu, UserBranch, Branch, Company, Form, FormTab, SubForm, FormField } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
@@ -71,6 +71,9 @@ class AuthService {
                     model: Branch,
                     through: { attributes: [] },
                     attributes: {exclude: ['createdAt', 'updatedAt']},
+                    through: {
+                        attributes: ['sap_emp_id']
+                    },
                     include: [
                         {
                             model: Company,
@@ -97,7 +100,19 @@ class AuthService {
         //     }
         // }
 
-        const company = await Company.findOne({where: {id: decodedCompanyId}});
+        const company = await Company.findOne({where: {id: decodedCompanyId}, include: [
+                        {
+                            model: Branch,
+                            attributes: {exclude: ['createdAt', 'updatedAt']},
+                            include: [
+                                {
+                                model: UserBranch,
+                                attributes: ['sap_emp_id']
+                                }
+                            ]
+                        }
+                    ]});
+                    
 
         const companypassword = decrypt(company.secret_key)
         const companyusername = decrypt(company.sap_username).replace(/\\\\/g, "\\");
@@ -153,10 +168,120 @@ class AuthService {
             expires_at: new Date(Date.now() + 30 * 60 * 1000)
         });
 
-        return { sessionId, routeId };
+        return { sessionId, routeId, company };
     }
 
-    async login(req, email, password) {
+    async login(req, email, password, isSwitch = false) {
+
+        if(isSwitch){
+            const requser = req.user;
+            const user = await User.findOne({
+                where: { email: requser.email },
+                include: [
+                    {
+                    model: Role,
+                    through: { attributes: [] },
+                    include: [
+                        {
+                            model: Permission,
+                            through: { attributes: [] }
+                        },
+                        {
+                            model: UserMenu,
+                            include: [
+                                {
+                                    model: Form,
+                                    include: [
+                                        {
+                                            model: FormTab,
+                                            include: [{
+                                                model: SubForm,
+                                                include: [FormField]
+                                            }],
+                                        } 
+                                    ]
+                                }
+                            ],
+                            attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
+                            through: {
+                                attributes: [
+                                'can_list_view',
+                                'can_create',
+                                'can_edit',
+                                'can_view',
+                                'can_delete'
+                                ]
+                            },
+                        }
+                    ]
+                    },
+                    {
+                    model: Branch,
+                    through: { attributes: [] },
+                    attributes: {exclude: ['createdAt', 'updatedAt']},
+                    through: {
+                        attributes: ['sap_emp_id']
+                    },
+                    include: [
+                        {
+                            model: Company,
+                            attributes: {exclude: ['createdAt', 'updatedAt']},
+                        }
+                    ]
+                }
+                ]
+            });
+            if (!user) throw new Error('Invalid email or user not found!');
+            const sapLogin = await this.sapLogin(req, user.id);
+
+            const fst_branch_sap_id = user?.Branches?.[0]?.UserBranch?.sap_emp_id;
+            console.log('fst_branch_sap_id', fst_branch_sap_id);
+
+            const token = jwt.sign(
+                { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: fst_branch_sap_id ?? null },
+                process.env.JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+
+            const data = user.toJSON();
+            delete data.password;
+            delete data.status;
+            delete data.createdAt;
+            delete data.updatedAt;
+
+            data.id = encodeId(data.id);
+            data.Roles.map((role) => {
+                role.id = encodeId(role.id)
+                role.companyId = encodeId(role.companyId)
+                delete role.status;
+                delete role.createdAt;
+                delete role.updatedAt;
+
+                role.Permissions.map((permission) => {
+                    permission.id = encodeId(permission.id)
+                    delete permission.createdAt;
+                    delete permission.updatedAt;
+                })
+
+                role.UserMenus = usermenu(role.UserMenus);
+                role.UserMenus.map(menuItem => encodeUserMenu(menuItem));
+            })
+
+            data.Branches.map((branch) => {
+                branch.id = encodeId(branch.id)
+                branch.companyId = encodeId(branch.companyId)
+                branch.Company.id = encodeId(branch.Company.id)
+                delete branch.Company.company_db_name;
+                delete branch.Company.base_url;
+                delete branch.Company.sap_username;
+                delete branch.Company.secret_key;
+            })
+            
+
+            return { token, user, data, sapLogin };
+        }
+
+        // regular llogin
         const user = await User.findOne({
             where: { email },
             include: [
@@ -200,6 +325,9 @@ class AuthService {
                 {
                     model: Branch,
                     through: { attributes: [] },
+                    through: {
+                        attributes: ['sap_emp_id']
+                    },
                     attributes: {exclude: ['createdAt', 'updatedAt']},
                     include: [
                         {
@@ -215,16 +343,19 @@ class AuthService {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) throw new Error('Invalid password!');
 
-        const token = jwt.sign(
-            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: user.sap_emp_id },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-
         let sapLogin;
         if(user.is_super_user === 0){
             sapLogin = await this.sapLogin(req, user.id);
         }
+
+        const fst_branch_sap_id = user?.Branches?.[0]?.UserBranch?.sap_emp_id;
+        // console.log('fst_branch_sap_id', fst_branch_sap_id);
+
+        const token = jwt.sign(
+            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: fst_branch_sap_id ?? null },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
 
         const data = user.toJSON();
         delete data.password;

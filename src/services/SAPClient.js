@@ -22,7 +22,7 @@ class SAPClient {
         
         return await sapGetRequest(
             req,
-            `${Endpoints.Employees}?$filter=EmployeeCode eq '${id}'&${Endpoints.EmployeesSelect}`
+            `${Endpoints.Employees}(${id})?${Endpoints.EmployeesSelect}`
         );
     }
 

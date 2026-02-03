@@ -1,7 +1,7 @@
 const Endpoints = {
   Employees: "EmployeesInfo",
   EmployeesSelect:
-    "$select=EmployeeID, EmployeeCode, ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department,PassportNumber,Picture,WorkStreet,WorkZipCode,LinkedVendor,CostCenterCode,U_BU,Position",
+    "$select=EmployeeID, ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department,PassportNumber,Picture,WorkStreet,WorkZipCode,LinkedVendor,CostCenterCode,U_BU,Position",
   Attendance: "U_HLB_OATT",
   AllLogEntries: "U_HLB_OAPL",
   Expanses: "HLB_OECL",

@@ -12,11 +12,14 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       UserBranch.belongsTo(models.User);
       UserBranch.belongsTo(models.Branch);
+      UserBranch.belongsTo(models.Company);
     }
   }
   UserBranch.init({
     userId: DataTypes.INTEGER,
     branchId: DataTypes.INTEGER,
+    companyId: DataTypes.INTEGER,
+    sap_emp_id: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'UserBranch',

@@ -21,7 +21,7 @@ class SAPService extends SAPClient{
 
     async getEmployeeDetail(req, id) {
         const response = await this.getEmployee(req, id);
-        return response.data.value[0];
+        return response.data;
     }
 
     // dynamic
@@ -392,6 +392,7 @@ class SAPService extends SAPClient{
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         // console.log('app lev', app_lev);return
         const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        // return approvalCollection;
         const isNeedApproval = approvalCollection?.length ?? 0;
 
         let stg_1;

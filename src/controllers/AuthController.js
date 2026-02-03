@@ -1,5 +1,6 @@
 const { logger } = require('../config/logger');
 const AuthService = require('../services/AuthService');
+const { encodeId } = require('../utils/hashids');
 const { syncEmployees } = require('./ESSController');
 const authService = new AuthService();
 
@@ -16,6 +17,20 @@ class AuthController {
             const result = await authService.login(req, email, password);
             logger.info('Login in successfully!', {email: email});
 
+            const fst_branch = result?.sapLogin?.company?.Branches?.[0];
+            const fil_bnc_rls = result.data?.Roles.filter(role => role?.branchId == fst_branch?.id);
+            const comb_menu_par = fil_bnc_rls.flatMap(item => item.UserMenus ?? []);
+            const comb_menu_chl = comb_menu_par.flatMap(menu =>  menu.children ?? [] );
+
+            const userMenus = comb_menu_chl.map((menu) => {
+                return menu = {
+                    id: menu.id,
+                    name: menu.name,
+                    display_name: menu.display_name,
+                    order_number: menu.order_number
+                }
+            });
+
             res.cookie('token', result.token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
@@ -27,7 +42,8 @@ class AuthController {
                 message: 'Login successful',
                 token: result.token,
                 user: result.data,
-                sap: result?.sapLogin?.sessionId ?  "SAP Login was Successfull!":result.sapLogin
+                sap: result?.sapLogin?.sessionId ?  "SAP Login was Successfull!":result.sapLogin,
+                userMenus: userMenus
             });
         } catch (error) {
             return res.status(400).json({ message: error.message });
@@ -35,10 +51,38 @@ class AuthController {
     }
 
     sapLogin = async (req, res) => {
-        try{
-            const login = await authService.sapLogin(req, req.user.id);
-            res.status(200).json("login successfull");
-        } catch(error){
+        try {
+            const isSwitch = true;
+            const result = await authService.login(req, null, null, isSwitch);
+            logger.info('Company Switch successfully!', {companyId: req.body?.company_id});
+            
+            const fst_branch = result?.sapLogin?.company?.Branches?.[0];
+            const fil_bnc_rls = result.data?.Roles.filter(role => role?.branchId == fst_branch?.id);
+            // return res.send(fil_bnc_rls);
+            const comb_menu_par = fil_bnc_rls.flatMap(item => item.UserMenus ?? []);
+            const comb_menu_chl = comb_menu_par.flatMap(menu =>  menu.children ?? [] );
+
+            const userMenus = comb_menu_chl.map((menu) => {
+                return menu = {
+                    id: menu.id,
+                    name: menu.name,
+                    display_name: menu.display_name,
+                    order_number: menu.order_number
+                }
+            });
+
+            res.cookie('token', result.token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict',
+                maxAge: parseInt(process.env.ACCESS_TOKEN_MAX_AGE)
+            });
+
+            return res.status(200).json({
+                message: 'SAP Login successful',
+                userMenus: userMenus
+            });
+        } catch (error) {
             return res.status(400).json({ message: error.message });
         }
     }
