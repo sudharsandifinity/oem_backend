@@ -79,6 +79,7 @@ class AuthController {
             });
 
             return res.status(200).json({
+                token: result.token,
                 message: 'SAP Login successful',
                 displayMenus: userMenus
             });
