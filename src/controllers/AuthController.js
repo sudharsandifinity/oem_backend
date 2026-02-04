@@ -43,7 +43,7 @@ class AuthController {
                 token: result.token,
                 user: result.data,
                 sap: result?.sapLogin?.sessionId ?  "SAP Login was Successfull!":result.sapLogin,
-                userMenus: userMenus
+                displayMenus: userMenus
             });
         } catch (error) {
             return res.status(400).json({ message: error.message });
@@ -80,7 +80,7 @@ class AuthController {
 
             return res.status(200).json({
                 message: 'SAP Login successful',
-                userMenus: userMenus
+                displayMenus: userMenus
             });
         } catch (error) {
             return res.status(400).json({ message: error.message });
