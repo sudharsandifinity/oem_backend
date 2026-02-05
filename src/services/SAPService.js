@@ -453,7 +453,7 @@ class SAPService extends SAPClient{
         
         // console.log('isneedapproval', isNeedApproval);
 
-        if(!isNeedApproval){
+        if(!isNeedApproval && (DocType != "L")){
             await this.APInvoice(req, emp, response, DocType)
         }
 
@@ -506,6 +506,45 @@ class SAPService extends SAPClient{
         }
         return response;
     } 
+
+    async PayOut(req, response){
+        const { date, time } = currentTime();
+
+        const paymentPayload =  {
+            "DocType": "rAccount",
+            "DocDate": date,
+            "CashAccount": null,
+            "DocCurrency": response.U_CUR,
+            "CashSum": 0.0,
+            "TransferAccount": "161012",
+            "TransferSum": response.U_ExpAmt,
+            "TransferDate": date,
+            "TaxDate": date,
+            "VatDate": date,
+            "DocTypte": "rAccount",
+            "DueDate": date,
+            "BPLID": 1,
+            "CashFlowAssignments": [
+                {
+                    "AmountLC": response.U_ExpAmt,
+                    "PaymentMeans": "pmtBankTransfer"
+                }
+            ],
+            "PaymentAccounts": [
+                {
+                    "LineNum": 0,
+                    "AccountCode": "510020",
+                    "SumPaid": response.U_ExpAmt,
+                    "SumPaidFC": 0.0,
+                    "GrossAmount": response.U_ExpAmt,
+                    "ProjectCode": null
+                }
+            ]  
+
+        }
+
+        await this.vendorPayment(req, paymentPayload);
+    }
 
     async APInvoice (req, emp, response, U_DocType){
         const { endpoint, patch } = await this.checkModule(U_DocType);

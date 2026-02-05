@@ -297,6 +297,15 @@ class SAPClient {
         );
     }
 
+
+    async vendorPayment(req, payload){
+        return await sapPostRequest(
+            req,
+            `${Endpoints.VendorPayment}`,
+            payload
+        );
+    }
+
 }
 
 module.exports = SAPClient;

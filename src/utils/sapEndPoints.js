@@ -16,7 +16,8 @@ const Endpoints = {
   OTR: "HLB_OOTRQ",
   LeaveType: "OECI",
   Leave: "OLVA",
-  AirTicket: "HLB_OATR"
+  AirTicket: "HLB_OATR",
+  VendorPayment: "VendorPayments"
 };
 
 const SAP_QUERIES = {
