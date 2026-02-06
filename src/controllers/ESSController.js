@@ -188,27 +188,40 @@ const syncEmployees = async (req, res) => {
         continue;
       }
       
-      const existingUser = await userRepository.findByEmpId(EmployeeID);
+      const findByEmail = await userRepository.findByEmail(eMail);
+      let existingUser;
+      if(findByEmail){
+        existingUser = await userRepository.findById(findByEmail.id);
+      }
+      
 
       if (existingUser) {
           let newRoleIds;
           let newBranchIds;
 
           const existingRoleIds = existingUser.Roles.map(r => encodeId(r.id));
-          newRoleIds = [...new Set([...existingRoleIds, ...roleIds])];
+          newRoleIds = roleIds.filter( role =>  
+            !existingRoleIds.includes(role)
+          )
+          // newRoleIds = [...new Set([...existingRoleIds, ...roleIds])];
 
           const existingBranchIds = existingUser.Branches.map(b => encodeId(b.id));
-          newBranchIds = [...new Set([...existingBranchIds, ...branchIds])];
+          newBranchIds = existingBranchIds.filter(branch => 
+            !branch.includes(branchIds)
+          )
+          // newBranchIds = [...new Set([...existingBranchIds, ...branchIds])];
 
           const updatedUserPayload = {
             first_name: FirstName,
             last_name: LastName,
             email: eMail,
+            sap_emp_id: EmployeeID,
             mobile: MobilePhone,
             is_sap_user: 1,
             department: Department,
-            roleIds: newRoleIds,
+            companyId: companyId,
             branchIds: newBranchIds,
+            roleIds: newRoleIds,
           };
           const data = await userController.updateSapEmployees(existingUser.id, updatedUserPayload);
           if(data === "duplicate"){

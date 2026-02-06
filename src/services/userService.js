@@ -1,4 +1,5 @@
 const { sendEmail, sendBranchAssignEmail } = require('../config/mail');
+const { UserBranch, UserRole } = require('../models');
 const { encodeId, decodeId } = require('../utils/hashids');
 const BaseService = require('./baseService');
 
@@ -258,6 +259,84 @@ class UserService extends BaseService {
         // </html>`
 
         // await sendBranchAssignEmail(userData.email, "Branch Assignment", mailDesign);
+        const result = await this.getById(user.id);
+        return result;
+    }
+
+    async createSapUser(data){
+        console.log('data11', data);
+        
+        const existing = await this.repository.findByEmail(data.email);
+        if(existing) throw new Error('Email already exists');
+        const user = await this.repository.create(data);
+        if(data.roleIds?.length){
+            const roleIdsArray = data.roleIds.map((role) => {
+                return decodeId(role);
+            })
+            roleIdsArray.map(async role => {
+                const payload = {
+                    userId: user.id,
+                    roleId: role
+                }
+                const ur = await UserRole.create(payload)
+            })
+            // await user.setRoles(roleIdsArray);
+        }
+        if(data.branchIds?.length){
+            const branchIdsArray = data.branchIds.map((permission) => {
+                return decodeId(permission);
+            })
+            branchIdsArray.map(async branch => {
+                const payload = {
+                    userId: user.id,
+                    companyId: data.companyId,
+                    branchId: branch,
+                    sap_emp_id: data.sap_emp_id
+                }
+                const ub = await UserBranch.create(payload)
+            })
+            // await user.setBranches(branchIdsArray);
+        }
+
+        const userData = await this.repository.findById(user.id);
+        const result = await this.getById(user.id);
+        return result;
+    }
+
+    async updatesapemp(id, data) {
+        const user = await this.repository.findById(id);
+        if(!user) throw new Error('user not found!');
+        // await this.repository.update(id, data);
+        if(data.roleIds?.length){
+            const roleIdsArray = data.roleIds.map((role) => {
+                return decodeId(role);
+            })
+            roleIdsArray.map(async role => {
+                const payload = {
+                    userId: user.id,
+                    roleId: role
+                }
+                const ur = await UserRole.create(payload)
+            })
+            // await user.setRoles(roleIdsArray);
+        }
+        if(data.branchIds?.length){
+            const branchIdsArray = data.branchIds.map((permission) => {
+                return decodeId(permission);
+            })
+            branchIdsArray.map(async branch => {
+                const payload = {
+                    userId: user.id,
+                    companyId: data.companyId,
+                    branchId: branch,
+                    sap_emp_id: data.sap_emp_id
+                }
+                const ub = await UserBranch.create(payload)
+            })
+            // await user.setBranches(branchIdsArray);
+        }
+
+        const userData = await this.repository.findById(id);
         const result = await this.getById(user.id);
         return result;
     }

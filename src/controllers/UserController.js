@@ -17,21 +17,14 @@ class UserController extends BaseController {
             console.log(`User id ${existing.id}, email ${existing.email} already exit`);
             return "duplicate";
         };
-        await this.userServiceClass.create(data);
+        await this.userServiceClass.createSapUser(data);
         return;
     }
 
     async updateSapEmployees(id, data){
-        if (data.email) {
-            const existing = await this.userRepository.findByEmail(data.email);
-            if (existing && existing.id != id) {
-                console.log('Email already exists');
-                return "duplicate";
-            }
-        }
         const user = await this.userRepository.findById(id);
         if(!user) throw new Error('user not found!');
-        await this.userServiceClass.update(id, data);
+        await this.userServiceClass.updatesapemp(id, data);
         return;
     }
 
