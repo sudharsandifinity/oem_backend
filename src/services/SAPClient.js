@@ -65,7 +65,7 @@ class SAPClient {
         console.log('att empid', EmpId);
         return await sapGetRequest(
             req,
-            `${Endpoints.Attendance}?${SAP_QUERIES.FilByUempId}'${EmpId}'`
+            `${Endpoints.Attendance}?${SAP_QUERIES.FilByUempId}'${EmpId}'&${SAP_QUERIES.OrderByCode}`
         );
     }
 

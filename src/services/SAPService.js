@@ -373,6 +373,15 @@ class SAPService extends SAPClient{
                     patch: this.patchReq.bind(this)
                 };
 
+            case "OR":
+                return {
+                    checkAprv: "U_HLB_OTRG",
+                    endpoint: Endpoints.Attendance,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchReq.bind(this)
+                };
+
             default:
                 throw new Error("Invalid DocType");
         }
@@ -1090,7 +1099,7 @@ class SAPService extends SAPClient{
     async createRegularization (req) {
 
         const { date, time } = currentTime();
-        const { endpoint, create, checkAprv } = await this.checkModule("OT");
+        const { endpoint, create, checkAprv } = await this.checkModule("OR");
         console.log('endpoint',  endpoint,);
         console.log('date', date, time);
         console.log('checkAprv',checkAprv);
@@ -1104,6 +1113,7 @@ class SAPService extends SAPClient{
         // console.log('approvalCollection', approvalCollection);
         // console.log('isNeedApproval', isNeedApproval);
         // console.log('req.files', req.files);
+        // return approvalCollection;
 
         let attachments = null;
 
@@ -1113,6 +1123,10 @@ class SAPService extends SAPClient{
         // console.log("attachments", attachments );
         
         let payload = req.body;
+        payload.Name = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_EmpID = emp.EmployeeID || "";
+        payload.U_ApprSts = isNeedApproval ? "P":"A";
+        payload.U_ApprSts = "N";
         console.log('body', payload);
 
         const createdData = await AttendanceRegularizationDraft.create(payload);
@@ -1144,7 +1158,7 @@ class SAPService extends SAPClient{
         let logPayload = {
             "Name": payload.Name,
             "U_ReqID": user.EmployeeId,
-            "U_DocType": "OT",
+            "U_DocType": "OR",
             "U_DocNo": payload.Code,
             "U_Stg": isNeedApproval?"1":"",
             "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
