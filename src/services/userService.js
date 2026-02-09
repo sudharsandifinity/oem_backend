@@ -264,10 +264,6 @@ class UserService extends BaseService {
     }
 
     async createSapUser(data){
-        console.log('data11', data);
-        
-        const existing = await this.repository.findByEmail(data.email);
-        if(existing) throw new Error('Email already exists');
         const user = await this.repository.create(data);
         if(data.roleIds?.length){
             const roleIdsArray = data.roleIds.map((role) => {
@@ -278,13 +274,12 @@ class UserService extends BaseService {
                     userId: user.id,
                     roleId: role
                 }
-                const ur = await UserRole.create(payload)
+                await UserRole.create(payload)
             })
-            // await user.setRoles(roleIdsArray);
         }
         if(data.branchIds?.length){
-            const branchIdsArray = data.branchIds.map((permission) => {
-                return decodeId(permission);
+            const branchIdsArray = data.branchIds.map((branch) => {
+                return decodeId(branch);
             })
             branchIdsArray.map(async branch => {
                 const payload = {
@@ -293,14 +288,10 @@ class UserService extends BaseService {
                     branchId: branch,
                     sap_emp_id: data.sap_emp_id
                 }
-                const ub = await UserBranch.create(payload)
+                await UserBranch.create(payload)
             })
-            // await user.setBranches(branchIdsArray);
         }
-
-        const userData = await this.repository.findById(user.id);
-        const result = await this.getById(user.id);
-        return result;
+        return;
     }
 
     async updatesapemp(id, data) {
@@ -316,13 +307,12 @@ class UserService extends BaseService {
                     userId: user.id,
                     roleId: role
                 }
-                const ur = await UserRole.create(payload)
+                await UserRole.create(payload)
             })
-            // await user.setRoles(roleIdsArray);
         }
         if(data.branchIds?.length){
-            const branchIdsArray = data.branchIds.map((permission) => {
-                return decodeId(permission);
+            const branchIdsArray = data.branchIds.map((branch) => {
+                return decodeId(branch);
             })
             branchIdsArray.map(async branch => {
                 const payload = {
@@ -331,14 +321,10 @@ class UserService extends BaseService {
                     branchId: branch,
                     sap_emp_id: data.sap_emp_id
                 }
-                const ub = await UserBranch.create(payload)
+                await UserBranch.create(payload)
             })
-            // await user.setBranches(branchIdsArray);
         }
-
-        const userData = await this.repository.findById(id);
-        const result = await this.getById(user.id);
-        return result;
+        return;
     }
 
 }

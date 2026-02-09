@@ -169,48 +169,48 @@ const syncEmployees = async (req, res) => {
   try {
     const { roleIds, branchIds, company_id }= req.body;
     const companyId = decodeId(company_id);    
-    const employees = await sapGetRequest(req, `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc`);
-    // console.log('employees.data.value', employees.data.value);
-    
-    // res.send(employees.data.value);
+    const employees = await sapService.getAllEmployees(req);
     const userRepository = new UserRepository();
     const userService = new UserService(userRepository);
     const userController = new UserController(userService);
-
+    
     let skippedEmployeeIDs = [];
-
-    for (const employee of employees.data.value) {
+    let newpayload = []
+    let existingpayload = []
+    
+    for (const employee of employees.value) {
       const { EmployeeID, eMail, FirstName, LastName, MobilePhone, Department } = employee;
-
+      
       if(!eMail){
-        // console.log(`EmployeeID ${EmployeeID} skipped becuse of null Email`);
-        skippedEmployeeIDs.push(EmployeeID);
+        skippedEmployeeIDs.push({SAP_ID: EmployeeID, Reason: "E-Mail not found!"});
         continue;
       }
       
       const findByEmail = await userRepository.findByEmail(eMail);
+
       let existingUser;
       if(findByEmail){
         existingUser = await userRepository.findById(findByEmail.id);
       }
-      
 
       if (existingUser) {
           let newRoleIds;
           let newBranchIds;
 
           const existingRoleIds = existingUser.Roles.map(r => encodeId(r.id));
+          const uniRoles = new Set(existingRoleIds);
           newRoleIds = roleIds.filter( role =>  
-            !existingRoleIds.includes(role)
+            !uniRoles.has(role)
           )
-          // newRoleIds = [...new Set([...existingRoleIds, ...roleIds])];
-
           const existingBranchIds = existingUser.Branches.map(b => encodeId(b.id));
-          newBranchIds = existingBranchIds.filter(branch => 
-            !branch.includes(branchIds)
+          const uniqueBranches = new Set(existingBranchIds);
+          newBranchIds = branchIds.filter(id => 
+            !uniqueBranches.has(id)
           )
-          // newBranchIds = [...new Set([...existingBranchIds, ...branchIds])];
-
+          console.log('current brances', existingBranchIds);
+          console.log('filtered newbranch ids', newBranchIds.map(i => (i)));
+          console.log('given newbranch ids', branchIds.map(i => (i)));
+    
           const updatedUserPayload = {
             first_name: FirstName,
             last_name: LastName,
@@ -223,6 +223,7 @@ const syncEmployees = async (req, res) => {
             branchIds: newBranchIds,
             roleIds: newRoleIds,
           };
+          existingpayload.push(updatedUserPayload)
           const data = await userController.updateSapEmployees(existingUser.id, updatedUserPayload);
           if(data === "duplicate"){
             skippedEmployeeIDs.push(EmployeeID);
@@ -243,19 +244,23 @@ const syncEmployees = async (req, res) => {
           branchIds: branchIds,
           status: 1
         };
-        const result = await userController.syncSapEmployees(userPayload);
-        if(result === "duplicate"){
-            skippedEmployeeIDs.push(EmployeeID);
-            continue
-        }
-        // console.log(`Created user: ${FirstName} ${LastName} (Email: ${eMail})`);
+        newpayload.push(userPayload)
+        await userController.syncSapEmployees(userPayload);
       }
+      
     }
-    return res.status(200).json({ message: 'Employee synchronization completed successfully.', skippedIDs: skippedEmployeeIDs });
+    // console.log('newpayloads', newpayload);
+    // console.log('existingpayload', existingpayload);
+    return res.status(200).json({ 
+      message: 'Employee synchronization completed successfully.',
+      createdUsers: newpayload.length, 
+      updatedUsers: existingpayload.length, 
+      skippedIDs: skippedEmployeeIDs 
+    });
 
   } catch (error) {
-    console.error('Error syncing employees:', error.message);
-    return res.status(500).json({ message: 'Error syncing employees', error: error.message });
+    const message = 'Error while updating Expanse request';
+    errorCatch(req, res, message, error);
   }
 };
 

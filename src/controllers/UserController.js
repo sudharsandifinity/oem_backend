@@ -12,11 +12,6 @@ class UserController extends BaseController {
     }
 
     async syncSapEmployees(data){
-        const existing = await this.userRepository.findByEmail(data.email);
-        if(existing){
-            console.log(`User id ${existing.id}, email ${existing.email} already exit`);
-            return "duplicate";
-        };
         await this.userServiceClass.createSapUser(data);
         return;
     }

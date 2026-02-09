@@ -3,10 +3,17 @@ const { sapGetRequest, sapPostRequest, sapPatchRequest } = require('../utils/sap
 
 class SAPClient {
 
-    async getEmployees(req, { top = 20, skip = 0 }) {
+    async getEmployees(req, query) {
+        let fullQuery = `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc`
+        if(query){
+            const top = query.top;
+            const skip = query.skip;
+            fullQuery = `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc&$top=${top}&$skip=${skip}`
+        }
+        
         return await sapGetRequest(
             req,
-            `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc&$top=${top}&$skip=${skip}`
+            fullQuery
         );
     }
 
