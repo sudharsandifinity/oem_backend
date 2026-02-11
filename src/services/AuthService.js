@@ -242,11 +242,13 @@ class AuthService {
 
             // const fst_branch_sap_id = user?.Branches?.[0]?.UserBranch?.sap_emp_id;
             const file_cur_comp = user.Branches.filter(branch => branch.companyId == decodedCompanyId);
+            const companyName = file_cur_comp[0]?.Company.name;
+            // console.log('compayname', companyName);
             const db_emp_id = file_cur_comp[0].UserBranch.sap_emp_id;
             console.log('current db_emp_id', db_emp_id);
 
             const token = jwt.sign(
-                { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: db_emp_id ?? null },
+                { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: db_emp_id ?? null, companyName: companyName },
                 process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );
@@ -357,10 +359,12 @@ class AuthService {
         }
 
         const fst_branch_sap_id = user?.Branches?.[0]?.UserBranch?.sap_emp_id;
+        const companyName = user?.Branches?.[0]?.Company.name;
         // console.log('fst_branch_sap_id', fst_branch_sap_id);
+        // console.log('companyName', companyName);
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: fst_branch_sap_id ?? null },
+            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: fst_branch_sap_id ?? null, companyName: companyName },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
