@@ -1044,7 +1044,8 @@ class SAPService extends SAPClient{
             this.getAllTExp(req), 
             this.getAllLvReq(req),
             this.getAllAtts(req),
-            this.getAllOTR(req)
+            this.getAllOTR(req),
+            AttendanceRegularizationDraft.findAll(),
         ]);
 
         const [
@@ -1053,7 +1054,8 @@ class SAPService extends SAPClient{
             tExpResult,
             leaveResult,
             attResult,
-            otResult
+            otResult,
+            rgResult
         ] = results;
 
         const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
@@ -1062,6 +1064,7 @@ class SAPService extends SAPClient{
         const allLeaveRq = leaveResult.status === 'fulfilled' ? leaveResult.value.value || [] : [];
         const attachments = attResult.status === 'fulfilled' ? attResult.value.value || [] : [];
         const OTs = otResult.status === 'fulfilled' ? otResult.value.value || [] : [];
+        const Rgs = rgResult.status === 'fulfilled' ? rgResult.value || [] : [];
 
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
@@ -1112,6 +1115,15 @@ class SAPService extends SAPClient{
             ])
         );
 
+        const Rg = new Map(
+            Rgs.map(rg => [
+                rg.dataValues.Code,
+                {
+                    ...rg.dataValues
+                }
+            ])
+        );
+
         const result = logs.map(log => {
             let expenseData = null;
 
@@ -1130,6 +1142,10 @@ class SAPService extends SAPClient{
 
                 case "L":
                     expenseData = LeaveMap.get(Number(log.U_DocNo)) || null;
+                    break;
+
+                case "OR":
+                    expenseData = Rg.get(Number(log.U_DocNo)) || null;
                     break;
             }
 
