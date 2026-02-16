@@ -838,9 +838,9 @@ class SAPService extends SAPClient{
             let accNo;
             const getData = await this.getPaymentAccount(req);
 
-            if(checkStatus.DocType === "E"){
+            if(checkStatus.U_DocType === "E"){
                 const expTypes = await this.getAllExpTypes(req);
-                const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
+                const val = expTypes.value.filter((e) => e.U_ExpName == expReq.U_ExpType);
                 accNo = val?.[0]?.U_DAccCode;
             }else{
                 accNo = getData?.[0]?.U_BAcc;
