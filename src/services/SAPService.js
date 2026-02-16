@@ -575,7 +575,7 @@ class SAPService extends SAPClient{
         const { date, time } = currentTime();
 
         let isLocCur;
-        if(response.U_CUR == getData.U_LCUR){
+        if(response.U_CUR == getData?.[0]?.U_LCUR){
             isLocCur = true
         }else{
             isLocCur = false
@@ -595,16 +595,10 @@ class SAPService extends SAPClient{
             "DocTypte": "rAccount",
             "DueDate": date,
             "BPLID": 1,
-            "CashFlowAssignments": [
-                {
-                    "AmountLC": response.U_ExpAmt,
-                    "PaymentMeans": "pmtBankTransfer"
-                }
-            ],
             "PaymentAccounts": [
                 {
                     "LineNum": 0,
-                    "AccountCode": "510020",
+                    "AccountCode": "175003",
                     "SumPaid": isLocCur ? response.U_ExpAmt:"",
                     "SumPaidFC": isLocCur ? "":response.U_ExpAmt,
                     "GrossAmount": response.U_ExpAmt,
@@ -844,7 +838,7 @@ class SAPService extends SAPClient{
             let accNo;
             const getData = await this.getPaymentAccount(req);
 
-            if(DocType === "E"){
+            if(checkStatus.DocType === "E"){
                 const expTypes = await this.getAllExpTypes(req);
                 const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
                 accNo = val?.[0]?.U_DAccCode;
