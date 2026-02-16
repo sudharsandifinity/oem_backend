@@ -92,6 +92,20 @@ class SAPClient {
         );
     }
 
+    async getExpTypes(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.ExpanseTypes}?${SAP_QUERIES.ExpTypeSlct}`
+        );
+    }
+
+    async getPayAcc(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Payroll}`
+        );
+    }
+
     async getAtts(req) {
         return await sapGetRequest(
             req,

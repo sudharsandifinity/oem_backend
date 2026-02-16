@@ -2,7 +2,7 @@
   "Companies": [
     {
       "name": "HLB_Demo",
-      "paymentMethod": "Ap Invoice"
+      "paymentMethod": "Payout"
     },
     {
       "name": "HLB_Demo2",

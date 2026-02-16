@@ -17,7 +17,8 @@ const Endpoints = {
   LeaveType: "OECI",
   Leave: "OLVA",
   AirTicket: "HLB_OATR",
-  VendorPayment: "VendorPayments"
+  VendorPayment: "VendorPayments",
+  Payroll: "U_HLB_PCONF"
 };
 
 const SAP_QUERIES = {
@@ -29,6 +30,7 @@ const SAP_QUERIES = {
   OrderByCode: "$orderby=Code desc",
   OrderByDocEntry: "$orderby=DocEntry desc",
   OrderByAbsoluteEntry: "$orderby=AbsoluteEntry desc",
+  ExpTypeSlct: "$select=U_ExpCode,U_ExpName, U_DAccCode"
 };
 
 module.exports = { Endpoints, SAP_QUERIES };

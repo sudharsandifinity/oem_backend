@@ -294,11 +294,11 @@ const missedOutNotification = async (req, res) => {
 
 const getAllExpType = async (req, res) => {
   try {
-    const response = await sapGetRequest(req, `${sapAPIs.ExpanseTypes}?$select=U_ExpCode,U_ExpName`);
-    res.status(200).json(response.data);
-  } catch (err) {
-    console.error('SAP error:', err.message);
-    res.status(500).json({ message: 'Error fetching Expanse Type', error: err.message });
+    const data = await sapService.getAllExpTypes(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error fetching Exp Types';
+    errorCatch(req, res, message, error);
   }
 }
 
@@ -1223,7 +1223,7 @@ const getMyAprs = async (req, res) => {
 
 const getAttandanceData = async (req, res) => {
     try {
-      const user = req.user;
+      const user = req.user; 
       const data = await sapService.attendanceData(req, user.EmployeeId);
       return res.status(200).json(data);
     } catch (error) {
