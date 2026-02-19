@@ -15,8 +15,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   AttendanceRegularizationDraft.init({
       Code: {
-        type: DataTypes.INTEGER,
-        allowNull: false
+        type: DataTypes.INTEGER
       },
       Name: DataTypes.STRING,
       U_EmpID: DataTypes.STRING,

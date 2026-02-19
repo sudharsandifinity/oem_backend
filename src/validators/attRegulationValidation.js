@@ -1,9 +1,8 @@
 const Joi = require('joi');
 
 const createAttendanceRegularizationDraftSchema = Joi.object({
-    Code: Joi.number().required().messages({
-        'number.base': 'Code must be a number',
-        'any.required': 'Code is required'
+    Code: Joi.number().optional().messages({
+        'number.base': 'Code must be a number'
     }),
 
     U_PrjCode: Joi.string().required().messages({

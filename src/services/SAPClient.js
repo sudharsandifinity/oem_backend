@@ -327,6 +327,22 @@ class SAPClient {
         );
     }
 
+    async createAttandance(req, payload){
+        return await sapPostRequest(
+            req,
+            `${Endpoints.Attendance}`,
+            payload
+        );
+    }
+
+    async patchAttandance(req, docEntry, payload){
+        return await sapPatchRequest(
+            req,
+            `${Endpoints.Attendance}(${docEntry})`,
+            payload
+        );
+    }
+
 }
 
 module.exports = SAPClient;

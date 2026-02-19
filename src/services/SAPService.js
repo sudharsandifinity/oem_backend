@@ -83,7 +83,11 @@ class SAPService extends SAPClient{
         // const response = await this.getReqById(req, endpoint, docEntry);
         let response;
         if(endpoint == "U_HLB_OATT"){
-            response = await AttendanceRegularizationDraft.findOne({where: {Code:docEntry}, order: [['id','DESC']]})
+            response = await AttendanceRegularizationDraft.findOne({where: {Code:docEntry}, order: [['id','DESC']]});
+            if(!response){
+                console.log('new entry');
+                response = await AttendanceRegularizationDraft.findByPk(docEntry);
+            }
         }else{
             response = await this.getReqById(req, endpoint, docEntry)
         }
@@ -146,7 +150,36 @@ class SAPService extends SAPClient{
 
     async attendanceData(req, EmpId){
         const response = await this.attendance(req, EmpId);
-        return response.data;
+
+        const today = new Date();
+        const last60Days = new Date();
+        last60Days.setDate(today.getDate() - 60);
+
+        let attendanceInfo = [];
+        let count= 0;
+
+        for(let cdt = today; today > last60Days; cdt.setDate(cdt.getDate()- 1)){
+            const formatted = cdt.toISOString().split('T')[0];
+            const fAttInfo = response.data.value.find((data) => {
+                return data.U_AttDt == formatted
+            })
+
+            if(fAttInfo){           
+                attendanceInfo.push(fAttInfo)
+            }else{
+                attendanceInfo.push({
+                    "U_PrjCode": "",
+                    "U_PrjName": "",
+                    "U_Task": "",
+                    "U_InTime": "",
+                    "U_OutTime": "",
+                    "U_AttDt": formatted,
+                    "U_OAttDt": ""
+                })
+            }
+        }
+        return attendanceInfo;
+        // return response.data;
     }
 
     async getAllExpTypes(req) {
@@ -410,16 +443,43 @@ class SAPService extends SAPClient{
     }
 
     async patchRgDraft (req, endpoint, docEntry, empReqPayload) {
-        const response = await AttendanceRegularizationDraft.findOne({
-            where: {Code: docEntry}, 
-            order: [['id','DESC']]
+        const response = await AttendanceRegularizationDraft.findByPk(docEntry, {
+            attributes: {
+                exclude: ['U_ApprSts', 'U_IsReSub', 'createdAt', 'updatedAt']
+            }
         });
 
         if (!response) {
             throw new Error('Draft not found');
         }
+        await response.update(empReqPayload);
 
-        return await response.update(empReqPayload)
+        if(empReqPayload.U_ApprSts !== "R"){
+            const updatedData = await AttendanceRegularizationDraft.findByPk(docEntry, {
+                attributes: {
+                    exclude: ['id', 'Code','U_ApprSts', 'U_IsReSub', 'createdAt', 'updatedAt']
+                }
+            });
+
+            if(response.Code){
+                console.log('update the old entry');
+                this.patchAttandanceData(req, response.Code, updatedData);
+            }else{
+                console.log('new atnc entry');
+                this.createAttandanceData(req, updatedData);
+            }
+        }
+        return
+    }
+
+    async patchAttandanceData(req, Code, payload){
+        const response = this.patchAttandance(req, Code, payload);
+        return response.data;
+    }
+
+    async createAttandanceData(req, payload){
+        const response = this.createAttandance(req, payload);
+        return response.data;
     }
 
     async createRequest (req, DocType) {
@@ -664,6 +724,7 @@ class SAPService extends SAPClient{
            company.name == req.user.companyName
         )?.paymentMethod || null;
 
+        
         const { date, time } = currentTime();
         const user = req.user;
         const {id} = req.params;
@@ -671,7 +732,9 @@ class SAPService extends SAPClient{
         
         const checkStatus = await this.getLogById(req, id);
         const { endpoint, getById, patch, checkAprv } = await this.checkModule(checkStatus.U_DocType);
-        // console.log('checkAprv', checkAprv);
+        console.log('checkAprv', checkAprv);
+        console.log('checst', checkStatus);
+        
 
         const expReq = await getById(req, endpoint, checkStatus.U_DocNo);
         const requester = await this.getEmployeeDetail(req, expReq.U_EmpID); 
@@ -1150,7 +1213,7 @@ class SAPService extends SAPClient{
 
         const Rg = new Map(
             Rgs.map(rg => [
-                rg.dataValues.Code,
+                rg.dataValues.id,
                 {
                     ...rg.dataValues
                 }
@@ -1195,7 +1258,7 @@ class SAPService extends SAPClient{
 
         const { date, time } = currentTime();
         const { endpoint, create, checkAprv } = await this.checkModule("OR");
-        console.log('endpoint',  endpoint,);
+        console.log('endpoint',  endpoint);
         console.log('date', date, time);
         console.log('checkAprv',checkAprv);
 
@@ -1221,66 +1284,74 @@ class SAPService extends SAPClient{
         payload.Name = emp.FirstName +" "+ emp.LastName || "";
         payload.U_EmpID = emp.EmployeeID || "";
         payload.U_ApprSts = isNeedApproval ? "P":"A";
-        payload.U_ApprSts = "P";
         console.log('body', payload);
 
-        const response = await AttendanceRegularizationDraft.findOne({
-            where: {Code: payload.Code}, 
-            order: [['id','DESC']]
-        });
+        // const response = await AttendanceRegularizationDraft.findOne({
+        //     where: {Code: payload.Code}, 
+        //     order: [['id','DESC']]
+        // });
 
-        if(response.U_ApprSts == 'A'){
-            return ('Request is already Approved!')
-        }
+        // if(response.U_ApprSts == 'A'){
+        //     return ('Request is already Approved!')
+        // }
 
-        if(response.U_ApprSts == 'P'){
-            return ('Request is already Pending!')
-        }
+        // if(response.U_ApprSts == 'P'){
+        //     return ('Request is already Pending!')
+        // }
 
         const createdData = await AttendanceRegularizationDraft.create(payload);
-        console.log('createdata', createdData);
+        if(isNeedApproval){
+            const isDelegationId = approvalCollection?.[0]?.U_DlgID;
+            let isDelegationValid = false;
 
-        const isDelegationId = approvalCollection?.[0]?.U_DlgID;
-        let isDelegationValid = false;
+            // console.log('isDelegationId', isDelegationId);
 
-        // console.log('isDelegationId', isDelegationId);
+            if(isDelegationId){
+                const currentDate = new Date(
+                `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                    .toString()
+                    .slice(6, 8)}`
+                );
 
-        if(isDelegationId){
-            const currentDate = new Date(
-            `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
-                .toString()
-                .slice(6, 8)}`
-            );
+                const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
+                const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
 
-            const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
-            const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
-
-            // console.log("currentDate", currentDate);
-            // console.log("fromDate", fromDate);
-            // console.log("toDate", toDate);
-        
-            isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-            // console.log("isDelegationValid", isDelegationValid);
+                // console.log("currentDate", currentDate);
+                // console.log("fromDate", fromDate);
+                // console.log("toDate", toDate);
+            
+                isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                // console.log("isDelegationValid", isDelegationValid);
+            }
+            
+            let logPayload = {
+                "Name": payload.Name,
+                "U_ReqID": user.EmployeeId,
+                "U_DocType": "OR",
+                "U_DocNo": payload.Code ?? createdData.id,
+                "U_Stg": isNeedApproval?"1":"",
+                "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
+                "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
+                "U_AppSts": isNeedApproval?"P":"A",
+                "U_PosId": emp.Position,
+                "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
+                "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
+                "U_CDt": date,
+                "U_CTm": time
+            } 
+            console.log('logpayload', logPayload);
+            await this.createLog(req, logPayload); 
+        }else{
+            delete payload.U_ApprSts;
+            if(payload.Code){
+                console.log('update the old entry');
+                this.patchAttandanceData(req, payload.Code, payload);
+            }else{
+                console.log('new atnc entry');
+                this.createAttandanceData(req, payload);
+            }
         }
         
-        let logPayload = {
-            "Name": payload.Name,
-            "U_ReqID": user.EmployeeId,
-            "U_DocType": "OR",
-            "U_DocNo": payload.Code,
-            "U_Stg": isNeedApproval?"1":"",
-            "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
-            "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
-            "U_AppSts": isNeedApproval?"P":"A",
-            "U_PosId": emp.Position,
-            "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
-            "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
-            "U_CDt": date,
-            "U_CTm": time
-        } 
-        console.log('logpayload', logPayload);
-        
-        await this.createLog(req, logPayload)  
         return "Request submited successfully!";
     }
 }
