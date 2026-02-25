@@ -1,7 +1,7 @@
 const Endpoints = {
   Employees: "EmployeesInfo",
   EmployeesSelect:
-    "$select=EmployeeID, ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department,PassportNumber,Picture,WorkStreet,WorkZipCode,LinkedVendor,CostCenterCode,U_BU,Position",
+    "$select=EmployeeID, ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department,PassportNumber,Picture,WorkStreet,WorkZipCode,LinkedVendor,CostCenterCode,U_BU,Position, BPLID",
   Attendance: "U_HLB_OATT",
   AllLogEntries: "U_HLB_OAPL",
   Expanses: "HLB_OECL",
@@ -10,7 +10,6 @@ const Endpoints = {
   ApprovalLevels: "HLB_OAPP",
   Currency: "Currencies",
   Attachments: "Attachments2",
-  ApprovalLevels: "HLB_OAPP",
   TravelExp: "HLB_OTRV",
   APInvoice: "PurchaseInvoices",
   OTR: "HLB_OOTRQ",

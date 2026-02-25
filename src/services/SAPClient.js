@@ -79,6 +79,7 @@ class SAPClient {
     async checkApprovalLevels(req, position, model) {
         console.log('position', position);
         console.log('model', model);
+        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`);
         return await sapGetRequest(
             req,
             `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`
@@ -100,6 +101,7 @@ class SAPClient {
     }
 
     async getPayAcc(req) {
+        console.log('sap url', `${Endpoints.Payroll}`);
         return await sapGetRequest(
             req,
             `${Endpoints.Payroll}`

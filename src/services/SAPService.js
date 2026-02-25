@@ -499,7 +499,11 @@ class SAPService extends SAPClient{
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         // console.log('app lev', app_lev);return
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        let approvalCollection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
         // return approvalCollection;
         const isNeedApproval = approvalCollection?.length ?? 0;
 
@@ -552,6 +556,7 @@ class SAPService extends SAPClient{
         }
 
         let accNo;
+        console.log('checking payment account');
         const getData = await this.getPaymentAccount(req);
 
         if(DocType === "E"){
@@ -576,7 +581,7 @@ class SAPService extends SAPClient{
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, emp, response, DocType);
                 }else{
-                    await this.PayOut(req, response, accNo, getData);
+                    await this.PayOut(req, response, accNo, getData, emp.BPLID);
                 }
             }
         }
@@ -631,7 +636,7 @@ class SAPService extends SAPClient{
         return response;
     } 
 
-    async PayOut(req, response, accNo, getData){
+    async PayOut(req, response, accNo, getData, branchId){
         const { date, time } = currentTime();
 
         let isLocCur;
@@ -654,11 +659,11 @@ class SAPService extends SAPClient{
             "VatDate": date,
             "DocTypte": "rAccount",
             "DueDate": date,
-            "BPLID": 1,
+            "BPLID": branchId,
             "PaymentAccounts": [
                 {
                     "LineNum": 0,
-                    "AccountCode": "175003",
+                    "AccountCode": accNo ?? "",
                     "SumPaid": isLocCur ? response.U_ExpAmt:"",
                     "SumPaidFC": isLocCur ? "":response.U_ExpAmt,
                     "GrossAmount": response.U_ExpAmt,
@@ -760,7 +765,8 @@ class SAPService extends SAPClient{
             await patch(req, endpoint, checkStatus.U_DocNo, formPayload);
         }
     
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
         const totalAprLevs = approvalCollection.length;
         
         console.log('approvalCollection', approvalCollection);
@@ -913,7 +919,7 @@ class SAPService extends SAPClient{
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
                 }else{
-                    await this.PayOut(req, updatedExpReq, accNo, getData);
+                    await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID);
                 }
             }
             // await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType)
@@ -1266,7 +1272,8 @@ class SAPService extends SAPClient{
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         // console.log('app lev', app_lev);return
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
         const isNeedApproval = approvalCollection?.length ?? 0;
         // console.log('approvalCollection', approvalCollection);
         // console.log('isNeedApproval', isNeedApproval);

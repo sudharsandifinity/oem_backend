@@ -35,6 +35,14 @@
     {
       "name": "Duagh",
       "paymentMethod": "Payout"
+    },
+    {
+      "name": "Prime Plastic Test",
+      "paymentMethod": "Payout"
+    },
+    {
+      "name": "Prime Plastic",
+      "paymentMethod": "Payout"
     }
   ],
   "paymentRequired": [
