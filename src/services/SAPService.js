@@ -555,18 +555,6 @@ class SAPService extends SAPClient{
             }
         }
 
-        let accNo;
-        console.log('checking payment account');
-        const getData = await this.getPaymentAccount(req);
-
-        if(DocType === "E"){
-            const expTypes = await this.getAllExpTypes(req);
-            const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
-            accNo = val?.[0]?.U_DAccCode;
-        }else{
-            accNo = getData?.[0]?.U_BAcc;
-        }
-
         console.log('payload', payload);
         // return payload
         const response = await create(req, endpoint, payload);  
@@ -581,6 +569,17 @@ class SAPService extends SAPClient{
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, emp, response, DocType);
                 }else{
+                    let accNo;
+                    console.log('checking payment account');
+                    const getData = await this.getPaymentAccount(req);
+
+                    if(DocType === "E"){
+                        const expTypes = await this.getAllExpTypes(req);
+                        const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
+                        accNo = val?.[0]?.U_DAccCode;
+                    }else{
+                        accNo = getData?.[0]?.U_BAcc;
+                    }
                     await this.PayOut(req, response, accNo, getData, emp.BPLID);
                 }
             }
@@ -638,6 +637,9 @@ class SAPService extends SAPClient{
 
     async PayOut(req, response, accNo, getData, branchId){
         const { date, time } = currentTime();
+        console.log('accNo', accNo);
+        console.log('branchId', branchId);
+        
 
         let isLocCur;
         if(response.U_CUR == getData?.[0]?.U_LCUR){
@@ -659,7 +661,7 @@ class SAPService extends SAPClient{
             "VatDate": date,
             "DocTypte": "rAccount",
             "DueDate": date,
-            "BPLID": branchId,
+            "BPLID": branchId ?? "",
             "PaymentAccounts": [
                 {
                     "LineNum": 0,
@@ -904,25 +906,23 @@ class SAPService extends SAPClient{
             
             await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
 
-            let accNo;
-            const getData = await this.getPaymentAccount(req);
-
-            if(checkStatus.U_DocType === "E"){
-                const expTypes = await this.getAllExpTypes(req);
-                const val = expTypes.value.filter((e) => e.U_ExpName == expReq.U_ExpType);
-                accNo = val?.[0]?.U_DAccCode;
-            }else{
-                accNo = getData?.[0]?.U_BAcc;
-            }
-
             if(companyJson.paymentRequired.includes(checkStatus.U_DocType)){
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
                 }else{
+                    let accNo;
+                    const getData = await this.getPaymentAccount(req);
+
+                    if(checkStatus.U_DocType === "E"){
+                        const expTypes = await this.getAllExpTypes(req);
+                        const val = expTypes.value.filter((e) => e.U_ExpName == expReq.U_ExpType);
+                        accNo = val?.[0]?.U_DAccCode;
+                    } else{
+                        accNo = getData?.[0]?.U_BAcc;
+                    }
                     await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID);
                 }
             }
-            // await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType)
             return
           }
         }
@@ -991,9 +991,12 @@ class SAPService extends SAPClient{
 
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
-        const isNeedApproval = approvalCollection?.length ?? 0;
-
+        let approvalCollection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
+        
         let stg_1;
         if(isNeedApproval){
             stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
@@ -1047,23 +1050,6 @@ class SAPService extends SAPClient{
                 await this.createLog(req, logPayload)
             };
         }
-        
-        // let logPayload = {
-        //     "Name": `${emp.FirstName} ${emp.LastName}`,
-        //     "U_ReqID": user.EmployeeId,
-        //     "U_DocType": DocType,
-        //     "U_DocNo": docEntry,
-        //     "U_Stg": isNeedApproval?"1":"",
-        //     "U_AppId": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprID:"",
-        //     "U_ApprName": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprName:"",
-        //     "U_AppSts": isNeedApproval?"P":"A",
-        //     "U_PosId": emp.Position,
-        //     "U_CDt": date,
-        //     "U_CTm": time
-        // } 
-
-        // console.log('logpyalod', logPayload);
-        // await this.createLog(req, logPayload);
         
         return {
             message: 'resubmit request log submited successfully'
