@@ -1353,6 +1353,16 @@ class SAPService extends SAPClient{
         const res = await this.employeeBenifites(req);
         return res.data.value;
     }
+
+    async getEmpSalary (req) {
+        const res = await this.employeeSalary(req);
+        return res.data.value;
+    }
+
+    async getEmpSalary (req) {
+        const res = await this.employeeSalary(req);
+        return res.data.value;
+    }
 }
 
 module.exports = SAPService;

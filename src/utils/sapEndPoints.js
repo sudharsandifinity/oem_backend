@@ -18,7 +18,8 @@ const Endpoints = {
   AirTicket: "HLB_OATR",
   VendorPayment: "VendorPayments",
   Payroll: "U_HLB_PCONF",
-  JournalEtry: "JournalEntries"
+  JournalEtry: "JournalEntries",
+  EmpSalary: "OECI"
 };
 
 const SAP_QUERIES = {

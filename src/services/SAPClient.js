@@ -33,12 +33,31 @@ class SAPClient {
         );
     }
 
+    async patchEmployee(req, id, payload) {
+        console.log('url', `${Endpoints.Employees}(${id})`);
+        
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Employees}(${id})`,
+            payload
+        );
+    }
+
     async employeeBenifites(req, id ) {
         console.log('url', `${Endpoints.JournalEtry}?$select=JournalEntryLines &$ filter=ReferenceDate ge datetime'2026-01-01T00:00:00' and ReferenceDate le datetime'2026-02-28T23:59:59'`);
         
         return await sapGetRequest(
             req,
             `${Endpoints.JournalEtry}?$select=JournalEntryLines &$ filter=ReferenceDate ge datetime'2026-01-01T00:00:00' and ReferenceDate le datetime'2026-02-28T23:59:59'`
+        );
+    }
+
+    async employeeSalary(req, id ) {
+        console.log('url', `${Endpoints.EmpSalary}?$select =INPR_ECI4Collection &$filter=Code eq '3'`);
+        
+        return await sapGetRequest(
+            req,
+            `${Endpoints.EmpSalary}?$select =INPR_ECI4Collection &$filter=Code eq '3'`
         );
     }
 
