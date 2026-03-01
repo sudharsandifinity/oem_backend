@@ -1,9 +1,10 @@
-const { syncEmployees, getEmployeeProfile, getAllEmployees } = require('../../../controllers/ESSController');
+const { syncEmployees, getEmployeeProfile, getAllEmployees, getEmpBenifits } = require('../../../controllers/ESSController');
 
 router = require('express').Router();
 
 router.get('/', getAllEmployees);
 router.get('/me', getEmployeeProfile);
 router.post('/sync', syncEmployees);
+router.get('/benifits', getEmpBenifits);
 
 module.exports = router;

@@ -33,6 +33,15 @@ class SAPClient {
         );
     }
 
+    async employeeBenifites(req, id ) {
+        console.log('url', `${Endpoints.JournalEtry}?$select=JournalEntryLines &$ filter=ReferenceDate ge datetime'2026-01-01T00:00:00' and ReferenceDate le datetime'2026-02-28T23:59:59'`);
+        
+        return await sapGetRequest(
+            req,
+            `${Endpoints.JournalEtry}?$select=JournalEntryLines &$ filter=ReferenceDate ge datetime'2026-01-01T00:00:00' and ReferenceDate le datetime'2026-02-28T23:59:59'`
+        );
+    }
+
     // dtynamic
 
     async getReqByEmp(req, EmpId, { endpoint, top = 20, skip = 0 }) {

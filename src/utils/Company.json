@@ -43,9 +43,13 @@
     {
       "name": "Prime Plastic",
       "paymentMethod": "Payout"
+    },
+    {
+      "name": "Elite Ventures test",
+      "paymentMethod": "Payout"
     }
   ],
   "paymentRequired": [
-    "TR", "OT", "E", "AT"
+    "TR", "E", "AT"
   ]
 }

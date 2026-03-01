@@ -1,7 +1,7 @@
 const Endpoints = {
   Employees: "EmployeesInfo",
   EmployeesSelect:
-    "$select=EmployeeID, ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department,PassportNumber,Picture,WorkStreet,WorkZipCode,LinkedVendor,CostCenterCode,U_BU,Position, BPLID",
+    "$select=EmployeeID, ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department,PassportNumber,Picture,WorkStreet,WorkZipCode,LinkedVendor,CostCenterCode,Position, BPLID",
   Attendance: "U_HLB_OATT",
   AllLogEntries: "U_HLB_OAPL",
   Expanses: "HLB_OECL",
@@ -17,7 +17,8 @@ const Endpoints = {
   Leave: "OLVA",
   AirTicket: "HLB_OATR",
   VendorPayment: "VendorPayments",
-  Payroll: "U_HLB_PCONF"
+  Payroll: "U_HLB_PCONF",
+  JournalEtry: "JournalEntries"
 };
 
 const SAP_QUERIES = {
@@ -29,7 +30,7 @@ const SAP_QUERIES = {
   OrderByCode: "$orderby=Code desc",
   OrderByDocEntry: "$orderby=DocEntry desc",
   OrderByAbsoluteEntry: "$orderby=AbsoluteEntry desc",
-  ExpTypeSlct: "$select=U_ExpCode,U_ExpName, U_DAccCode"
+  ExpTypeSlct: "$select=U_ExpCode,U_ExpName, U_DAccCode",
 };
 
 module.exports = { Endpoints, SAP_QUERIES };

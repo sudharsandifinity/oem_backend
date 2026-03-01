@@ -569,18 +569,19 @@ class SAPService extends SAPClient{
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, emp, response, DocType);
                 }else{
-                    let accNo;
+                    let accNo = {};
                     console.log('checking payment account');
                     const getData = await this.getPaymentAccount(req);
 
                     if(DocType === "E"){
                         const expTypes = await this.getAllExpTypes(req);
                         const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
-                        accNo = val?.[0]?.U_DAccCode;
+                        accNo.U_DAccCode = val?.[0]?.U_DAccCode;
                     }else{
-                        accNo = getData?.[0]?.U_BAcc;
+                        accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
+                        accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;
                     }
-                    await this.PayOut(req, response, accNo, getData, emp.BPLID);
+                    await this.PayOut(req, response, accNo, getData, emp.BPLID, DocType);
                 }
             }
         }
@@ -635,12 +636,11 @@ class SAPService extends SAPClient{
         return response;
     } 
 
-    async PayOut(req, response, accNo, getData, branchId){
+    async PayOut(req, response, accNo, getData, branchId, DocType){
         const { date, time } = currentTime();
         console.log('accNo', accNo);
         console.log('branchId', branchId);
         
-
         let isLocCur;
         if(response.U_CUR == getData?.[0]?.U_LCUR){
             isLocCur = true
@@ -654,7 +654,7 @@ class SAPService extends SAPClient{
             "CashAccount": null,
             "DocCurrency": response.U_CUR,
             "CashSum": 0.0,
-            "TransferAccount": accNo ?? "",
+            "TransferAccount": DocType == "E" ? accNo.U_DAccCode:accNo.U_TRDAcc ?? "",
             "TransferSum": response.U_ExpAmt,
             "TransferDate": date,
             "TaxDate": date,
@@ -665,7 +665,7 @@ class SAPService extends SAPClient{
             "PaymentAccounts": [
                 {
                     "LineNum": 0,
-                    "AccountCode": accNo ?? "",
+                    "AccountCode": DocType == "E" ? accNo.U_DAccCode:accNo.U_TRCAcc ?? "",
                     "SumPaid": isLocCur ? response.U_ExpAmt:"",
                     "SumPaidFC": isLocCur ? "":response.U_ExpAmt,
                     "GrossAmount": response.U_ExpAmt,
@@ -910,15 +910,16 @@ class SAPService extends SAPClient{
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
                 }else{
-                    let accNo;
+                    let accNo = {};
                     const getData = await this.getPaymentAccount(req);
 
                     if(checkStatus.U_DocType === "E"){
                         const expTypes = await this.getAllExpTypes(req);
                         const val = expTypes.value.filter((e) => e.U_ExpName == expReq.U_ExpType);
-                        accNo = val?.[0]?.U_DAccCode;
-                    } else{
-                        accNo = getData?.[0]?.U_BAcc;
+                            accNo.U_DAccCode = val?.[0]?.U_DAccCode;
+                    }else{
+                        accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
+                        accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;
                     }
                     await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID);
                 }
@@ -1346,6 +1347,11 @@ class SAPService extends SAPClient{
         }
         
         return "Request submited successfully!";
+    }
+
+    async getEmpBenifits (req) {
+        const res = await this.employeeBenifites(req);
+        return res.data.value;
     }
 }
 
