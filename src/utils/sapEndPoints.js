@@ -19,7 +19,8 @@ const Endpoints = {
   VendorPayment: "VendorPayments",
   Payroll: "U_HLB_PCONF",
   JournalEtry: "JournalEntries",
-  EmpSalary: "OECI"
+  EmpSalary: "OECI",
+  TerminationRn: "U_HLB_RSGN"
 };
 
 const SAP_QUERIES = {

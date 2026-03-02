@@ -382,6 +382,10 @@ class SAPClient {
         );
     }
 
+    async terminationRN(req) {
+        return await sapGetRequest(req, `${Endpoints.TerminationRn}`);
+    }
+
 }
 
 module.exports = SAPClient;
