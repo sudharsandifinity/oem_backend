@@ -27,6 +27,11 @@ class SAPService extends SAPClient{
 
     // dynamic
 
+    async getReqByEmpIdE_PC(req, EmpId, type, query) {
+        const response = await this.getReqByEmpE_PC(req, EmpId, type, query);
+        return response.data;
+    }
+
     async getReqByEmpId(req, EmpId, query) {
         const response = await this.getReqByEmp(req, EmpId, query);
         // const myLogs = await this.getMyLogs(req, EmpId);
@@ -122,7 +127,7 @@ class SAPService extends SAPClient{
                 return {...response.data, AttachmentData: attachment, Logs: ATLogs};
 
             case "HLB_OECL":
-                const filLogE = myLogs.value.filter((log) => log.U_DocType == "E");
+                const filLogE = myLogs.value.filter((log) => log.U_DocType == "E" || log.U_DocType == "PC");
                 const ELogs = filLogE.filter((log) => log.U_DocNo == response.data.DocEntry);
                 return {...response.data, AttachmentData: attachment, Logs: ELogs};
 
@@ -410,6 +415,15 @@ class SAPService extends SAPClient{
                     patch: this.patchReq.bind(this)
                 };
 
+            case "PC":
+                return {
+                    checkAprv: "U_HLB_PC",
+                    endpoint: Endpoints.Expanses,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchReq.bind(this)
+                };
+
             case "L":
                 return {
                     checkAprv: "U_HLB_LEV",
@@ -482,7 +496,15 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
-    async createRequest (req, DocType) {
+    async createRequest (req, gDocType) {
+
+        let DocType;
+        if(gDocType == "E"){
+            const { U_TransType } = req.body;
+            DocType = U_TransType == "PC" ? "PC":"E";
+        }else{
+            DocType = gDocType;
+        }
 
         const paymentMethod = companyJson.Companies.find(company => 
            company.name == req.user.companyName
@@ -532,6 +554,9 @@ class SAPService extends SAPClient{
         payload.U_Udt = date,
         payload.U_UTm = time,
         payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
+        if (DocType == "E" || DocType == "PC"){
+            payload.U_TransType = DocType
+        }
         
         if(DocType == "L"){
             console.log('inside L');

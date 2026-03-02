@@ -70,6 +70,15 @@ class SAPClient {
         );
     }
 
+    async getReqByEmpE_PC(req, EmpId, type, { endpoint, top = 20, skip = 0 }) {
+        console.log('url', `${endpoint}?${Endpoints.OrderByDocEntry}&${SAP_QUERIES.FilByUempId}'${EmpId}' and U_TransType eq '${type}'&$top=${top}&$skip=${skip}`);
+        
+        return await sapGetRequest(
+            req,
+            `${endpoint}?${Endpoints.OrderByDocEntry}&${SAP_QUERIES.FilByUempId}'${EmpId}' and U_TransType eq '${type}'&$top=${top}&$skip=${skip}`
+        );
+    }
+
     async getReqById(req, endpoint, docEntry ) {
         console.log('docEntry', docEntry);
         return await sapGetRequest(
@@ -107,10 +116,10 @@ class SAPClient {
     async checkApprovalLevels(req, position, model) {
         console.log('position', position);
         console.log('model', model);
-        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`);
+        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and U_ApprID is not null AND ${model} eq 'Y'`);
         return await sapGetRequest(
             req,
-            `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`
+            `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and U_ApprID is not null AND ${model} eq 'Y'`
         );
     }
 

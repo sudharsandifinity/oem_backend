@@ -956,9 +956,10 @@ const viewAttachment = async (req, res) => {
 const getExpanses = async (req, res) => {
   try {
     const { top = 20, skip = 0 } = req.query;
+     const DocType = "E";
     const endpoint = Endpoints.Expanses;
     const EmpId = req.user;
-    const data = await sapService.getReqByEmpId(req, EmpId.EmployeeId, { endpoint, top, skip });
+    const data = await sapService.getReqByEmpIdE_PC(req, EmpId.EmployeeId, DocType, { endpoint, top, skip });
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while getting Expanse request';
@@ -999,6 +1000,20 @@ const resubmitExp = async (req, res) => {
     errorCatch(req, res, message, error);
   }
 }
+
+const getPettyCashes = async (req, res) => {
+  try {
+    const { top = 20, skip = 0 } = req.query;
+     const DocType = "PC";
+    const endpoint = Endpoints.Expanses;
+    const EmpId = req.user;
+    const data = await sapService.getReqByEmpIdE_PC(req, EmpId.EmployeeId, DocType, { endpoint, top, skip });
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Petty Cash list';
+    errorCatch(req, res, message, error);
+  }
+} 
 
 const getTravelExpanses = async (req, res) => {
   try {
@@ -1286,4 +1301,4 @@ const getEmpSalary = async (req, res) => {
   }
 }
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary }
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes }
