@@ -151,6 +151,11 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
+    async patchEmp(req, EmpId, payload){
+        const response = await this.patchEmployee(req, EmpId, payload);
+        return response.data;
+    }
+
     // -----------------------------
 
     async attendanceData(req, EmpId){

@@ -36,7 +36,7 @@ class SAPClient {
     async patchEmployee(req, id, payload) {
         console.log('url', `${Endpoints.Employees}(${id})`);
         
-        return await sapGetRequest(
+        return await sapPatchRequest(
             req,
             `${Endpoints.Employees}(${id})`,
             payload
