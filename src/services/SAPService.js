@@ -1405,14 +1405,40 @@ class SAPService extends SAPClient{
         return res.data.value;
     }
 
-    async getEmpSalary (req) {
-        const res = await this.employeeSalary(req);
-        return res.data.value;
-    }
-
     async getTerRn(req) {
         const res = await this.terminationRN(req);
         return res.data.value;
+    }
+
+    async ListCertificates(req) {
+        const res = await this.Certificates(req);
+        return res.data.value;
+    }
+
+    async ListCertificatesByEmp(req, EmpID) {
+        const res = await this.CertificatesByEmp(req, EmpID);
+        return res.data.value;
+    }
+
+    async addCertReq(req) {
+        const { date } = currentTime();
+        const user = req.user;
+        const emp = await this.getEmployeeDetail(req, user.EmployeeId);
+
+        let payload = {
+            U_EmpName: emp.FirstName +" "+ emp.LastName || "",
+            U_EmpID: emp.EmployeeID || "",
+            U_ApprSts: "P",
+            U_ReqDt: date
+        };
+
+        const res = await this.ReqCert(req, payload);
+        return res.data;
+    }
+
+    async ViewCerts(req, id) {
+        const res = await this.ViewCert(req, id);
+        return res.data;
     }
 }
 

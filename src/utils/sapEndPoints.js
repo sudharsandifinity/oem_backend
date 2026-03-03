@@ -21,7 +21,8 @@ const Endpoints = {
   JournalEtry: "JournalEntries",
   EmpSalary: "OECI",
   TerminationRn: "U_HLB_RSGN",
-  Resignation: "HLB_ORRQ"
+  Resignation: "HLB_ORRQ",
+  Certificate: "HLB_OSCR"
 };
 
 const SAP_QUERIES = {

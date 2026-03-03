@@ -1,4 +1,4 @@
-const { createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp, getPettyCashes, getResignations, getResignation, createResignation, resubmitResignation } = require('../../../controllers/ESSController');
+const { createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp, getPettyCashes, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts } = require('../../../controllers/ESSController');
 const upload = require('../../../middlewares/uploadMiddleware');
 
 router = require('express').Router();
@@ -39,5 +39,10 @@ router.get('/resignations', getResignations);
 router.get('/resignation/:id', getResignation);
 router.post('/resignation', upload.array('Attachments2_Lines'), createResignation);
 router.patch('/resubmit/resignation/:id', upload.array('Attachments2_Lines'), resubmitResignation);
+
+router.get('/all-certificates', listAllCertificates);
+router.get('/certificates', listCertificatesByEmpId);
+router.post('/certificate', addCertReq);
+router.get('/certificate/:id', ViewCerts);
 
 module.exports = router;

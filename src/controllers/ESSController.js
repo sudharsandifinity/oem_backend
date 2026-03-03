@@ -1373,4 +1373,61 @@ const terminationReason = async (req, res) => {
   }
 }
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation }
+const listAllCertificates = async (req, res) => {
+  try {
+    const data = await sapService.ListCertificates(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting certificates!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const listCertificatesByEmpId = async (req, res) => {
+  try {
+    const user = req.user;
+    const data = await sapService.ListCertificatesByEmp(req, user.EmployeeId);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting certificates!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const addCertReq = async (req, res) => {
+  try {
+    const data = await sapService.addCertReq(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while creating certificates!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const ViewCerts = async (req, res) => {
+  try {
+    const  {id} = req.params;
+    const data = await sapService.ViewCerts(req, id);
+    // return res.send(data)
+    const attachment = await sapService.getAttachment(req, data.U_Atch);
+    const attField = attachment.Attachments2_Lines?.[0];
+    // return res.send(attachment)
+    if(!attachment) throw new Error("Attachment not found!");
+    const attachmentUrl = `${sapAPIs.Attachments}(${attField.AbsoluteEntry})/$value?filename='${attField.FileName}.${attField.FileExtension}'`;
+    console.log('attachment link', attachmentUrl);
+
+    const response = await sapGetRequest(req, attachmentUrl, {}, {}, {
+      responseType: 'stream'
+    });
+
+    res.setHeader('Content-Disposition', `inline; filename="${attField.FileName}.${attField.FileExtension}"`);
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+
+    response.data.pipe(res);
+  } catch (error) {
+    const message = 'Error while getting certificate!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts }

@@ -386,6 +386,23 @@ class SAPClient {
         return await sapGetRequest(req, `${Endpoints.TerminationRn}`);
     }
 
+    async Certificates(req) {
+        return await sapGetRequest(req, `${Endpoints.Certificate}`);
+    }
+
+    async CertificatesByEmp(req, empId) {
+        return await sapGetRequest(req, `${Endpoints.Certificate}?$filter=U_EmpID eq '${empId}'`);
+    }
+
+    async ViewCert(req, id) {
+        console.log('url', `${Endpoints.Certificate}(${id})`);
+        return await sapGetRequest(req, `${Endpoints.Certificate}(${id})`);
+    }
+
+    async ReqCert(req, payload) {
+        return await sapPostRequest(req, `${Endpoints.Certificate}`, payload);
+    }
+
 }
 
 module.exports = SAPClient;
