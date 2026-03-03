@@ -20,7 +20,8 @@ const Endpoints = {
   Payroll: "U_HLB_PCONF",
   JournalEtry: "JournalEntries",
   EmpSalary: "OECI",
-  TerminationRn: "U_HLB_RSGN"
+  TerminationRn: "U_HLB_RSGN",
+  Resignation: "HLB_ORRQ"
 };
 
 const SAP_QUERIES = {

@@ -136,6 +136,11 @@ class SAPService extends SAPClient{
                 const RgLogs = filLogRg.filter((log) => log.U_DocNo == response.dataValues.DocEntry);
                 return {...response.dataValues, Logs: RgLogs};
 
+             case "HLB_ORRQ":
+                const filLogRR = myLogs.value.filter((log) => log.U_DocType == "RR");
+                const RRLogs = filLogRR.filter((log) => log.U_DocNo == response.data.DocEntry);
+                return {...response.data, Logs: RRLogs};
+
             default:
                 return [];
         }
@@ -454,6 +459,15 @@ class SAPService extends SAPClient{
                     create: this.createReq.bind(this),
                     getById: this.getRqstById.bind(this),
                     patch: this.patchRgDraft.bind(this)
+                };
+
+            case "RR":
+                return {
+                    checkAprv: "U_HLB_RERQ",
+                    endpoint: Endpoints.Resignation,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchReq.bind(this)
                 };
 
             default:
@@ -1033,6 +1047,8 @@ class SAPService extends SAPClient{
             stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
             // console.log('stg1', stg_1);
         }
+        // return approvalCollection;
+        const isNeedApproval = approvalCollection?.length ?? 0;
 
         if(isNeedApproval){
             for (const element of stg_1) {

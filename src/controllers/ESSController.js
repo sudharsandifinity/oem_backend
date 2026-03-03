@@ -1257,6 +1257,53 @@ const createRegularizeRequest = async (req, res) => {
   }
 }
 
+const getResignations = async (req, res) => {
+  try {
+    const { top = 20, skip = 0 } = req.query;
+    const endpoint = Endpoints.Resignation;
+    const EmpId = req.user;
+    const data = await sapService.getReqByEmpId(req, EmpId.EmployeeId, { endpoint, top, skip });
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Air Tickets!';
+    errorCatch(req, res, message, error);
+  }
+} 
+
+const getResignation = async (req, res) => {
+  try {
+    const {id} = req.params;
+    const endpoint = Endpoints.Resignation;
+    const response = await sapService.getRqstById(req, endpoint, id);
+    res.status(200).json(response);
+  } catch (error) {
+      const message = "Error while fetching air ticket!"
+      errorCatch(req, res, message, error);
+  }
+};
+
+const createResignation = async (req, res) => {
+  try {
+    const DocType = "RR";
+    const data = await sapService.createRequest(req, DocType);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while Resignation!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const resubmitResignation = async (req, res) => {
+  try {
+    const DocType = "RR";
+    const data = await sapService.resubmitRequest(req, DocType);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while resubmiting Resignation!';
+    errorCatch(req, res, message, error);
+  }
+}
+
 const getEmpBenifits = async (req, res) => {
   try {
     const data = await sapService.getEmpBenifits(req);
@@ -1303,10 +1350,9 @@ const getEmpSalary = async (req, res) => {
 
 const termination = async (req, res) => {
   try {
-    const { date } = currentTime();
-    const { EmployeeID, TreminationReason } = req.body;
+    const { EmployeeID, TreminationReason, TerminationDate } = req.body;
     const payload = {
-      TerminationDate: date,
+      TerminationDate: TerminationDate,
       TreminationReason: TreminationReason
     }
     const data = await sapService.patchEmp(req, EmployeeID, payload);
@@ -1327,4 +1373,4 @@ const terminationReason = async (req, res) => {
   }
 }
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason }
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation }
