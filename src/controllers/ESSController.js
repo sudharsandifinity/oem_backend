@@ -1409,10 +1409,10 @@ const ViewCerts = async (req, res) => {
     const  {id} = req.params;
     const data = await sapService.ViewCerts(req, id);
     // return res.send(data)
+    if(!data.U_Atch) throw new Error("Attachment not found!");
     const attachment = await sapService.getAttachment(req, data.U_Atch);
     const attField = attachment.Attachments2_Lines?.[0];
-    // return res.send(attachment)
-    if(!attachment) throw new Error("Attachment not found!");
+    // return res.send(attachment);
     const attachmentUrl = `${sapAPIs.Attachments}(${attField.AbsoluteEntry})/$value?filename='${attField.FileName}.${attField.FileExtension}'`;
     console.log('attachment link', attachmentUrl);
 
@@ -1430,4 +1430,51 @@ const ViewCerts = async (req, res) => {
   }
 }
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts }
+const listWarnByEmpId = async (req, res) => {
+  try {
+    const user = req.user;
+    const data = await sapService.ListWarnByEmp(req, user.EmployeeId);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Warning letter!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const addWarnReq = async (req, res) => {
+  try {
+    const data = await sapService.addWarnReq(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while creating Warning Letter!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const ViewWarnLtr = async (req, res) => {
+  try {
+    const  {id} = req.params;
+    const data = await sapService.ViewWarn(req, id);
+    // return res.send(data)
+    if(!data.U_Atch) throw new Error("Attachment not found!");
+    const attachment = await sapService.getAttachment(req, data.U_Atch);
+    const attField = attachment.Attachments2_Lines?.[0];
+    // return res.send(attachment);
+    const attachmentUrl = `${sapAPIs.Attachments}(${attField.AbsoluteEntry})/$value?filename='${attField.FileName}.${attField.FileExtension}'`;
+    console.log('attachment link', attachmentUrl);
+
+    const response = await sapGetRequest(req, attachmentUrl, {}, {}, {
+      responseType: 'stream'
+    });
+
+    res.setHeader('Content-Disposition', `inline; filename="${attField.FileName}.${attField.FileExtension}"`);
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+
+    response.data.pipe(res);
+  } catch (error) {
+    const message = 'Error while getting warning letter!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr }

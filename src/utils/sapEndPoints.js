@@ -22,7 +22,8 @@ const Endpoints = {
   EmpSalary: "OECI",
   TerminationRn: "U_HLB_RSGN",
   Resignation: "HLB_ORRQ",
-  Certificate: "HLB_OSCR"
+  Certificate: "HLB_OSCR",
+  Warning: "HLB_OWLP",
 };
 
 const SAP_QUERIES = {

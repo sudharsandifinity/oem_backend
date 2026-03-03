@@ -1440,6 +1440,28 @@ class SAPService extends SAPClient{
         const res = await this.ViewCert(req, id);
         return res.data;
     }
+
+    async ListWarnByEmp(req, EmpID) {
+        const res = await this.WarnByEmp(req, EmpID);
+        return res.data.value;
+    }
+
+    async addWarnReq(req) {
+        let payload = req.body;
+        const emp = await this.getEmployeeDetail(req, payload.U_EmpID);
+
+        payload.U_EmpID = emp.EmployeeID || "";
+        payload.U_EmpName = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_ApprSts = "P";
+
+        const res = await this.addWarn(req, payload);
+        return res.data;
+    }
+
+    async ViewWarn(req, id) {
+        const res = await this.WarnLtr(req, id);
+        return res.data;
+    }
 }
 
 module.exports = SAPService;

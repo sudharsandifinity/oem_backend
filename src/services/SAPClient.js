@@ -403,6 +403,19 @@ class SAPClient {
         return await sapPostRequest(req, `${Endpoints.Certificate}`, payload);
     }
 
+    async WarnByEmp(req, empId) {
+        return await sapGetRequest(req, `${Endpoints.Warning}?$filter=U_EmpID eq '${empId}'`);
+    }
+
+    async WarnLtr(req, id) {
+        console.log('url', `${Endpoints.Warning}(${id})`);
+        return await sapGetRequest(req, `${Endpoints.Warning}(${id})`);
+    }
+
+    async addWarn(req, payload) {
+        return await sapPostRequest(req, `${Endpoints.Warning}`, payload);
+    }
+
 }
 
 module.exports = SAPClient;
