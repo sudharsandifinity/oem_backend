@@ -24,6 +24,8 @@ const Endpoints = {
   Resignation: "HLB_ORRQ",
   Certificate: "HLB_OSCR",
   Warning: "HLB_OWLP",
+  LoanTy: "OLON",
+  Loan: "OLOA"
 };
 
 const SAP_QUERIES = {

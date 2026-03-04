@@ -136,10 +136,15 @@ class SAPService extends SAPClient{
                 const RgLogs = filLogRg.filter((log) => log.U_DocNo == response.dataValues.DocEntry);
                 return {...response.dataValues, Logs: RgLogs};
 
-             case "HLB_ORRQ":
+            case "HLB_ORRQ":
                 const filLogRR = myLogs.value.filter((log) => log.U_DocType == "RR");
                 const RRLogs = filLogRR.filter((log) => log.U_DocNo == response.data.DocEntry);
                 return {...response.data, Logs: RRLogs};
+
+             case "OLOA":
+                const filLogLA = myLogs.value.filter((log) => log.U_DocType == "LA");
+                const LALogs = filLogLA.filter((log) => log.U_DocNo == response.data.DocEntry);
+                return {...response.data, Logs: LALogs};
 
             default:
                 return [];
@@ -470,6 +475,15 @@ class SAPService extends SAPClient{
                     patch: this.patchReq.bind(this)
                 };
 
+            case "LA":
+                return {
+                    checkAprv: "U_HLB_OLON",
+                    endpoint: Endpoints.Loan,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchReq.bind(this)
+                };
+
             default:
                 throw new Error("Invalid DocType");
         }
@@ -692,6 +706,13 @@ class SAPService extends SAPClient{
             isLocCur = false
         }
 
+        let amount;
+        if(DocType == "LA"){
+            amount = U_SancnAmt;
+        }else{
+            amount = response.U_ExpAmt;
+        }
+
         const paymentPayload =  {
             "DocType": "rAccount",
             "DocDate": date,
@@ -699,7 +720,7 @@ class SAPService extends SAPClient{
             "DocCurrency": response.U_CUR,
             "CashSum": 0.0,
             "TransferAccount": DocType == "E" ? accNo.U_DAccCode:accNo.U_TRDAcc ?? "",
-            "TransferSum": response.U_ExpAmt,
+            "TransferSum": amount,
             "TransferDate": date,
             "TaxDate": date,
             "VatDate": date,
@@ -710,9 +731,9 @@ class SAPService extends SAPClient{
                 {
                     "LineNum": 0,
                     "AccountCode": DocType == "E" ? accNo.U_DAccCode:accNo.U_TRCAcc ?? "",
-                    "SumPaid": isLocCur ? response.U_ExpAmt:"",
-                    "SumPaidFC": isLocCur ? "":response.U_ExpAmt,
-                    "GrossAmount": response.U_ExpAmt,
+                    "SumPaid": isLocCur ? amount:"",
+                    "SumPaidFC": isLocCur ? "":amount,
+                    "GrossAmount": amount,
                     "ProjectCode": null
                 }
             ]  
@@ -779,8 +800,7 @@ class SAPService extends SAPClient{
         const { date, time } = currentTime();
         const user = req.user;
         const {id} = req.params;
-        const {U_LvAppFDt, U_LvAppTDt, ...payload} = req.body;
-        
+        const {U_LvAppFDt, U_LvAppTDt, U_NoOfInst, U_SancnAmt, U_EffDate, ...payload} = req.body;
         const checkStatus = await this.getLogById(req, id);
         const { endpoint, getById, patch, checkAprv } = await this.checkModule(checkStatus.U_DocType);
         console.log('checkAprv', checkAprv);
@@ -809,6 +829,17 @@ class SAPService extends SAPClient{
             }
             console.log('form pay', formPayload);
             await patch(req, endpoint, checkStatus.U_DocNo, formPayload);
+        } else if(checkStatus.U_DocType == "LA"){
+
+            const formPayload = {
+                "U_NoOfInst": U_NoOfInst??"",
+                "U_SancnAmt": U_SancnAmt??"",
+                "U_EffDate": U_EffDate
+            }
+
+            console.log('form pay', formPayload);
+            await patch(req, endpoint, checkStatus.U_DocNo, formPayload);
+
         }
     
         const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
@@ -1462,6 +1493,31 @@ class SAPService extends SAPClient{
         const res = await this.WarnLtr(req, id);
         return res.data;
     }
+
+    async LoanType(req, id) {
+        const res = await this.LoanTy(req, id);
+        return res.data.value;
+    }
+
+    async LoanList(req, id) {
+        const res = await this.LoanByEmp(req, id);
+        return res.data.value;
+    }
+
+    async LoanReq(req, EmpId) {
+        let payload = req.body;
+        const emp = await this.getEmployeeDetail(req, EmpId);
+
+        payload.U_empID = emp.EmployeeID || "";
+        payload.U_empName = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_PreByCod = emp.EmployeeID || "";
+        payload.U_PreByNam = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_ApprSts = "P";
+
+        const res = await this.LoanPost(req, payload);
+        return res.data;
+    }
+
 }
 
 module.exports = SAPService;

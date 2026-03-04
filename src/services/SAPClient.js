@@ -116,10 +116,10 @@ class SAPClient {
     async checkApprovalLevels(req, position, model) {
         console.log('position', position);
         console.log('model', model);
-        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and U_ApprID is not null AND ${model} eq 'Y'`);
+        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and ${model} eq 'Y'`);
         return await sapGetRequest(
             req,
-            `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and U_ApprID is not null AND ${model} eq 'Y'`
+            `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and ${model} eq 'Y'`
         );
     }
 
@@ -414,6 +414,21 @@ class SAPClient {
 
     async addWarn(req, payload) {
         return await sapPostRequest(req, `${Endpoints.Warning}`, payload);
+    }
+
+    async LoanTy(req) {
+        console.log('url', `${Endpoints.LoanTy}?$select=U_LoanCode,Name`);
+        return await sapGetRequest(req, `${Endpoints.LoanTy}?$select=U_LoanCode,Name`);
+    }
+
+    async LoanByEmp(req, empId) {
+        console.log('url', `${Endpoints.Loan}?$filter=U_EmpID eq '${empId}'`);
+        return await sapGetRequest(req, `${Endpoints.Loan}?$filter=U_empID eq '${empId}'`);
+    }
+
+    async LoanPost(req, payload) {
+        console.log('url', `${Endpoints.Loan}`);
+        return await sapPostRequest(req, `${Endpoints.Loan}`, payload);
     }
 
 }
