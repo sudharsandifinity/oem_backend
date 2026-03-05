@@ -708,7 +708,7 @@ class SAPService extends SAPClient{
 
         let amount;
         if(DocType == "LA"){
-            amount = U_SancnAmt;
+            amount = response.U_SancnAmt;
         }else{
             amount = response.U_ExpAmt;
         }
@@ -996,7 +996,7 @@ class SAPService extends SAPClient{
                         accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
                         accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;
                     }
-                    await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID);
+                    await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID, checkStatus.U_DocType);
                 }
             }
             return

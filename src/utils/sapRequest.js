@@ -24,6 +24,8 @@ async function callSAP(req, method, endpoint, data = {}, headerCont = {}, option
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
       responseType: options.responseType || 'json'
     };
+
+    console.log('SAP URL', `${sapSession.base_url}/${endpoint}`);
     if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
       config.data = data;
     }
