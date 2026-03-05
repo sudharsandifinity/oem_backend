@@ -144,7 +144,7 @@ class SAPService extends SAPClient{
              case "OLOA":
                 const filLogLA = myLogs.value.filter((log) => log.U_DocType == "LA");
                 const LALogs = filLogLA.filter((log) => log.U_DocNo == response.data.DocEntry);
-                return {...response.data, Logs: LALogs};
+                return {...response.data, AttachmentData: attachment, Logs: LALogs};
 
             default:
                 return [];
@@ -731,8 +731,7 @@ class SAPService extends SAPClient{
                 {
                     "LineNum": 0,
                     "AccountCode": DocType == "E" ? accNo.U_DAccCode:accNo.U_TRCAcc ?? "",
-                    "SumPaid": isLocCur ? amount:"",
-                    "SumPaidFC": isLocCur ? "":amount,
+                    ...(isLocCur ? { SumPaid: amount } : { SumPaidFC: amount }),
                     "GrossAmount": amount,
                     "ProjectCode": null
                 }
