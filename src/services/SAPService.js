@@ -967,6 +967,9 @@ class SAPService extends SAPClient{
 
             
             if(checkStatus.U_DocType == "L"){
+                if(!updatedExpReq.U_LvAppTDt || !updatedExpReq.U_LvAppTDt){
+                    throw new Error("Approved dates not found!");
+                }
                 const noDays = await this.calculateDays(updatedExpReq.U_LvAppFDt, updatedExpReq.U_LvAppTDt);
                 console.log('updatedExpReq', updatedExpReq);
                 console.log('no days', noDays);
@@ -996,8 +999,10 @@ class SAPService extends SAPClient{
 
                     if(checkStatus.U_DocType === "E"){
                         const expTypes = await this.getAllExpTypes(req);
-                        const val = expTypes.value.filter((e) => e.U_ExpName == expReq.U_ExpType);
-                            accNo.U_DAccCode = val?.[0]?.U_DAccCode;
+                        
+                        const val = expTypes.value.filter((e) => e.U_ExpCode == expReq.U_ExpType);
+                        console.log('E acc', val);
+                        accNo.U_DAccCode = val?.[0]?.U_DAccCode;
                     }else{
                         accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
                         accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;

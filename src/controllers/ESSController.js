@@ -1250,7 +1250,7 @@ const getAttandanceData = async (req, res) => {
 const getEmpRegReq = async (req, res) => {
     try {
       const user = req.user; 
-      const data = await sapService.RegReqById(req, user.EmployeeId);
+      const data = await sapService.RegReqById(user.EmployeeId);
       return res.status(200).json(data);
     } catch (error) {
       const message = 'Error while getting Regularization data!';
