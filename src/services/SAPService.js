@@ -489,6 +489,13 @@ class SAPService extends SAPClient{
         }
     }
 
+    async RegReqById (id){
+        const data = await AttendanceRegularizationDraft.findAll({
+            where: { U_EmpID: id },
+        });
+        return data;
+    }
+
     async patchRgDraft (req, endpoint, docEntry, empReqPayload) {
         const response = await AttendanceRegularizationDraft.findByPk(docEntry, {
             attributes: {
@@ -1071,15 +1078,15 @@ class SAPService extends SAPClient{
         if(Array.isArray(approvalCollectionArr)){
             approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
         }
+        // return approvalCollection;
+        const isNeedApproval = approvalCollection?.length ?? 0;
         
         let stg_1;
         if(isNeedApproval){
             stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
             // console.log('stg1', stg_1);
         }
-        // return approvalCollection;
-        const isNeedApproval = approvalCollection?.length ?? 0;
-
+        
         if(isNeedApproval){
             for (const element of stg_1) {
 
