@@ -1225,7 +1225,7 @@ class SAPService extends SAPClient{
 
         const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
         const allExpanses = expResult.status === 'fulfilled' ? expResult.value.value || [] : [];
-        const allTExpsReq = tExpResult.status === 'fulfilled' ? expResult.value.value || [] : [];
+        const allTExpsReq = tExpResult.status === 'fulfilled' ? tExpResult.value.value || [] : [];
         const allLeaveRq = leaveResult.status === 'fulfilled' ? leaveResult.value.value || [] : [];
         const attachments = attResult.status === 'fulfilled' ? attResult.value.value || [] : [];
         const OTs = otResult.status === 'fulfilled' ? otResult.value.value || [] : [];
