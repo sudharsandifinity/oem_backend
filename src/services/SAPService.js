@@ -612,7 +612,10 @@ class SAPService extends SAPClient{
             if(checkAva[0]?.U_BalLeave < noDays){
                 return {message: "Applied leave is greater than Balance!"}
             }
-            
+
+            payload.U_LvAppFDt = payload.U_FromDate;
+            payload.U_LvAppTDt = payload.U_Todate;
+            payload.U_NoLveApp = noDays || 0;
             payload.U_PreByCod = user.EmployeeId || 0;
             payload.U_NoDayLve = noDays || 0;
             if(!isNeedApproval){
