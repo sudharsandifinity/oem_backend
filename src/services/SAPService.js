@@ -829,8 +829,8 @@ class SAPService extends SAPClient{
             const noDays = await this.calculateDays(U_LvAppFDt??expReq.U_FromDate, U_LvAppTDt??expReq.U_Todate)
 
             const formPayload = {
-                "U_LvAppFDt": U_LvAppFDt??"",
-                "U_LvAppTDt": U_LvAppTDt??"",
+                "U_LvAppFDt": U_LvAppFDt??expReq.U_FromDate,
+                "U_LvAppTDt": U_LvAppTDt??expReq.U_Todate,
                 "U_NoLveApp": noDays
             }
             console.log('form pay', formPayload);
@@ -967,9 +967,9 @@ class SAPService extends SAPClient{
 
             
             if(checkStatus.U_DocType == "L"){
-                if(!updatedExpReq.U_LvAppTDt || !updatedExpReq.U_LvAppTDt){
-                    throw new Error("Approved dates not found!");
-                }
+                // if(!updatedExpReq.U_LvAppTDt || !updatedExpReq.U_LvAppTDt){
+                //     throw new Error("Approved dates not found!");
+                // }
                 const noDays = await this.calculateDays(updatedExpReq.U_LvAppFDt, updatedExpReq.U_LvAppTDt);
                 console.log('updatedExpReq', updatedExpReq);
                 console.log('no days', noDays);
