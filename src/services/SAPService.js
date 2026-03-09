@@ -706,6 +706,7 @@ class SAPService extends SAPClient{
 
     async PayOut(req, response, accNo, getData, branchId, DocType){
         const { date, time } = currentTime();
+        const { endpoint, patch } = await this.checkModule(DocType);
         console.log('accNo', accNo);
         console.log('branchId', branchId);
         
@@ -749,7 +750,24 @@ class SAPService extends SAPClient{
 
         }
         console.log('payout payload', paymentPayload);
-        await this.vendorPayment(req, paymentPayload);
+        try{
+            const payout = await this.vendorPayment(req, paymentPayload);
+            // console.log('payout entry', payout?.data);
+            const patchPayload = {
+                "U_OPNo": payout?.data?.DocEntry,
+                "U_PSts": payout?.data?.DocEntry?"Success":payout.error
+            }
+            // console.log('patch payload', patchPayload);
+            await patch(req, endpoint, response.DocEntry, patchPayload); 
+        
+        } catch(err){
+            const patchPayload = {
+                "U_OPNo": "",
+                "U_PSts": err.response?.data?.error?.message?.value
+            }
+            // console.log('patch payload', patchPayload);
+            await patch(req, endpoint, response.DocEntry, patchPayload); 
+        }
     }
 
     async APInvoice (req, emp, response, U_DocType){
