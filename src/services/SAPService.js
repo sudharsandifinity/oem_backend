@@ -1531,14 +1531,13 @@ class SAPService extends SAPClient{
         const { date } = currentTime();
         const user = req.user;
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
-
         let payload = {
+            ...req.body,
             U_EmpName: emp.FirstName +" "+ emp.LastName || "",
             U_EmpID: emp.EmployeeID || "",
             U_ApprSts: "P",
             U_ReqDt: date
         };
-
         const res = await this.ReqCert(req, payload);
         return res.data;
     }
