@@ -297,6 +297,16 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
+    async getAllAirTicket(req){
+        const response = await this.getAllAT(req);
+        return response.data.value;
+    }
+
+    async getAllLoans(req){
+        const response = await this.getAllLoan(req);
+        return response.data.value;
+    }
+
     async getTExpByEmpId(req, EmpId, query){
         const response = await this.getTExpByEmp(req, EmpId, query);
         return response.data;
@@ -1244,6 +1254,8 @@ class SAPService extends SAPClient{
             this.getAllAtts(req),
             this.getAllOTR(req),
             AttendanceRegularizationDraft.findAll(),
+            this.getAllAirTicket(req),
+            this.getAllLoans(req),
         ]);
 
         const [
@@ -1253,7 +1265,9 @@ class SAPService extends SAPClient{
             leaveResult,
             attResult,
             otResult,
-            rgResult
+            rgResult,
+            airResult,
+            loanResult
         ] = results;
 
         const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
@@ -1263,6 +1277,8 @@ class SAPService extends SAPClient{
         const attachments = attResult.status === 'fulfilled' ? attResult.value.value || [] : [];
         const OTs = otResult.status === 'fulfilled' ? otResult.value.value || [] : [];
         const Rgs = rgResult.status === 'fulfilled' ? rgResult.value || [] : [];
+        const ATs = airResult.status === 'fulfilled' ? airResult.value || [] : [];
+        const Loans = loanResult.status === 'fulfilled' ? loanResult.value || [] : [];
 
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
@@ -1322,6 +1338,26 @@ class SAPService extends SAPClient{
             ])
         );
 
+        const AirTicketMap = new Map(
+            ATs.map(t => [
+                t.DocEntry,
+                {
+                    ...t,
+                    AttachmentData: attachmentMap.get(Number(t.U_Atch)) || null
+                }
+            ])
+        );
+
+        const LoanData = new Map(
+            Loans.map(t => [
+                t.DocEntry,
+                {
+                    ...t,
+                    AttachmentData: attachmentMap.get(Number(t.U_Atch)) || null
+                }
+            ])
+        );
+
         const result = logs.map(log => {
             let expenseData = null;
 
@@ -1344,6 +1380,14 @@ class SAPService extends SAPClient{
 
                 case "OR":
                     expenseData = Rg.get(Number(log.U_DocNo)) || null;
+                    break;
+
+                case "AT":
+                    expenseData = AirTicketMap.get(Number(log.U_DocNo)) || null;
+                    break;
+
+                case "LA":
+                    expenseData = LoanData.get(Number(log.U_DocNo)) || null;
                     break;
             }
 

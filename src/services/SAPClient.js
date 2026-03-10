@@ -278,6 +278,20 @@ class SAPClient {
         );
     }
 
+    async getAllAT(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.AirTicket}?${SAP_QUERIES.OrderByDocEntry}`
+        );
+    }
+
+    async getAllLoan(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Loan}?${SAP_QUERIES.OrderByDocEntry}`
+        );
+    }
+
     async getTExpByEmp(req, EmpId, { top = 20, skip = 0 }) {
         return await sapGetRequest(
             req,
