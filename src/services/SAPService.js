@@ -312,6 +312,11 @@ class SAPService extends SAPClient{
         return response.data.value;
     }
 
+    async getAllRR(req){
+        const response = await this.getAllRRs(req);
+        return response.data.value;
+    }
+
     async getTExpByEmpId(req, EmpId, query){
         const response = await this.getTExpByEmp(req, EmpId, query);
         return response.data;
@@ -1261,6 +1266,7 @@ class SAPService extends SAPClient{
             AttendanceRegularizationDraft.findAll(),
             this.getAllAirTicket(req),
             this.getAllLoans(req),
+            this.getAllRR(req),
         ]);
 
         const [
@@ -1272,7 +1278,8 @@ class SAPService extends SAPClient{
             otResult,
             rgResult,
             airResult,
-            loanResult
+            loanResult,
+            resignationResult
         ] = results;
 
         const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
@@ -1284,6 +1291,7 @@ class SAPService extends SAPClient{
         const Rgs = rgResult.status === 'fulfilled' ? rgResult.value || [] : [];
         const ATs = airResult.status === 'fulfilled' ? airResult.value || [] : [];
         const Loans = loanResult.status === 'fulfilled' ? loanResult.value || [] : [];
+        const RRs = resignationResult.status === 'fulfilled' ? resignationResult.value || [] : [];
 
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
@@ -1363,6 +1371,15 @@ class SAPService extends SAPClient{
             ])
         );
 
+        const RR = new Map(
+            RRs.map(r => [
+                r.DocEntry,
+                {
+                    ...r
+                }
+            ])
+        );
+
         const result = logs.map(log => {
             let expenseData = null;
 
@@ -1393,6 +1410,10 @@ class SAPService extends SAPClient{
 
                 case "LA":
                     expenseData = LoanData.get(Number(log.U_DocNo)) || null;
+                    break;
+
+                case "RR":
+                    expenseData = RR.get(Number(log.U_DocNo)) || null;
                     break;
             }
 

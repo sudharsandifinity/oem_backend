@@ -140,7 +140,7 @@ class SAPClient {
     async getPCTypes(req) {
         return await sapGetRequest(
             req,
-            `${Endpoints.PCTypes}?$select=Code,U_PType`
+            `${Endpoints.PCTypes}?$select=Code,Name`
         );
     }
 
@@ -296,6 +296,13 @@ class SAPClient {
         return await sapGetRequest(
             req,
             `${Endpoints.Loan}?${SAP_QUERIES.OrderByDocEntry}`
+        );
+    }
+    
+    async getAllRRs(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Resignation}?${SAP_QUERIES.OrderByDocEntry}`
         );
     }
 
