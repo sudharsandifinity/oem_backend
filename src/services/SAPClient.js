@@ -137,6 +137,13 @@ class SAPClient {
         );
     }
 
+    async getPCTypes(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.PCTypes}?$select=Code,U_PType`
+        );
+    }
+
     async getPayAcc(req) {
         console.log('sap url', `${Endpoints.Payroll}`);
         return await sapGetRequest(

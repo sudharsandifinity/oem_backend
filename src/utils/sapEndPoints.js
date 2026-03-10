@@ -7,6 +7,7 @@ const Endpoints = {
   Expanses: "HLB_OECL",
   OrderByDocEntry: "$orderby=DocEntry desc",
   ExpanseTypes: "HLB_EXPM",
+  PCTypes: "HLB_OPCM",
   ApprovalLevels: "HLB_OAPP",
   Currency: "Currencies",
   Attachments: "Attachments2",

@@ -207,6 +207,11 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
+    async getAllPCTypes(req) {
+        const response = await this.getPCTypes(req);
+        return response.data;
+    }
+
     async getPaymentAccount(req) {
         const response = await this.getPayAcc(req);
         return response.data.value;
