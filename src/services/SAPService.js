@@ -620,7 +620,12 @@ class SAPService extends SAPClient{
         
         if(DocType == "L"){
             console.log('inside L');
-            const noDays = await this.calculateDays(payload.U_FromDate, payload.U_Todate)
+            let noDays;
+            if(payload.U_LeaveMode == "F"){
+                noDays = await this.calculateDays(payload.U_FromDate, payload.U_Todate)
+            }else{
+                noDays = 0.5;
+            }
             console.log('no days', noDays);
             const leaves = await this.getAllLeaveType(req, user.EmployeeId);
             const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
@@ -747,6 +752,7 @@ class SAPService extends SAPClient{
         const paymentPayload =  {
             "DocType": "rAccount",
             "DocDate": date,
+            "JournalMemo": response.U_Rem ?? null,
             "CashAccount": null,
             "DocCurrency": response.U_CUR,
             "CashSum": 0.0,
@@ -866,8 +872,14 @@ class SAPService extends SAPClient{
     
         console.log('payload', payload);
 
-        if(checkStatus.U_DocType == "L" && U_LvAppFDt && U_LvAppTDt){
-            const noDays = await this.calculateDays(U_LvAppFDt??expReq.U_FromDate, U_LvAppTDt??expReq.U_Todate)
+        if(checkStatus.U_DocType == "L"){
+
+            let noDays;
+            if(payload.U_LeaveMode == "F"){
+                noDays = await this.calculateDays(U_LvAppFDt??expReq.U_FromDate, U_LvAppTDt??expReq.U_Todate);
+            }else{
+                noDays = 0.5;
+            }
 
             const formPayload = {
                 "U_LvAppFDt": U_LvAppFDt??expReq.U_FromDate,
@@ -1011,7 +1023,12 @@ class SAPService extends SAPClient{
                 // if(!updatedExpReq.U_LvAppTDt || !updatedExpReq.U_LvAppTDt){
                 //     throw new Error("Approved dates not found!");
                 // }
-                const noDays = await this.calculateDays(updatedExpReq.U_LvAppFDt, updatedExpReq.U_LvAppTDt);
+                let noDays;
+                if(payload.U_LeaveMode == "F"){
+                    noDays = await this.calculateDays(updatedExpReq.U_LvAppFDt, updatedExpReq.U_LvAppTDt);
+                }else{
+                    noDays = 0.5;
+                }
                 console.log('updatedExpReq', updatedExpReq);
                 console.log('no days', noDays);
                 console.log('inside L');
