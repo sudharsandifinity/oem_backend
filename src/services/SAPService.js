@@ -1413,6 +1413,10 @@ class SAPService extends SAPClient{
                     expenseData = expenseWithAttMap.get(Number(log.U_DocNo)) || null;
                     break;
 
+                case "PC":
+                    expenseData = expenseWithAttMap.get(Number(log.U_DocNo)) || null;
+                    break;
+
                 case "L":
                     expenseData = LeaveMap.get(Number(log.U_DocNo)) || null;
                     break;
