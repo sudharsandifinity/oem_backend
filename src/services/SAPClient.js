@@ -376,11 +376,11 @@ class SAPClient {
 
     async patchLv(req, docEntry, payload) {
         console.log('docEntry', docEntry);
-        console.log('leave patch payload', payload);
+        console.log('leave balance patch payload', payload);
         
         return await sapPatchRequest(
             req,
-            `${Endpoints.Leave}(${docEntry})`,
+            `${Endpoints.LeaveType}('${docEntry}')`,
             payload
         );
     }

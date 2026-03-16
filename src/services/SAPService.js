@@ -645,6 +645,17 @@ class SAPService extends SAPClient{
             payload.U_NoDayLve = noDays || 0;
             if(!isNeedApproval){
                 payload.U_BalLeave = checkAva[0]?.U_BalLeave - noDays || 0;
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkAva[0]?.LineId,
+                        "U_BalLeave": checkAva[0]?.U_BalLeave - noDays || 0
+                        }
+                    ]
+                }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkAva[0]?.Code, leaveUpdatePayload);
+                console.log('leave updated');
             }
         }
 
@@ -752,7 +763,7 @@ class SAPService extends SAPClient{
         const paymentPayload =  {
             "DocType": "rAccount",
             "DocDate": date,
-            "JournalMemo": response.U_Rem ?? null,
+            "JournalRemarks": response.U_Rem ?? "",
             "CashAccount": null,
             "DocCurrency": response.U_CUR,
             "CashSum": 0.0,
@@ -1032,15 +1043,32 @@ class SAPService extends SAPClient{
                 console.log('updatedExpReq', updatedExpReq);
                 console.log('no days', noDays);
                 console.log('inside L');
-                const leaves = await this.getAllLeaveType(req, user.EmployeeId);
+                const leaves = await this.getAllLeaveType(req, requester.EmployeeID);
                 const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
                 const checkAva = collection.filter(lev =>
                     lev.U_LveCode?.trim() === updatedExpReq.U_LveCode?.trim()
                 );
 
+                console.log('checkAva[0]', checkAva[0]);
+                console.log('checkAva[0]?.U_BalLeave', checkAva[0]?.U_BalLeave);
+                console.log('noDays', noDays);
+                console.log('checkAva[0]?.U_BalLeave < noDays', checkAva[0]?.U_BalLeave < noDays);
+
                 if(checkAva[0]?.U_BalLeave < noDays){
                     return {message: "Applied leave is greater than Balance!"}
                 }
+
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkAva[0]?.LineId,
+                        "U_BalLeave": checkAva[0]?.U_BalLeave - noDays || 0
+                        }
+                    ]
+                }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkAva[0]?.Code, leaveUpdatePayload);
+                console.log('leave updated');
                 
                 empReqPayload.U_BalLeave = updatedExpReq.U_NoDayLve || 0;
             }
