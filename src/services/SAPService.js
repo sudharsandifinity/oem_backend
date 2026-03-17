@@ -29,7 +29,21 @@ class SAPService extends SAPClient{
 
     async getReqByEmpIdE_PC(req, EmpId, type, query) {
         const response = await this.getReqByEmpE_PC(req, EmpId, type, query);
-        return response.data;
+        const attachments = await this.getAllAtts(req);
+
+        const attachmentMap = new Map(
+            attachments.value.map(att => [att.AbsoluteEntry, att])
+        );
+
+        const expenseWithAttMap = response.data.value.map(exp => (
+            {
+                ...exp,
+                AttachmentData: exp.U_Atch
+                    ? attachmentMap.get(Number(exp.U_Atch)) || null
+                    : null
+            }));
+
+        return expenseWithAttMap;
     }
 
     async getReqByEmpId(req, EmpId, query) {
