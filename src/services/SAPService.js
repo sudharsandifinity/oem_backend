@@ -695,6 +695,7 @@ class SAPService extends SAPClient{
                         const expTypes = await this.getAllExpTypes(req);
                         const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
                         accNo.U_DAccCode = val?.[0]?.U_DAccCode;
+                        accNo.U_CAccCode = val?.[0]?.U_CAccCode;
                     }else{
                         accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
                         accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;
@@ -781,7 +782,7 @@ class SAPService extends SAPClient{
             "CashAccount": null,
             "DocCurrency": response.U_CUR,
             "CashSum": 0.0,
-            "TransferAccount": DocType == "E" ? accNo.U_DAccCode:accNo.U_TRDAcc ?? "",
+            "TransferAccount": DocType == "E" ? accNo.U_CAccCode:accNo.U_TRDAcc ?? "",
             "TransferSum": amount,
             "TransferDate": date,
             "TaxDate": date,
@@ -1103,6 +1104,7 @@ class SAPService extends SAPClient{
                         const val = expTypes.value.filter((e) => e.U_ExpCode == expReq.U_ExpType);
                         console.log('E acc', val);
                         accNo.U_DAccCode = val?.[0]?.U_DAccCode;
+                        accNo.U_CAccCode = val?.[0]?.U_CAccCode;
                     }else{
                         accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
                         accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;

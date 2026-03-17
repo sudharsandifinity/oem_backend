@@ -38,7 +38,7 @@ const SAP_QUERIES = {
   OrderByCode: "$orderby=Code desc",
   OrderByDocEntry: "$orderby=DocEntry desc",
   OrderByAbsoluteEntry: "$orderby=AbsoluteEntry desc",
-  ExpTypeSlct: "$select=U_ExpCode,U_ExpName, U_DAccCode",
+  ExpTypeSlct: "$select=U_ExpCode,U_ExpName, U_DAccCode, U_CAccCode",
 };
 
 module.exports = { Endpoints, SAP_QUERIES };
