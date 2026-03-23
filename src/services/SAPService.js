@@ -377,16 +377,34 @@ class SAPService extends SAPClient{
     }
 
     async calculateDays(fromDate, toDate) {
+        const formatDate = (dateStr) => {
+            if (/^\d{8}$/.test(dateStr)) {
+                return dateStr;
+            }
+
+            const d = new Date(dateStr);
+            if (isNaN(d)) {
+                throw new Error("Invalid date: " + dateStr);
+            }
+
+            return d.getUTCFullYear().toString() +
+                String(d.getUTCMonth() + 1).padStart(2, '0') +
+                String(d.getUTCDate()).padStart(2, '0');
+        };
+
+        const formattedFrom = formatDate(fromDate);
+        const formattedTo = formatDate(toDate);
+        
         const from = new Date(
-            fromDate.toString().slice(0,4),
-            fromDate.toString().slice(4,6) - 1,
-            fromDate.toString().slice(6,8)
+            formattedFrom.toString().slice(0,4),
+            formattedFrom.toString().slice(4,6) - 1,
+            formattedFrom.toString().slice(6,8)
         );
 
         const to = new Date(
-            toDate.toString().slice(0,4),
-            toDate.toString().slice(4,6) - 1,
-            toDate.toString().slice(6,8)
+            formattedTo.toString().slice(0,4),
+            formattedTo.toString().slice(4,6) - 1,
+            formattedTo.toString().slice(6,8)
         );
         
         const diffTime = to - from;
@@ -1068,12 +1086,13 @@ class SAPService extends SAPClient{
                 console.log('checkAva[0]?.U_BalLeave', checkAva[0]?.U_BalLeave);
                 console.log('noDays', noDays);
                 console.log('checkAva[0]?.U_BalLeave < noDays', checkAva[0]?.U_BalLeave < noDays);
+                const balance_leave = checkAva[0]?.U_BalLeave - noDays || 0;
 
                 const leaveUpdatePayload  = {
                     "INPR_ECI5Collection": [
                         {
                         "LineId": checkAva[0]?.LineId,
-                        "U_BalLeave": checkAva[0]?.U_BalLeave - noDays || 0
+                        "U_BalLeave": balance_leave
                         }
                     ]
                 }
@@ -1081,7 +1100,7 @@ class SAPService extends SAPClient{
                 await this.patchLvReq(req, checkAva[0]?.Code, leaveUpdatePayload);
                 console.log('leave updated');
                 
-                empReqPayload.U_BalLeave = updatedExpReq.U_NoDayLve || 0;
+                empReqPayload.U_BalLeave = balance_leave;
             }
             console.log('empReqPayload', empReqPayload);
             
