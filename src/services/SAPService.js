@@ -901,7 +901,7 @@ class SAPService extends SAPClient{
         if(checkStatus.U_DocType == "L"){
 
             let noDays;
-            if(payload.U_LeaveMode == "F"){
+            if(expReq.U_LeaveMode == "F"){
                 noDays = await this.calculateDays(U_LvAppFDt??expReq.U_FromDate, U_LvAppTDt??expReq.U_Todate);
             }else{
                 noDays = 0.5;
@@ -1050,7 +1050,7 @@ class SAPService extends SAPClient{
                 //     throw new Error("Approved dates not found!");
                 // }
                 let noDays;
-                if(payload.U_LeaveMode == "F"){
+                if(expReq.U_LeaveMode == "F"){
                     noDays = await this.calculateDays(updatedExpReq.U_LvAppFDt, updatedExpReq.U_LvAppTDt);
                 }else{
                     noDays = 0.5;
@@ -1068,10 +1068,6 @@ class SAPService extends SAPClient{
                 console.log('checkAva[0]?.U_BalLeave', checkAva[0]?.U_BalLeave);
                 console.log('noDays', noDays);
                 console.log('checkAva[0]?.U_BalLeave < noDays', checkAva[0]?.U_BalLeave < noDays);
-
-                if(checkAva[0]?.U_BalLeave < noDays){
-                    return {message: "Applied leave is greater than Balance!"}
-                }
 
                 const leaveUpdatePayload  = {
                     "INPR_ECI5Collection": [
