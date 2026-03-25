@@ -444,9 +444,9 @@ class SAPClient {
         return await sapPostRequest(req, `${Endpoints.Warning}`, payload);
     }
 
-    async LoanTy(req) {
-        console.log('url', `${Endpoints.LoanTy}?$select=U_LoanCode,Name`);
-        return await sapGetRequest(req, `${Endpoints.LoanTy}?$select=U_LoanCode,Name`);
+    async LoanTy(req, type="L") {
+        console.log('url', `${Endpoints.LoanTy}?$select=U_LoanCode,Name&$filter= U_DocType eq '${type}'`);
+        return await sapGetRequest(req, `${Endpoints.LoanTy}?$select=U_LoanCode,Name&$filter= U_DocType eq '${type}'`);
     }
 
     async LoanByEmp(req, empId) {

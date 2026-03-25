@@ -1675,8 +1675,8 @@ class SAPService extends SAPClient{
         return res.data;
     }
 
-    async LoanType(req, id) {
-        const res = await this.LoanTy(req, id);
+    async LoanType(req, type) {
+        const res = await this.LoanTy(req, type);
         return res.data.value;
     }
 

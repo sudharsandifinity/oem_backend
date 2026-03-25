@@ -50,7 +50,7 @@ router.get('/warnings', listWarnByEmpId);
 router.post('/warning', addWarnReq);
 router.get('/warning/:id', ViewWarnLtr);
 
-router.get('/loan/types', LoanTypes);
+router.post('/loan/types', LoanTypes);
 router.get('/loans', getLoans);
 router.post('/loan', upload.array('Attachments2_Lines'), createLoan);
 router.get('/loan/:id', getLoan);

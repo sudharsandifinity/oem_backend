@@ -1500,7 +1500,8 @@ const ViewWarnLtr = async (req, res) => {
 
 const LoanTypes = async (req, res) => {
   try {
-    const data = await sapService.LoanType(req);
+    const { U_LType } = req.body;
+    const data = await sapService.LoanType(req, U_LType);
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while getting Loan Types!';
