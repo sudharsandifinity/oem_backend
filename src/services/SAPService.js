@@ -1,4 +1,4 @@
-const { currentTime } = require('../utils/currentTime');
+const { currentTime, addMinutes } = require('../utils/currentTime');
 const { Endpoints } = require('../utils/sapEndPoints');
 const { sapPatchRequest } = require('../utils/sapRequestMethods');
 const { AttendanceRegularizationDraft } = require('../models');
@@ -973,7 +973,18 @@ class SAPService extends SAPClient{
     
         // console.log('checkStatus', checkStatus.data);
         // console.log('getLogs', getLogs.data.value.length);
-        const totalLogs = isResubmitted?latestLogs.length:getLogs.value.length;
+        let totalLogs;
+        if(checkStatus.U_DocType == "OR"){
+            const expDocDate = new Date(expReq.updatedAt);
+            latestLogs = getLogs.value.filter((i) => { 
+                const logDateTimeStr = `${i.U_CDt.split('T')[0]}T${i.U_CTm}`;
+                const logEntryDate = new Date(logDateTimeStr);
+                if(logEntryDate >= expDocDate) return i;
+            });
+            totalLogs = latestLogs.length;
+        }else{
+            totalLogs = isResubmitted?latestLogs.length:getLogs.value.length
+        }
     
         console.log('toallog', totalLogs);
         // console.log('totalAprLevs', totalAprLevs);
@@ -1518,13 +1529,21 @@ class SAPService extends SAPClient{
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         // console.log('app lev', app_lev);return
+        let approvalCollection;
         const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
-        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
         const isNeedApproval = approvalCollection?.length ?? 0;
         // console.log('approvalCollection', approvalCollection);
         // console.log('isNeedApproval', isNeedApproval);
         // console.log('req.files', req.files);
         // return approvalCollection;
+        let stg_1;
+        if(isNeedApproval){
+            stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
+            // console.log('stg1', stg_1);
+        }
 
         let attachments = null;
 
@@ -1551,49 +1570,50 @@ class SAPService extends SAPClient{
         // if(response.U_ApprSts == 'P'){
         //     return ('Request is already Pending!')
         // }
-
         const createdData = await AttendanceRegularizationDraft.create(payload);
         if(isNeedApproval){
-            const isDelegationId = approvalCollection?.[0]?.U_DlgID;
-            let isDelegationValid = false;
+            for (const element of stg_1) {
+                const isDelegationId = element.U_DlgID;
+                let isDelegationValid = false;
 
-            // console.log('isDelegationId', isDelegationId);
+                // console.log('isDelegationId', isDelegationId);
 
-            if(isDelegationId){
-                const currentDate = new Date(
-                `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
-                    .toString()
-                    .slice(6, 8)}`
-                );
+                if(isDelegationId){
+                    const currentDate = new Date(
+                    `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                        .toString()
+                        .slice(6, 8)}`
+                    );
 
-                const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
-                const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
+                    const fromDate = new Date(element.U_FrmDt);
+                    const toDate = new Date(element.U_ToDt);
 
-                // console.log("currentDate", currentDate);
-                // console.log("fromDate", fromDate);
-                // console.log("toDate", toDate);
-            
-                isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-                // console.log("isDelegationValid", isDelegationValid);
+                    // console.log("currentDate", currentDate);
+                    // console.log("fromDate", fromDate);
+                    // console.log("toDate", toDate);
+                
+                    isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                    // console.log("isDelegationValid", isDelegationValid);
+                }
+                const newTime = addMinutes(time, 1);
+                let logPayload = {
+                    "Name": payload.Name,
+                    "U_ReqID": user.EmployeeId,
+                    "U_DocType": "OR",
+                    "U_DocNo": payload.Code ?? createdData.id,
+                    "U_Stg": isNeedApproval?"1":"",
+                    "U_AppId": isNeedApproval?element.U_ApprID:"",
+                    "U_ApprName": isNeedApproval?element.U_ApprName:"",
+                    "U_AppSts": isNeedApproval?"P":"A",
+                    "U_PosId": emp.Position,
+                    "U_DelID": isDelegationValid?element.U_DlgID:"",
+                    "U_DelName": isDelegationValid?element.U_DlgName:"",
+                    "U_CDt": date,
+                    "U_CTm": newTime
+                } 
+                console.log('logpayload', logPayload);
+                await this.createLog(req, logPayload); 
             }
-            
-            let logPayload = {
-                "Name": payload.Name,
-                "U_ReqID": user.EmployeeId,
-                "U_DocType": "OR",
-                "U_DocNo": payload.Code ?? createdData.id,
-                "U_Stg": isNeedApproval?"1":"",
-                "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
-                "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
-                "U_AppSts": isNeedApproval?"P":"A",
-                "U_PosId": emp.Position,
-                "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
-                "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
-                "U_CDt": date,
-                "U_CTm": time
-            } 
-            console.log('logpayload', logPayload);
-            await this.createLog(req, logPayload); 
         }else{
             delete payload.U_ApprSts;
             if(payload.Code){

@@ -245,6 +245,7 @@ class SAPClient {
     }
 
     async getRequestLogs(req, col ) {
+        console.log('sap url', `${Endpoints.AllLogEntries}?${SAP_QUERIES.LogFilterByReq} '${col.U_DocNo}' and U_DocType eq '${col.U_DocType}'`);
         console.log('log col', col);
         
         return await sapGetRequest(
