@@ -945,9 +945,18 @@ class SAPService extends SAPClient{
 
         }
     
+        // const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        // const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        // const totalAprLevs = approvalCollection.length;
+
+        let approvalCollection;
         const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
-        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
-        const totalAprLevs = approvalCollection.length;
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
+        // return approvalCollection;
+        const totalAprLevs = approvalCollection.length ?? 0;
+        const isNeedApproval = approvalCollection?.length ?? 0;
         
         console.log('approvalCollection', approvalCollection);
         console.log('totalAprLevs', totalAprLevs);
@@ -1042,7 +1051,7 @@ class SAPService extends SAPClient{
         // console.log('totalLogs', totalLogs);
         const updatedExpReq = await getById(req, endpoint,checkStatus.U_DocNo);
     
-        if(totalAprLevs == totalLogs){
+        if(totalAprLevs == totalLogs || !isNeedApproval){
           console.log('inside final approval');
     
           const getLatestLogs = await this.getLogByDoc(req, checkStatus);
