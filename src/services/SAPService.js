@@ -955,7 +955,7 @@ class SAPService extends SAPClient{
             approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
         }
         // return approvalCollection;
-        const totalAprLevs = approvalCollection.length ?? 0;
+        const totalAprLevs = approvalCollection?.length ?? 0;
         const isNeedApproval = approvalCollection?.length ?? 0;
         
         console.log('approvalCollection', approvalCollection);
