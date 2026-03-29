@@ -269,13 +269,22 @@ const isCheckedIn = async (req, res) => {
   const { date, time } = currentTime();
   const user = req.user;
   const missedOut = await findMissedCheckOuts(req, user.EmployeeId);
+  // res.send(missedOut)
   
   if(!missedOut){
     return res.status(404).json({message: 'Checkin not found!'});
   }
   const U_AttDt = missedOut.U_AttDt;
   const dateform = new Date(U_AttDt);
-  const formattedDate = `${dateform.getFullYear()}${dateform.getMonth() + 1}${dateform.getDate()}`;
+  const year = dateform.getFullYear();
+  const month = String(dateform.getMonth() + 1).padStart(2, '0');
+  const day = String(dateform.getDate()).padStart(2, '0');
+
+  const formattedDate = `${year}${month}${day}`;
+
+  // console.log('formattedDate', formattedDate);
+  // console.log('date', date);
+
   const isCheckedInToday = formattedDate === date;
   res.status(200).send(isCheckedInToday);
 }

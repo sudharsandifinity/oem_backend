@@ -193,9 +193,12 @@ class SAPService extends SAPClient{
         let count= 0;
 
         for(let cdt = today; today > last60Days; cdt.setDate(cdt.getDate()- 1)){
-            const formatted = cdt.toISOString().split('T')[0];
+            const formattedT = cdt.toISOString().split('T')[0];
             const fAttInfo = response.data.value.find((data) => {
-                return data.U_AttDt == formatted
+                const formattedD = data.U_AttDt.split('T')[0];
+                // console.log('formattedT', formattedT);
+                // console.log('formattedD', formattedD);
+                return formattedT == formattedD;
             })
 
             if(fAttInfo){           
@@ -207,7 +210,7 @@ class SAPService extends SAPClient{
                     "U_Task": "",
                     "U_InTime": "",
                     "U_OutTime": "",
-                    "U_AttDt": formatted,
+                    "U_AttDt": formattedT,
                     "U_OAttDt": ""
                 })
             }
