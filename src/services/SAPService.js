@@ -591,6 +591,19 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
+    async calculateOTHours(reqDate, fromTime, toTime) {
+        const start = new Date(`${reqDate.split('T')[0]}T${fromTime}`);
+        let end = new Date(`${reqDate.split('T')[0]}T${toTime}`);
+
+        if (end < start) {
+            end.setDate(end.getDate() + 1);
+        }
+
+        const diffMs = end - start;
+        const hours = diffMs / (1000 * 60 * 60);
+        return hours;
+    }
+
     async createRequest (req, gDocType) {
 
         let DocType;
@@ -601,9 +614,11 @@ class SAPService extends SAPClient{
             DocType = gDocType;
         }
 
-        const paymentMethod = companyJson.Companies.find(company => 
+        const cmpJson = companyJson.Companies.find(company => 
            company.name == req.user.companyName
-        )?.paymentMethod || null;
+        );
+        const paymentMethod = cmpJson.paymentMethod || null;
+        const OTPayout = cmpJson.OTPayout || null;
 
         const { date, time } = currentTime();
         const { endpoint, create, checkAprv } = await this.checkModule(DocType);
@@ -704,6 +719,35 @@ class SAPService extends SAPClient{
         
         // console.log('isneedapproval', isNeedApproval);
         if(!isNeedApproval){
+            if(DocType == "OT" && OTPayout == "Compoff"){
+                const OTHours = await this.calculateOTHours(response.U_ReqDt, response.U_FrmTm, response.U_ToTm);
+                const compOffDays = OTHours / 8;
+                console.log('ot hours', OTHours);
+                console.log('compOffDays', compOffDays);
+
+                const leaves = await this.getAllLeaveType(req, emp.EmployeeID);
+                const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
+                const checkComb = collection.find(lev =>
+                    lev.U_LveCode?.trim() === "COMPOFF"
+                );
+                
+                if(!checkComb){
+                    throw new Error("Comboff not found!");
+                }
+                
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkComb.LineId,
+                        "U_BalLeave": compOffDays
+                        }
+                    ]
+                }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkComb?.Code, leaveUpdatePayload);
+                console.log('leave updated');
+            }
+
             if(companyJson.paymentRequired.includes(DocType)){
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, emp, response, DocType);
@@ -892,11 +936,12 @@ class SAPService extends SAPClient{
     }
 
     async RequestResponse (req) {
-        const paymentMethod = companyJson.Companies.find(company => 
+        const cmpJson = companyJson.Companies.find(company => 
            company.name == req.user.companyName
-        )?.paymentMethod || null;
+        );
+        const paymentMethod = cmpJson.paymentMethod || null;
+        const OTPayout = cmpJson.OTPayout || null;
 
-        
         const { date, time } = currentTime();
         const user = req.user;
         const {id} = req.params;
@@ -1128,6 +1173,35 @@ class SAPService extends SAPClient{
             console.log('empReqPayload', empReqPayload);
             
             await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
+            
+            if(updatedData.U_DocType == "OT" && OTPayout == "Compoff"){
+                const OTHours = await this.calculateOTHours(updatedExpReq.U_ReqDt, updatedExpReq.U_FrmTm, updatedExpReq.U_ToTm);
+                const compOffDays = OTHours / 8;
+                console.log('ot hours', OTHours);
+                console.log('compOffDays', compOffDays);
+
+                const leaves = await this.getAllLeaveType(req, requester.EmployeeID);
+                const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
+                const checkComb = collection.find(lev =>
+                    lev.U_LveCode?.trim() === "COMPOFF"
+                );
+                
+                if(!checkComb){
+                    throw new Error("Comboff not found!");
+                }
+                
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkComb.LineId,
+                        "U_BalLeave": compOffDays
+                        }
+                    ]
+                }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkComb?.Code, leaveUpdatePayload);
+                console.log('leave updated');
+            }
 
             if(companyJson.paymentRequired.includes(checkStatus.U_DocType)){
                 if(paymentMethod == "Ap Invoice"){
