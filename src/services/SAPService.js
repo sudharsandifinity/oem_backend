@@ -1194,7 +1194,7 @@ class SAPService extends SAPClient{
                     "INPR_ECI5Collection": [
                         {
                         "LineId": checkComb.LineId,
-                        "U_BalLeave": compOffDays
+                        "U_BalLeave": checkComb.U_BalLeave + compOffDays
                         }
                     ]
                 }
