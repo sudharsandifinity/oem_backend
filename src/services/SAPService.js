@@ -604,6 +604,15 @@ class SAPService extends SAPClient{
         return hours;
     }
 
+    async getMonthYear(dateString) {
+        const date = new Date(dateString);
+
+        return date.toLocaleString('en-US', {
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
     async createRequest (req, gDocType) {
 
         let DocType;
@@ -896,7 +905,7 @@ class SAPService extends SAPClient{
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
             "DocCurrency": response.U_CUR,
-            "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName}`:null,
+            "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName} - ${getMonthYear(response.U_DtFrm)}`:null,
             "Project": response.U_PrjCode,
             "DocTotal":response.U_ExpAmt??"0",
             "DocumentLines": [
