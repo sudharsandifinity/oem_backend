@@ -900,12 +900,13 @@ class SAPService extends SAPClient{
         const { endpoint, patch } = await this.checkModule(U_DocType);
         // console.log('respos', response);
         // console.log('respos', response.DocEntry);
+        const frM = this.getMonthYear(response.U_DtFrm);
 
         const APInvoicePayload = {
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
             "DocCurrency": response.U_CUR,
-            "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName} - ${getMonthYear(response.U_DtFrm)}`:null,
+            "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName} - ${frM}`:null,
             "Project": response.U_PrjCode,
             "DocTotal":response.U_ExpAmt??"0",
             "DocumentLines": [
@@ -1015,7 +1016,7 @@ class SAPService extends SAPClient{
         const totalAprLevs = approvalCollection?.length ?? 0;
         const isNeedApproval = approvalCollection?.length ?? 0;
         
-        console.log('approvalCollection', approvalCollection);
+        // console.log('approvalCollection', approvalCollection);
         console.log('totalAprLevs', totalAprLevs);
         
         const getLogs = await this.getLogByDoc(req, checkStatus);
