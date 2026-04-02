@@ -234,6 +234,14 @@ class SAPService extends SAPClient{
         return response.data.value;
     }
 
+    async getPaySlipData(req, employeeId, month) {
+        const response = await this.getPayslip(req, month);
+        const paydoc = response?.data?.value?.[0]?.INPR_PRC1Collection?.find((e) => e.U_empID == employeeId);
+        const att = 10;
+        const attachment = await this.getAttachment(req, att);
+        return attachment;
+    }
+
     async checkAppvalLvs(req, position, model){
         const response = await this.checkApprovalLevels(req, position, model);
         return response.data;

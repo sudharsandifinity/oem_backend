@@ -1,4 +1,4 @@
-const { createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp, getPettyCashes, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes,  createLoan, getLoans, getLoan, getAllPCType } = require('../../../controllers/ESSController');
+const { createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp, getPettyCashes, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes,  createLoan, getLoans, getLoan, getAllPCType, getEmployeePaySlip } = require('../../../controllers/ESSController');
 const upload = require('../../../middlewares/uploadMiddleware');
 
 router = require('express').Router();
@@ -45,6 +45,8 @@ router.get('/all-certificates', listAllCertificates);
 router.get('/certificates', listCertificatesByEmpId);
 router.post('/certificate', addCertReq);
 router.get('/certificate/:id', ViewCerts);
+
+router.post('/payslip', getEmployeePaySlip);
 
 router.get('/warnings', listWarnByEmpId);
 router.post('/warning', addWarnReq);

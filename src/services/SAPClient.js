@@ -460,6 +460,14 @@ class SAPClient {
         return await sapPostRequest(req, `${Endpoints.Loan}`, payload);
     }
 
+    async getPayslip(req, month) {
+        console.log('url', `${Endpoints.Payslip}&$filter=U_PayPerid eq '${month}'`);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Payslip}&$filter=U_PayPerid eq '${month}'`
+        );
+    }
+
 }
 
 module.exports = SAPClient;

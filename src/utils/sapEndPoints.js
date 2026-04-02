@@ -26,7 +26,8 @@ const Endpoints = {
   Certificate: "HLB_OSCR",
   Warning: "HLB_OWLP",
   LoanTy: "OLON",
-  Loan: "OLOA"
+  Loan: "OLOA",
+  Payslip: "OPRC?$select=INPR_PRC1Collection"
 };
 
 const SAP_QUERIES = {
