@@ -237,7 +237,7 @@ class SAPService extends SAPClient{
     async getPaySlipData(req, employeeId, month) {
         const response = await this.getPayslip(req, month);
         const paydoc = response?.data?.value?.[0]?.INPR_PRC1Collection?.find((e) => e.U_empID == employeeId);
-        const att = 10;
+        const att = 152;
         const attachment = await this.getAttachment(req, att);
         return attachment;
     }
@@ -908,12 +908,13 @@ class SAPService extends SAPClient{
         const { endpoint, patch } = await this.checkModule(U_DocType);
         // console.log('respos', response);
         // console.log('respos', response.DocEntry);
-        const frM = this.getMonthYear(response.U_DtFrm);
+        const frM = await this.getMonthYear(response.U_DtFrm);
 
         const APInvoicePayload = {
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
             "DocCurrency": response.U_CUR,
+            "DocDate": response.CreateDate,
             "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName} - ${frM}`:null,
             "Project": response.U_PrjCode,
             "DocTotal":response.U_ExpAmt??"0",
@@ -929,7 +930,7 @@ class SAPService extends SAPClient{
                     "LineTotal":response.U_ExpAmt??"0"
                 }
             ]
-            }
+        }
             console.log('APInvoicePayload', APInvoicePayload);
 
             try{
@@ -942,6 +943,7 @@ class SAPService extends SAPClient{
             if(U_DocType != "OR"){
                 await patch(req, endpoint, response.DocEntry, patchPayload); 
             }
+            return patchPayload;
             } catch(err){
             const patchPayload = {
                 "U_OPNo": "",
@@ -950,6 +952,7 @@ class SAPService extends SAPClient{
             if(U_DocType != "OR"){
                 await patch(req, endpoint, response.DocEntry, patchPayload); 
             }
+            return patchPayload;
         }
     }
 
@@ -1223,7 +1226,42 @@ class SAPService extends SAPClient{
 
             if(companyJson.paymentRequired.includes(checkStatus.U_DocType)){
                 if(paymentMethod == "Ap Invoice"){
-                    await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
+                    const apinvoice = await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
+                    if(apinvoice.U_PSts != "Success"){
+                        const getAllLatestLogs = getLatestLogs.value || [];
+                        if(getAllLatestLogs.length > 0){
+
+                            const maxStage = Math.max(...getAllLatestLogs.map(l => Number(l.U_Stg)));
+
+                            const maxStageLogs = getAllLatestLogs.filter(
+                                l => Number(l.U_Stg) === maxStage
+                            );
+
+                            let payload = {
+                                "U_AppSts": "P",
+                                "U_ApprDt": "",
+                                "U_ApprTm": "",
+                                "U_Comments": "",
+                                "U_ApprName": "",
+                                "U_AppByID": "",
+                                "U_AppByName": ""
+                            }
+
+                            await Promise.all(
+                                maxStageLogs.map(log =>
+                                    this.patchLogData(req, log.Code, payload)
+                                )
+                            );
+                        }
+
+                        const empReqPayload = {
+                            "U_ApprSts":"P",
+                            "U_Udt": "",
+                            "U_UTm": ""
+                        }
+                        console.log('revert status', empReqPayload);
+                        await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
+                    }
                 }else{
                     let accNo = {};
                     const getData = await this.getPaymentAccount(req);
