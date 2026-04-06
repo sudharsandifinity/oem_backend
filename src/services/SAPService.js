@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const SAPClient = require('./SAPClient');
 const companyJson = require('../utils/Company.json');
+const { notificationService } = require('../routes/v1/user/notificaitonRoutes');
 
 class SAPService extends SAPClient{
 
@@ -728,8 +729,65 @@ class SAPService extends SAPClient{
 
         console.log('payload', payload);
         // return payload
-        const response = await create(req, endpoint, payload);  
-        // const response = await this.createTravelExpReq(req, payload);  
+        const response = await create(req, endpoint, payload); 
+
+        let moduleName;
+        let moduleurl;
+
+        switch (DocType) {
+            case "TR":
+                moduleName = "Travel";
+                moduleurl = "Travel";
+                break;
+            case "OT":
+                moduleName = "Over Time";
+                moduleurl = "ess/requests/ot-requests/";
+                break;
+            case "E":
+                moduleName = "Expanse";
+                moduleurl = "ess/requests/expanse/";
+                break;
+            case "PC":
+                moduleName = "Petty cash";
+                moduleurl = "ess/requests/expanse/";
+                break;
+            case "L":
+                moduleName = "Leave";
+                moduleurl = "ess/requests/leave-requests/";
+                break;
+            case "AT":
+                moduleName = "Air Ticket";
+                moduleurl = "Travel";
+                break;
+            case "OR":
+                moduleName = "Regularization";
+                moduleurl = "Travel";
+                break;
+            case "RR":
+                moduleName = "Resignation";
+                moduleurl = "Travel";
+                break;
+            case "LA":
+                moduleName = "Loan";
+                moduleurl = "Travel";
+                break;
+            default:
+                moduleName = "General";
+                moduleurl = null;
+        }
+
+        let notificationPayload = {
+            userId: user.id,
+            title: `${moduleName} Request created successfully!`,
+            body: "",
+            type: `${moduleName}`,
+            referenceId: `${response.DocEntry}`,
+            url: `${moduleurl}${Number(response.DocEntry)}`,
+            application_status: ""
+        };
+
+        const noti = await notificationService.create(notificationPayload);
+        console.log('Notification created:', noti);
         console.log('form response', response);
         // return response
         
