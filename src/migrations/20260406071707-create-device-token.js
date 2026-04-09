@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('notifications', {
+    await queryInterface.createTable('device_tokens', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -12,26 +12,10 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER
       },
-      title: {
-        type: Sequelize.STRING
+      token: {
+        type: Sequelize.TEXT
       },
-      body: {
-        type: Sequelize.STRING
-      },
-      type: {
-        type: Sequelize.STRING
-      },
-      referenceId: {
-        type: Sequelize.STRING
-      },
-      url: {
-        type: Sequelize.STRING
-      },
-      application_status: {
-        type: Sequelize.STRING
-      },
-      isRead: { type: Sequelize.BOOLEAN, defaultValue: false },
-      meta_data: {
+      platform: {
         type: Sequelize.STRING
       },
       createdAt: {
@@ -45,6 +29,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('notifications');
+    await queryInterface.dropTable('device_tokens');
   }
 };

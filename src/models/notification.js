@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     referenceId: DataTypes.STRING,
     url: DataTypes.STRING,
     application_status: DataTypes.STRING,
+    meta_data: DataTypes.STRING,
     isRead: { type: DataTypes.BOOLEAN, defaultValue: false },
   }, {
     sequelize,

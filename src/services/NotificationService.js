@@ -1,10 +1,18 @@
 const admin = require('../config/firebase');
+const { Notification } = require('../models');
 const BaseService = require('./baseService');
+const DeviceTokenRepository = require('../repositories/DeviceTokenRepository');
 
 class NotificationService extends BaseService{
 
   constructor(NotificationRepository){
-    super(NotificationRepository)
+    super(NotificationRepository);
+    this.deviceTokenRepo = new DeviceTokenRepository();
+  }
+
+  async getByUser(id) {
+    const usernotifications = await Notification.findAll({ where: { 'userId':id }});
+    return usernotifications;
   }
 
   async sendPushNotification(deviceToken, title, body, customData = {}) {
@@ -31,6 +39,55 @@ class NotificationService extends BaseService{
       throw error;
     }
   };
+
+  async sendMulticast(tokens, title, body, customData = {}) {
+    try {
+      if (!tokens.length) return;
+
+      const message = {
+        notification: { title, body },
+        data: customData,
+        tokens: tokens
+      };
+
+      const response = await admin.messaging().sendEachForMulticast(message);
+
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          console.log("Invalid token:", tokens[idx]);
+        }
+      });
+
+      return response;
+    } catch (error) {
+      console.error("Multicast error:", error);
+    }
+  }
+
+  async createAndSend(data) {
+
+    console.log('createndsend');
+    const notification = await this.repository.create(data);
+    console.log('snotification', notification);
+    
+    const tokensData = await this.getByUser(data.userId);
+    const tokens = tokensData.map(t => t.token);
+
+    console.log('ssrvice tokens', tokens);
+    
+    await this.sendMulticast(
+      tokens,
+      data.title,
+      data.body || "You have a new notification",
+      {
+        type: data.type || "",
+        referenceId: String(data.referenceId || ""),
+        url: data.url || ""
+      }
+    );
+
+    return notification;
+  }
 
 }
 

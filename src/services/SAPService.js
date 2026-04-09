@@ -8,6 +8,8 @@ const fs = require('fs');
 const SAPClient = require('./SAPClient');
 const companyJson = require('../utils/Company.json');
 const { notificationService } = require('../routes/v1/user/notificaitonRoutes');
+const UserRepository = require('../repositories/userRepository');
+const userRepository = new UserRepository();
 
 class SAPService extends SAPClient{
 
@@ -778,15 +780,16 @@ class SAPService extends SAPClient{
 
         let notificationPayload = {
             userId: user.id,
-            title: `${moduleName} Request created successfully!`,
-            body: "",
+            title: `${moduleName} Request submitted successfully!`,
+            body: `Your ${moduleName} Request is successfully submitted!`,
             type: `${moduleName}`,
             referenceId: `${response.DocEntry}`,
             url: `${moduleurl}${Number(response.DocEntry)}`,
-            application_status: ""
+            application_status: isNeedApproval ? "P":"A",
+            meta_data: ''
         };
 
-        const noti = await notificationService.create(notificationPayload);
+        const noti = await notificationService.createAndSend(notificationPayload);
         console.log('Notification created:', noti);
         console.log('form response', response);
         // return response
@@ -888,8 +891,32 @@ class SAPService extends SAPClient{
                     "U_CDt": date,
                     "U_CTm": time
                 } 
-                console.log('logPayload', logPayload);
-                await this.createLog(req, logPayload)
+
+                const sapAppUser = await this.getEmployeeDetail(req, element.U_ApprID);
+                // console.log('sapuser', sapAppUser);
+                const appUser = await userRepository.findByEmail(sapAppUser.eMail);
+                if(!appUser) console.log('approver user not found! notification not added.');
+                
+                // console.log('appUser', appUser);
+                let logCode = await this.createLog(req, logPayload);
+
+                let devPay = {
+                    company: req.user.companyName
+                }
+
+                let notificationPayload = {
+                    userId: appUser.id,
+                    title: `New Request!`,
+                    body: `${payload.U_EmpName} Created a ${moduleName} Request!`,
+                    type: `${moduleName}`,
+                    referenceId: `${logCode.Code}`,
+                    url: `ess/requests/pending`,
+                    application_status: `${logCode.U_AppSts}`,
+                    meta_data: JSON.stringify(devPay)
+                };
+                // console.log('Approval Notification created:', notificationPayload);
+                const noti = await notificationService.createAndSend(notificationPayload);
+                console.log('App Notification created:', noti);
             };
         }
         return response;
@@ -1150,6 +1177,75 @@ class SAPService extends SAPClient{
         }
     
         const patchReq = await this.patchLogData(req, id, payload);
+        if(payload.U_AppSts == "R"){
+            const appUser = await userRepository.findByEmail(requester.eMail);
+            if(!appUser) console.log('User not found! notification not added.');
+            console.log('appUser', appUser);
+
+            let moduleName;
+            let moduleurl;
+
+            switch (checkStatus.U_DocType) {
+                case "TR":
+                    moduleName = "Travel";
+                    moduleurl = "Travel";
+                    break;
+                case "OT":
+                    moduleName = "Over Time";
+                    moduleurl = "ess/requests/ot-requests/";
+                    break;
+                case "E":
+                    moduleName = "Expanse";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "PC":
+                    moduleName = "Petty cash";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "L":
+                    moduleName = "Leave";
+                    moduleurl = "ess/requests/leave-requests/";
+                    break;
+                case "AT":
+                    moduleName = "Air Ticket";
+                    moduleurl = "Travel";
+                    break;
+                case "OR":
+                    moduleName = "Regularization";
+                    moduleurl = "Travel";
+                    break;
+                case "RR":
+                    moduleName = "Resignation";
+                    moduleurl = "Travel";
+                    break;
+                case "LA":
+                    moduleName = "Loan";
+                    moduleurl = "Travel";
+                    break;
+                default:
+                    moduleName = "General";
+                    moduleurl = null;
+            }
+
+            let devPay = {
+                company: req.user.companyName
+            }
+            
+            
+            let notificationPayload = {
+                userId: appUser.id,
+                title: `Request Rejected!`,
+                body: `Hi ${requester.FirstName +" "+ requester.LastName}, Your ${moduleName} request is Rejected!`,
+                type: `${moduleName}`,
+                referenceId: `${checkStatus.U_DocNo}`,
+                url: `${moduleurl}${Number(checkStatus.U_DocNo)}`,
+                application_status: `R`,
+                meta_data: JSON.stringify(devPay)
+            };
+            // console.log('Approval Notification created:', notificationPayload);
+            const noti = await notificationService.createAndSend(notificationPayload);
+            console.log('final notification Notification created:', noti);
+        }
 
         for(const item of get_sm_stg){
             if(item.Code == id){
@@ -1338,6 +1434,74 @@ class SAPService extends SAPClient{
                     await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID, checkStatus.U_DocType);
                 }
             }
+
+            const appUser = await userRepository.findByEmail(requester.eMail);
+            if(!appUser) console.log('approver user not found! notification not added.');
+            console.log('appUser', appUser);
+
+            let moduleName;
+            let moduleurl;
+
+            switch (checkStatus.U_DocType) {
+                case "TR":
+                    moduleName = "Travel";
+                    moduleurl = "Travel";
+                    break;
+                case "OT":
+                    moduleName = "Over Time";
+                    moduleurl = "ess/requests/ot-requests/";
+                    break;
+                case "E":
+                    moduleName = "Expanse";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "PC":
+                    moduleName = "Petty cash";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "L":
+                    moduleName = "Leave";
+                    moduleurl = "ess/requests/leave-requests/";
+                    break;
+                case "AT":
+                    moduleName = "Air Ticket";
+                    moduleurl = "Travel";
+                    break;
+                case "OR":
+                    moduleName = "Regularization";
+                    moduleurl = "Travel";
+                    break;
+                case "RR":
+                    moduleName = "Resignation";
+                    moduleurl = "Travel";
+                    break;
+                case "LA":
+                    moduleName = "Loan";
+                    moduleurl = "Travel";
+                    break;
+                default:
+                    moduleName = "General";
+                    moduleurl = null;
+            }
+
+            let devPay = {
+                company: req.user.companyName
+            }
+            
+            
+            let notificationPayload = {
+                userId: appUser.id,
+                title: `Request Approved!`,
+                body: `Hi ${requester.FirstName +" "+ requester.LastName}, Your ${moduleName} request is approved successfully!`,
+                type: `${moduleName}`,
+                referenceId: `${checkStatus.U_DocNo}`,
+                url: `${moduleurl}${Number(checkStatus.U_DocNo)}`,
+                application_status: `A`,
+                meta_data: JSON.stringify(devPay)
+            };
+            // console.log('Approval Notification created:', notificationPayload);
+            const noti = await notificationService.createAndSend(notificationPayload);
+            console.log('final notification Notification created:', noti);
             return
           }
         }
