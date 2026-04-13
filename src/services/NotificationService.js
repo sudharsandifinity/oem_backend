@@ -1,13 +1,11 @@
 const admin = require('../config/firebase');
-const { Notification } = require('../models');
+const { Notification, DeviceToken } = require('../models');
 const BaseService = require('./baseService');
-const DeviceTokenRepository = require('../repositories/DeviceTokenRepository');
 
 class NotificationService extends BaseService{
 
   constructor(NotificationRepository){
     super(NotificationRepository);
-    this.deviceTokenRepo = new DeviceTokenRepository();
   }
 
   async getByUser(id) {
@@ -70,7 +68,10 @@ class NotificationService extends BaseService{
     const notification = await this.repository.create(data);
     console.log('snotification', notification);
     
-    const tokensData = await this.getByUser(data.userId);
+    // const tokensData = await deviceTokenService.getByUser(data.userId);
+    const tokensData = await DeviceToken.findAll({ where: {userId: data.userId} });
+    console.log('tokenddata', tokensData);
+    
     const tokens = tokensData.map(t => t.token);
 
     console.log('ssrvice tokens', tokens);

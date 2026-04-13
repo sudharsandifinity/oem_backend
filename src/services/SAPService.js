@@ -916,7 +916,7 @@ class SAPService extends SAPClient{
                 };
                 // console.log('Approval Notification created:', notificationPayload);
                 const noti = await notificationService.createAndSend(notificationPayload);
-                console.log('App Notification created:', noti);
+                // console.log('App Notification created:', noti);
             };
         }
         return response;
@@ -999,7 +999,8 @@ class SAPService extends SAPClient{
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
             "DocCurrency": response.U_CUR,
-            "DocDate": response.CreateDate,
+            "DocDate": response.U_Udt,
+            "TaxDate": response.U_CDt,
             "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName} - ${frM}`:null,
             "Project": response.U_PrjCode,
             "DocTotal":response.U_ExpAmt??"0",
@@ -1415,6 +1416,7 @@ class SAPService extends SAPClient{
                         }
                         console.log('revert status', empReqPayload);
                         await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
+                        throw new Error("Please contact Administrator!");
                     }
                 }else{
                     let accNo = {};

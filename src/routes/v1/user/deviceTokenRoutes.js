@@ -12,4 +12,4 @@ const deviceTokenController = new DeviceTokenController(deviceTokenService);
 router.post('/', deviceTokenController.create);
 router.patch('/:id', deviceTokenController.update);
 
-module.exports = { router };
+module.exports = { router, deviceTokenService };
