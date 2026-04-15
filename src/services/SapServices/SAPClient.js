@@ -1,5 +1,5 @@
-const {Endpoints, SAP_QUERIES} = require('../utils/sapEndPoints');
-const { sapGetRequest, sapPostRequest, sapPatchRequest } = require('../utils/sapRequestMethods');
+const {Endpoints, SAP_QUERIES} = require('../../utils/sapEndPoints');
+const { sapGetRequest, sapPostRequest, sapPatchRequest } = require('../../utils/sapRequestMethods');
 
 class SAPClient {
 
@@ -460,11 +460,28 @@ class SAPClient {
         return await sapPostRequest(req, `${Endpoints.Loan}`, payload);
     }
 
-    async getPayslip(req, month) {
-        console.log('url', `${Endpoints.Payslip}&$filter=U_PayPerid eq '${month}'`);
+    async PayslipMonth(req) {
+        console.log('url', `${Endpoints.PayslipMonth}?$select=Code,U_PayMonth`);
         return await sapGetRequest(
             req,
-            `${Endpoints.Payslip}&$filter=U_PayPerid eq '${month}'`
+            `${Endpoints.PayslipMonth}?$select=Code,U_PayMonth`
+        );
+    }
+
+    async getPayslip(req, empId, month) {
+        console.log('url', `${Endpoints.Payslip}?$select=U_Atch,U_RSts,U_PayPerd&$filter=U_EmpID eq ${empId} And U_RSts eq 'G' And U_PayPerd eq ${month}`);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Payslip}?$select=U_Atch,U_RSts,U_PayPerd&$filter=U_EmpID eq ${empId} And U_PayPerd eq ${month}`
+        );
+    }
+
+    async reqPayslip(req, payload) {
+        console.log('url', `${Endpoints.Payslip}`);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Payslip}`,
+            payload
         );
     }
 

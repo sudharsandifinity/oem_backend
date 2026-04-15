@@ -27,7 +27,8 @@ const Endpoints = {
   Warning: "HLB_OWLP",
   LoanTy: "OLON",
   Loan: "OLOA",
-  Payslip: "OPRC?$select=INPR_PRC1Collection"
+  PayslipMonth: "OPYP",
+  Payslip: "HLB_PYSL"
 };
 
 const SAP_QUERIES = {

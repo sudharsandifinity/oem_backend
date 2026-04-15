@@ -5,7 +5,7 @@ const { AttendanceRegularizationDraft } = require('../models');
 const FormData = require('form-data');
 const path = require('path');
 const fs = require('fs');
-const SAPClient = require('./SAPClient');
+const SAPClient = require('./SapServices/SAPClient');
 const companyJson = require('../utils/Company.json');
 const { notificationService } = require('../routes/v1/user/notificaitonRoutes');
 const UserRepository = require('../repositories/userRepository');
@@ -235,14 +235,6 @@ class SAPService extends SAPClient{
     async getPaymentAccount(req) {
         const response = await this.getPayAcc(req);
         return response.data.value;
-    }
-
-    async getPaySlipData(req, employeeId, month) {
-        const response = await this.getPayslip(req, month);
-        const paydoc = response?.data?.value?.[0]?.INPR_PRC1Collection?.find((e) => e.U_empID == employeeId);
-        const att = 152;
-        const attachment = await this.getAttachment(req, att);
-        return attachment;
     }
 
     async checkAppvalLvs(req, position, model){
