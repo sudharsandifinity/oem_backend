@@ -221,10 +221,12 @@ class SAPClient {
         );
     }
 
-    async getAprLogs(req, EmpId, {top = 20, skip = 0}) {
+    async getAprLogs(req, EmpId, {top = 20, skip = 0, status = ""}) {
         return await sapGetRequest(
             req,
-            `${Endpoints.AllLogEntries}?${SAP_QUERIES.OrderByCode}&$filter=U_AppId eq '${EmpId}' or U_DelID eq '${EmpId}'&$top=${top}&$skip=${skip}`
+            `${Endpoints.AllLogEntries}?${SAP_QUERIES.OrderByCode}&
+            $filter=${status ? `U_AppSts eq '${status}' and ` : ''}
+            (U_AppId eq '${EmpId}' or U_DelID eq '${EmpId}')&$top=${top}&$skip=${skip}`
         );
     }
 

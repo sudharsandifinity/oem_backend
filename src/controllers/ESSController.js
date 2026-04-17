@@ -1245,9 +1245,9 @@ const updateMyAprvls = async (req, res) => {
 
 const getMyAprs = async (req, res) => {
   try {
-    const { top = 20, skip = 0 } = req.query;
+    const { top = 20, skip = 0, status = "" } = req.query;
     const user = req.user
-    const data = await sapService.getAprRqstList(req, user.EmployeeId, { top, skip });
+    const data = await sapService.getAprRqstList(req, user.EmployeeId, { top, skip, status });
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while getting my approval requests!';
