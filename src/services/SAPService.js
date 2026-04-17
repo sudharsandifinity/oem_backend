@@ -625,7 +625,7 @@ class SAPService extends SAPClient{
         }else{
             DocType = gDocType;
         }
-
+        
         const cmpJson = companyJson.Companies.find(company => 
            company.name == req.user.companyName
         );
@@ -1034,6 +1034,41 @@ class SAPService extends SAPClient{
         }
     }
 
+    async generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate) {
+        const installmentAmount = U_SancnAmt / U_NoOfInst;
+        const installments = [];
+
+        const effectiveDate = new Date(U_EffDate); 
+
+        for (let i = 0; i < U_NoOfInst; i++) {
+            const currentMonth = new Date(effectiveDate);
+            currentMonth.setMonth(effectiveDate.getMonth() + i);
+            
+            const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentMonth).toUpperCase();
+            const year = currentMonth.getFullYear();
+
+            const installment = {
+                U_Month: monthName,
+                U_Year: year,
+                U_Date: currentMonth.toISOString(),
+                U_Amount: installmentAmount,
+                U_Status: "O"
+            };
+
+            installments.push(installment);
+        }
+
+        const result = {
+            U_NoOfInst: U_NoOfInst,
+            U_SancnAmt: U_SancnAmt,
+            U_EffDate: U_EffDate,
+            U_ApprSts: "A",
+            INPR_LOA1Collection: installments
+        };
+        console.log('loan result', result);
+        return result;
+    }
+
     async RequestResponse (req) {
         const cmpJson = companyJson.Companies.find(company => 
            company.name == req.user.companyName
@@ -1087,8 +1122,9 @@ class SAPService extends SAPClient{
                 "U_EffDate": U_EffDate
             }
 
-            console.log('form pay', formPayload);
-            await patch(req, endpoint, checkStatus.U_DocNo, formPayload);
+            const loanData = this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate);
+            console.log('loanData', loanData);
+            await patch(req, endpoint, checkStatus.U_DocNo, loanData);
 
         }
     
@@ -1173,7 +1209,7 @@ class SAPService extends SAPClient{
         if(payload.U_AppSts == "R"){
             const appUser = await userRepository.findByEmail(requester.eMail);
             if(!appUser) console.log('User not found! notification not added.');
-            console.log('appUser', appUser);
+            // console.log('appUser', appUser);
 
             let moduleName;
             let moduleurl;
@@ -1237,7 +1273,7 @@ class SAPService extends SAPClient{
             };
             // console.log('Approval Notification created:', notificationPayload);
             const noti = await notificationService.createAndSend(notificationPayload);
-            console.log('final notification Notification created:', noti);
+            console.log('final notification Notification created:', noti.dataValues);
         }
 
         for(const item of get_sm_stg){
@@ -1431,7 +1467,7 @@ class SAPService extends SAPClient{
 
             const appUser = await userRepository.findByEmail(requester.eMail);
             if(!appUser) console.log('approver user not found! notification not added.');
-            console.log('appUser', appUser);
+            // console.log('appUser', appUser);
 
             let moduleName;
             let moduleurl;
@@ -1495,7 +1531,7 @@ class SAPService extends SAPClient{
             };
             // console.log('Approval Notification created:', notificationPayload);
             const noti = await notificationService.createAndSend(notificationPayload);
-            console.log('final notification Notification created:', noti);
+            console.log('final notification Notification created:', noti.dataValues);
             return
           }
         }

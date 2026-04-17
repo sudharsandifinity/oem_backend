@@ -63,18 +63,13 @@ class NotificationService extends BaseService{
   }
 
   async createAndSend(data) {
-
-    console.log('createndsend');
     const notification = await this.repository.create(data);
-    console.log('snotification', notification);
     
     // const tokensData = await deviceTokenService.getByUser(data.userId);
     const tokensData = await DeviceToken.findAll({ where: {userId: data.userId} });
-    console.log('tokenddata', tokensData);
-    
     const tokens = tokensData.map(t => t.token);
 
-    console.log('ssrvice tokens', tokens);
+    console.log('device token', tokens);
     
     await this.sendMulticast(
       tokens,
