@@ -1,0 +1,51 @@
+{
+  "Companies": [
+    {
+      "name": "HLB_Demo",
+      "paymentMethod": "Payout"
+    },
+    {
+      "name": "HLB_Demo2",
+      "paymentMethod": "Payout"
+    },
+    {
+      "name": "INSTINCTIF-KSA",
+      "paymentMethod": "Ap Invoice"
+    },
+    {
+      "name": "INSTINCTIF-ABUDHABI",
+      "paymentMethod": "Ap Invoice"
+    },
+    {
+      "name": "INSTINCTIF-DMCC",
+      "paymentMethod": "Ap Invoice"
+    },
+    {
+      "name": "INSTINCTIF-DUBAI-Live",
+      "paymentMethod": "Ap Invoice"
+    },
+    {
+      "name": "INSTINCTIF-KSA-Live",
+      "paymentMethod": "Ap Invoice"
+    },
+    {
+      "name": "INSTINCTIF-ABU_DHABI-Live",
+      "paymentMethod": "Ap Invoice"
+    },
+    {
+      "name": "Duagh",
+      "paymentMethod": "Payout"
+    },
+    {
+      "name": "Prime Plastic Test",
+      "paymentMethod": "Payout"
+    },
+    {
+      "name": "Prime Plastic",
+      "paymentMethod": "Payout"
+    }
+  ],
+  "paymentRequired": [
+    "TR", "OT", "E", "AT"
+  ]
+}

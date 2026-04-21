@@ -12,7 +12,7 @@ module.exports = {
 
       Code: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: true
       },
       Name: {
         type: Sequelize.STRING,

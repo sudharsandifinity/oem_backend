@@ -6,6 +6,7 @@ const FormData = require('form-data');
 const path = require('path');
 const fs = require('fs');
 const SAPClient = require('./SAPClient');
+const companyJson = require('../utils/Company.json');
 
 class SAPService extends SAPClient{
 
@@ -79,10 +80,20 @@ class SAPService extends SAPClient{
 
 
     async getRqstById(req, endpoint, docEntry){
-        const response = await this.getReqById(req, endpoint, docEntry);
+        // const response = await this.getReqById(req, endpoint, docEntry);
+        let response;
+        if(endpoint == "U_HLB_OATT"){
+            response = await AttendanceRegularizationDraft.findOne({where: {Code:docEntry}, order: [['id','DESC']]});
+            if(!response){
+                console.log('new entry');
+                response = await AttendanceRegularizationDraft.findByPk(docEntry);
+            }
+        }else{
+            response = await this.getReqById(req, endpoint, docEntry)
+        }
 
         let attachment;
-        if(response.data.U_Atch){
+        if(response?.data?.U_Atch){
             attachment = await this.getAttachment(req, response.data.U_Atch);
         }
 
@@ -115,6 +126,11 @@ class SAPService extends SAPClient{
                 const ELogs = filLogE.filter((log) => log.U_DocNo == response.data.DocEntry);
                 return {...response.data, AttachmentData: attachment, Logs: ELogs};
 
+            case "U_HLB_OATT":
+                const filLogRg = myLogs.value.filter((log) => log.U_DocType == "OR");
+                const RgLogs = filLogRg.filter((log) => log.U_DocNo == response.dataValues.DocEntry);
+                return {...response.dataValues, Logs: RgLogs};
+
             default:
                 return [];
         }
@@ -134,7 +150,46 @@ class SAPService extends SAPClient{
 
     async attendanceData(req, EmpId){
         const response = await this.attendance(req, EmpId);
+
+        const today = new Date();
+        const last60Days = new Date();
+        last60Days.setDate(today.getDate() - 60);
+
+        let attendanceInfo = [];
+        let count= 0;
+
+        for(let cdt = today; today > last60Days; cdt.setDate(cdt.getDate()- 1)){
+            const formatted = cdt.toISOString().split('T')[0];
+            const fAttInfo = response.data.value.find((data) => {
+                return data.U_AttDt == formatted
+            })
+
+            if(fAttInfo){           
+                attendanceInfo.push(fAttInfo)
+            }else{
+                attendanceInfo.push({
+                    "U_PrjCode": "",
+                    "U_PrjName": "",
+                    "U_Task": "",
+                    "U_InTime": "",
+                    "U_OutTime": "",
+                    "U_AttDt": formatted,
+                    "U_OAttDt": ""
+                })
+            }
+        }
+        return attendanceInfo;
+        // return response.data;
+    }
+
+    async getAllExpTypes(req) {
+        const response = await this.getExpTypes(req);
         return response.data;
+    }
+
+    async getPaymentAccount(req) {
+        const response = await this.getPayAcc(req);
+        return response.data.value;
     }
 
     async checkAppvalLvs(req, position, model){
@@ -373,12 +428,65 @@ class SAPService extends SAPClient{
                     patch: this.patchReq.bind(this)
                 };
 
+            case "OR":
+                return {
+                    checkAprv: "U_HLB_OTRG",
+                    endpoint: Endpoints.Attendance,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchRgDraft.bind(this)
+                };
+
             default:
                 throw new Error("Invalid DocType");
         }
     }
 
+    async patchRgDraft (req, endpoint, docEntry, empReqPayload) {
+        const response = await AttendanceRegularizationDraft.findByPk(docEntry, {
+            attributes: {
+                exclude: ['U_ApprSts', 'U_IsReSub', 'createdAt', 'updatedAt']
+            }
+        });
+
+        if (!response) {
+            throw new Error('Draft not found');
+        }
+        await response.update(empReqPayload);
+
+        if(empReqPayload.U_ApprSts !== "R"){
+            const updatedData = await AttendanceRegularizationDraft.findByPk(docEntry, {
+                attributes: {
+                    exclude: ['id', 'Code','U_ApprSts', 'U_IsReSub', 'createdAt', 'updatedAt']
+                }
+            });
+
+            if(response.Code){
+                console.log('update the old entry');
+                this.patchAttandanceData(req, response.Code, updatedData);
+            }else{
+                console.log('new atnc entry');
+                this.createAttandanceData(req, updatedData);
+            }
+        }
+        return
+    }
+
+    async patchAttandanceData(req, Code, payload){
+        const response = this.patchAttandance(req, Code, payload);
+        return response.data;
+    }
+
+    async createAttandanceData(req, payload){
+        const response = this.createAttandance(req, payload);
+        return response.data;
+    }
+
     async createRequest (req, DocType) {
+
+        const paymentMethod = companyJson.Companies.find(company => 
+           company.name == req.user.companyName
+        )?.paymentMethod || null;
 
         const { date, time } = currentTime();
         const { endpoint, create, checkAprv } = await this.checkModule(DocType);
@@ -386,12 +494,17 @@ class SAPService extends SAPClient{
         console.log('date', date, time);
         console.log('DocType', DocType);
         console.log('checkAprv',checkAprv);
-
+        
         const user = req.user;
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         // console.log('app lev', app_lev);return
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        let approvalCollection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
+        // return approvalCollection;
         const isNeedApproval = approvalCollection?.length ?? 0;
 
         let stg_1;
@@ -442,6 +555,18 @@ class SAPService extends SAPClient{
             }
         }
 
+        let accNo;
+        console.log('checking payment account');
+        const getData = await this.getPaymentAccount(req);
+
+        if(DocType === "E"){
+            const expTypes = await this.getAllExpTypes(req);
+            const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
+            accNo = val?.[0]?.U_DAccCode;
+        }else{
+            accNo = getData?.[0]?.U_BAcc;
+        }
+
         console.log('payload', payload);
         // return payload
         const response = await create(req, endpoint, payload);  
@@ -451,9 +576,14 @@ class SAPService extends SAPClient{
         
         
         // console.log('isneedapproval', isNeedApproval);
-
         if(!isNeedApproval){
-            await this.APInvoice(req, emp, response, DocType)
+            if(companyJson.paymentRequired.includes(DocType)){
+                if(paymentMethod == "Ap Invoice"){
+                    await this.APInvoice(req, emp, response, DocType);
+                }else{
+                    await this.PayOut(req, response, accNo, getData, emp.BPLID);
+                }
+            }
         }
 
         if(isNeedApproval){
@@ -506,6 +636,46 @@ class SAPService extends SAPClient{
         return response;
     } 
 
+    async PayOut(req, response, accNo, getData, branchId){
+        const { date, time } = currentTime();
+
+        let isLocCur;
+        if(response.U_CUR == getData?.[0]?.U_LCUR){
+            isLocCur = true
+        }else{
+            isLocCur = false
+        }
+
+        const paymentPayload =  {
+            "DocType": "rAccount",
+            "DocDate": date,
+            "CashAccount": null,
+            "DocCurrency": response.U_CUR,
+            "CashSum": 0.0,
+            "TransferAccount": accNo ?? "",
+            "TransferSum": response.U_ExpAmt,
+            "TransferDate": date,
+            "TaxDate": date,
+            "VatDate": date,
+            "DocTypte": "rAccount",
+            "DueDate": date,
+            "BPLID": branchId,
+            "PaymentAccounts": [
+                {
+                    "LineNum": 0,
+                    "AccountCode": accNo ?? "",
+                    "SumPaid": isLocCur ? response.U_ExpAmt:"",
+                    "SumPaidFC": isLocCur ? "":response.U_ExpAmt,
+                    "GrossAmount": response.U_ExpAmt,
+                    "ProjectCode": null
+                }
+            ]  
+
+        }
+        console.log('payout payload', paymentPayload);
+        await this.vendorPayment(req, paymentPayload);
+    }
+
     async APInvoice (req, emp, response, U_DocType){
         const { endpoint, patch } = await this.checkModule(U_DocType);
         // console.log('respos', response);
@@ -540,19 +710,26 @@ class SAPService extends SAPClient{
                 "U_OPNo": APInvoiceStatus.DocEntry,
                 "U_PSts": APInvoiceStatus.DocEntry?"Success":APInvoiceStatus.error
             }
-            await patch(req, endpoint, response.DocEntry, patchPayload); 
-            // await sapPatchRequest(req, `${Endpoints.Expanses}(${response.DocEntry})`, patchPayload);
+            if(U_DocType != "OR"){
+                await patch(req, endpoint, response.DocEntry, patchPayload); 
+            }
             } catch(err){
             const patchPayload = {
                 "U_OPNo": "",
                 "U_PSts": err.response?.data?.error?.message?.value
             }
-            await patch(req, endpoint, response.DocEntry, patchPayload); 
-            // await sapPatchRequest(req, `${Endpoints.Expanses}(${response.DocEntry})`, patchPayload);
+            if(U_DocType != "OR"){
+                await patch(req, endpoint, response.DocEntry, patchPayload); 
+            }
         }
     }
 
     async RequestResponse (req) {
+        const paymentMethod = companyJson.Companies.find(company => 
+           company.name == req.user.companyName
+        )?.paymentMethod || null;
+
+        
         const { date, time } = currentTime();
         const user = req.user;
         const {id} = req.params;
@@ -561,6 +738,8 @@ class SAPService extends SAPClient{
         const checkStatus = await this.getLogById(req, id);
         const { endpoint, getById, patch, checkAprv } = await this.checkModule(checkStatus.U_DocType);
         console.log('checkAprv', checkAprv);
+        console.log('checst', checkStatus);
+        
 
         const expReq = await getById(req, endpoint, checkStatus.U_DocNo);
         const requester = await this.getEmployeeDetail(req, expReq.U_EmpID); 
@@ -586,16 +765,15 @@ class SAPService extends SAPClient{
             await patch(req, endpoint, checkStatus.U_DocNo, formPayload);
         }
     
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
         const totalAprLevs = approvalCollection.length;
-
+        
         console.log('approvalCollection', approvalCollection);
         console.log('totalAprLevs', totalAprLevs);
-    
+        
         const getLogs = await this.getLogByDoc(req, checkStatus);
-
         const get_sm_stg = getLogs.value.filter(i => i.U_Stg == checkStatus.U_Stg);
-    
         const isResubmitted = expReq.U_IsReSub === "Y";
         
         let latestLogs = null;
@@ -655,7 +833,7 @@ class SAPService extends SAPClient{
 
         const updatedData = await this.getLogById(req, id);
 
-        console.log('updated data', updatedData);
+        console.log('updated log data', updatedData);
     
         if(updatedData.U_AppSts == "R"){
           console.log('inside reject');
@@ -725,7 +903,26 @@ class SAPService extends SAPClient{
             console.log('empReqPayload', empReqPayload);
             
             await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
-            await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType)
+
+            let accNo;
+            const getData = await this.getPaymentAccount(req);
+
+            if(checkStatus.U_DocType === "E"){
+                const expTypes = await this.getAllExpTypes(req);
+                const val = expTypes.value.filter((e) => e.U_ExpName == expReq.U_ExpType);
+                accNo = val?.[0]?.U_DAccCode;
+            }else{
+                accNo = getData?.[0]?.U_BAcc;
+            }
+
+            if(companyJson.paymentRequired.includes(checkStatus.U_DocType)){
+                if(paymentMethod == "Ap Invoice"){
+                    await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
+                }else{
+                    await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID);
+                }
+            }
+            // await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType)
             return
           }
         }
@@ -949,7 +1146,8 @@ class SAPService extends SAPClient{
             this.getAllTExp(req), 
             this.getAllLvReq(req),
             this.getAllAtts(req),
-            this.getAllOTR(req)
+            this.getAllOTR(req),
+            AttendanceRegularizationDraft.findAll(),
         ]);
 
         const [
@@ -958,7 +1156,8 @@ class SAPService extends SAPClient{
             tExpResult,
             leaveResult,
             attResult,
-            otResult
+            otResult,
+            rgResult
         ] = results;
 
         const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
@@ -967,6 +1166,7 @@ class SAPService extends SAPClient{
         const allLeaveRq = leaveResult.status === 'fulfilled' ? leaveResult.value.value || [] : [];
         const attachments = attResult.status === 'fulfilled' ? attResult.value.value || [] : [];
         const OTs = otResult.status === 'fulfilled' ? otResult.value.value || [] : [];
+        const Rgs = rgResult.status === 'fulfilled' ? rgResult.value || [] : [];
 
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
@@ -1017,6 +1217,15 @@ class SAPService extends SAPClient{
             ])
         );
 
+        const Rg = new Map(
+            Rgs.map(rg => [
+                rg.dataValues.id,
+                {
+                    ...rg.dataValues
+                }
+            ])
+        );
+
         const result = logs.map(log => {
             let expenseData = null;
 
@@ -1036,6 +1245,10 @@ class SAPService extends SAPClient{
                 case "L":
                     expenseData = LeaveMap.get(Number(log.U_DocNo)) || null;
                     break;
+
+                case "OR":
+                    expenseData = Rg.get(Number(log.U_DocNo)) || null;
+                    break;
             }
 
             return {
@@ -1050,8 +1263,8 @@ class SAPService extends SAPClient{
     async createRegularization (req) {
 
         const { date, time } = currentTime();
-        const { endpoint, create, checkAprv } = await this.checkModule("OT");
-        console.log('endpoint',  endpoint,);
+        const { endpoint, create, checkAprv } = await this.checkModule("OR");
+        console.log('endpoint',  endpoint);
         console.log('date', date, time);
         console.log('checkAprv',checkAprv);
 
@@ -1059,11 +1272,13 @@ class SAPService extends SAPClient{
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         // console.log('app lev', app_lev);return
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
         const isNeedApproval = approvalCollection?.length ?? 0;
         // console.log('approvalCollection', approvalCollection);
         // console.log('isNeedApproval', isNeedApproval);
         // console.log('req.files', req.files);
+        // return approvalCollection;
 
         let attachments = null;
 
@@ -1073,59 +1288,79 @@ class SAPService extends SAPClient{
         // console.log("attachments", attachments );
         
         let payload = req.body;
+        payload.Name = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_EmpID = emp.EmployeeID || "";
+        payload.U_ApprSts = isNeedApproval ? "P":"A";
         console.log('body', payload);
 
+        // const response = await AttendanceRegularizationDraft.findOne({
+        //     where: {Code: payload.Code}, 
+        //     order: [['id','DESC']]
+        // });
+
+        // if(response.U_ApprSts == 'A'){
+        //     return ('Request is already Approved!')
+        // }
+
+        // if(response.U_ApprSts == 'P'){
+        //     return ('Request is already Pending!')
+        // }
+
         const createdData = await AttendanceRegularizationDraft.create(payload);
-        console.log('createdata', createdData);
+        if(isNeedApproval){
+            const isDelegationId = approvalCollection?.[0]?.U_DlgID;
+            let isDelegationValid = false;
 
-        const isDelegationId = approvalCollection?.[0]?.U_DlgID;
-        let isDelegationValid = false;
+            // console.log('isDelegationId', isDelegationId);
 
-        // console.log('isDelegationId', isDelegationId);
+            if(isDelegationId){
+                const currentDate = new Date(
+                `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                    .toString()
+                    .slice(6, 8)}`
+                );
 
-        if(isDelegationId){
-            const currentDate = new Date(
-            `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
-                .toString()
-                .slice(6, 8)}`
-            );
+                const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
+                const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
 
-            const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
-            const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
-
-            // console.log("currentDate", currentDate);
-            // console.log("fromDate", fromDate);
-            // console.log("toDate", toDate);
-        
-            isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-            // console.log("isDelegationValid", isDelegationValid);
+                // console.log("currentDate", currentDate);
+                // console.log("fromDate", fromDate);
+                // console.log("toDate", toDate);
+            
+                isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                // console.log("isDelegationValid", isDelegationValid);
+            }
+            
+            let logPayload = {
+                "Name": payload.Name,
+                "U_ReqID": user.EmployeeId,
+                "U_DocType": "OR",
+                "U_DocNo": payload.Code ?? createdData.id,
+                "U_Stg": isNeedApproval?"1":"",
+                "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
+                "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
+                "U_AppSts": isNeedApproval?"P":"A",
+                "U_PosId": emp.Position,
+                "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
+                "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
+                "U_CDt": date,
+                "U_CTm": time
+            } 
+            console.log('logpayload', logPayload);
+            await this.createLog(req, logPayload); 
+        }else{
+            delete payload.U_ApprSts;
+            if(payload.Code){
+                console.log('update the old entry');
+                this.patchAttandanceData(req, payload.Code, payload);
+            }else{
+                console.log('new atnc entry');
+                this.createAttandanceData(req, payload);
+            }
         }
         
-        let logPayload = {
-            "Name": payload.Name,
-            "U_ReqID": user.EmployeeId,
-            "U_DocType": "OT",
-            "U_DocNo": payload.Code,
-            "U_Stg": isNeedApproval?"1":"",
-            "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
-            "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
-            "U_AppSts": isNeedApproval?"P":"A",
-            "U_PosId": emp.Position,
-            "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
-            "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
-            "U_CDt": date,
-            "U_CTm": time
-        } 
-        console.log('logpayload', logPayload);
-        
-        await this.createLog(req, logPayload)  
         return "Request submited successfully!";
     }
-
-    async regularizationResponse (req) {
-        
-    }
-
 }
 
 module.exports = SAPService;

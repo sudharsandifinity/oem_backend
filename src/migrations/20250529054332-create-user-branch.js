@@ -18,14 +18,27 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
+      companyId: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'companies',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       branchId: {
         type: Sequelize.INTEGER,
         references: {
           model: 'branches',
           key: 'id'
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onUpdate: 'NO ACTION',
+        onDelete: 'NO ACTION'
+      },
+      sap_emp_id: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,

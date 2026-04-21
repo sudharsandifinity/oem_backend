@@ -3,10 +3,17 @@ const { sapGetRequest, sapPostRequest, sapPatchRequest } = require('../utils/sap
 
 class SAPClient {
 
-    async getEmployees(req, { top = 20, skip = 0 }) {
+    async getEmployees(req, query) {
+        let fullQuery = `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc`
+        if(query){
+            const top = query.top;
+            const skip = query.skip;
+            fullQuery = `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc&$top=${top}&$skip=${skip}`
+        }
+        
         return await sapGetRequest(
             req,
-            `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc&$top=${top}&$skip=${skip}`
+            fullQuery
         );
     }
 
@@ -65,13 +72,14 @@ class SAPClient {
         console.log('att empid', EmpId);
         return await sapGetRequest(
             req,
-            `${Endpoints.Attendance}?${SAP_QUERIES.FilByUempId}'${EmpId}'`
+            `${Endpoints.Attendance}?${SAP_QUERIES.FilByUempId}'${EmpId}'&${SAP_QUERIES.OrderByCode}`
         );
     }
 
     async checkApprovalLevels(req, position, model) {
         console.log('position', position);
         console.log('model', model);
+        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`);
         return await sapGetRequest(
             req,
             `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`
@@ -82,6 +90,21 @@ class SAPClient {
         return await sapGetRequest(
             req,
             `${Endpoints.Expanses}?${SAP_QUERIES.OrderByDocEntry}`
+        );
+    }
+
+    async getExpTypes(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.ExpanseTypes}?${SAP_QUERIES.ExpTypeSlct}`
+        );
+    }
+
+    async getPayAcc(req) {
+        console.log('sap url', `${Endpoints.Payroll}`);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Payroll}`
         );
     }
 
@@ -293,6 +316,31 @@ class SAPClient {
         return await sapPatchRequest(
             req,
             `${Endpoints.Leave}(${docEntry})`,
+            payload
+        );
+    }
+
+
+    async vendorPayment(req, payload){
+        return await sapPostRequest(
+            req,
+            `${Endpoints.VendorPayment}`,
+            payload
+        );
+    }
+
+    async createAttandance(req, payload){
+        return await sapPostRequest(
+            req,
+            `${Endpoints.Attendance}`,
+            payload
+        );
+    }
+
+    async patchAttandance(req, docEntry, payload){
+        return await sapPatchRequest(
+            req,
+            `${Endpoints.Attendance}(${docEntry})`,
             payload
         );
     }
