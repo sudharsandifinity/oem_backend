@@ -102,8 +102,12 @@ class AuthController {
     }
 
     profile = async (req, res) => {
-        const user = await this.authService.profile(req.user.id);
-        return res.status(200).json(user);
+        try{
+             const user = await this.authService.profile(req.user.id);
+            return res.status(200).json(user);
+        } catch(error){
+            return res.status(400).json({ message: error.message });
+        }
     }
 
     forgotPassword = async (req, res) => {
