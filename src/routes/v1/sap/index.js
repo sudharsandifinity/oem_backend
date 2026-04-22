@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const BPRoutes = require('./businesspartnerRoutes');
+const BranchRoutes = require('./BranchRoutes');
 const OrderRoutes = require('./orderRoutes');
 const SalesQuotationRoutes = require('./salesQuotationRoutes');
 const PurchaseQuotationRoutes = require('./purchaseQuotationRoutes');
@@ -19,6 +20,7 @@ const AttachmentRoutes = require('./attachmentRoutes');
 const PurchaseDeliveryNote = require('./purchaseDeliverytNoteRoutes');
 const OtherRoutes = require('./otherRoutes');
 
+router.use('/branches', BranchRoutes);
 router.use('/business-partners', BPRoutes);
 router.use('/orders', OrderRoutes);
 router.use('/quotations', SalesQuotationRoutes);

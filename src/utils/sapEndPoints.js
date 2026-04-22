@@ -28,7 +28,8 @@ const Endpoints = {
   LoanTy: "OLON",
   Loan: "OLOA",
   PayslipMonth: "OPYP",
-  Payslip: "HLB_PYSL"
+  Payslip: "HLB_PYSL",
+  Branches: "BusinessPlaces"
 };
 
 const SAP_QUERIES = {

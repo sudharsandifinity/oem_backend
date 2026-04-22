@@ -10,6 +10,11 @@ class SapBaseService {
         return response.data;
     }
 
+    async getBranches(req) {
+        const response = await this.sapClient.Branches(req);
+        return response.data.value;
+    }
+
 }
 
 module.exports = SapBaseService;

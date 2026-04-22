@@ -487,6 +487,10 @@ class SAPClient {
         );
     }
 
+    async Branches(req, id) {
+        return await sapGetRequest(req, `${Endpoints.Branches}`);
+    }
+
 }
 
 module.exports = SAPClient;
