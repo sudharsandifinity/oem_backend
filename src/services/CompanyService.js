@@ -14,8 +14,8 @@ class CompanyService extends BaseService{
         return datas.map((data) => {
             const json = data.toJSON();
             json.id = encodeId(json.id);
-            if(json.Branches){
-                json.Branches = json.Branches.map((branch) => ({
+            if(json.branches){
+                json.branches = json.branches.map((branch) => ({
                     ...branch,
                     id: encodeId(branch.id),
                     companyId: encodeId(branch.companyId)
@@ -39,8 +39,8 @@ class CompanyService extends BaseService{
         if(!company) return null;
         const result = company.toJSON();
         result.id = encodeId(result.id);
-        if(result.Branches){
-            result.Branches = result.Branches.map((branch) => ({
+        if(result.branches){
+            result.branches = result.branches.map((branch) => ({
                 ...branch,
                 id: encodeId(branch.id),
                 companyId: encodeId(branch.companyId)

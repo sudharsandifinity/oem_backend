@@ -1,5 +1,5 @@
 const BaseRepository = require("./baseRepository");
-const { Company, Branch } = require('../models');
+const { Company, Branch, SapBranch } = require('../models');
 
 
 class CompanyRepository extends BaseRepository{
@@ -9,7 +9,7 @@ class CompanyRepository extends BaseRepository{
     }
 
     async findAll(){
-        return await this.model.findAll({ include: Branch });
+        return await this.model.findAll({ include: [{model: SapBranch, as: 'branches'}] });
     }
 
     async findAllActive(){
@@ -22,7 +22,7 @@ class CompanyRepository extends BaseRepository{
     }
 
     async findById(id){
-        return await this.model.findByPk(id, { include: Branch });
+        return await this.model.findByPk(id, { include: [{model: SapBranch, as: 'branches'}] });
     }
 
     async findCompanyCode(company_code){

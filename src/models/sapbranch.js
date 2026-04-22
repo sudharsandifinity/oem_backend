@@ -4,7 +4,7 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class SapBranch extends Model {
     static associate(models) {
-      // define associations here if needed
+      SapBranch.belongsTo(models.Company, {foreignKey: 'companyId'});
     }
   }
 
