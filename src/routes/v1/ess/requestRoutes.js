@@ -1,5 +1,7 @@
-const { createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp } = require('../../../controllers/ESSController');
+const { createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp, getPettyCashes, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes,  createLoan, getLoans, getLoan, getAllPCType, getEmployeePaySlip } = require('../../../controllers/ESSController');
 const upload = require('../../../middlewares/uploadMiddleware');
+const PayslipController = require('../../../controllers/SapControllers/PayslipController');
+const payslipController = new PayslipController();
 
 router = require('express').Router();
 
@@ -32,5 +34,31 @@ router.get('/expanses', getExpanses);
 router.get('/expanse/:id', getExpanse);
 router.post('/expanse', upload.array('Attachments2_Lines'), createERequest);
 router.patch('/resubmit/expanse/:id', upload.array('Attachments2_Lines'), resubmitExp);
+
+router.get('/petty-cash/types', getAllPCType);
+router.get('/petty-cashes', getPettyCashes);
+
+router.get('/resignations', getResignations);
+router.get('/resignation/:id', getResignation);
+router.post('/resignation', upload.array('Attachments2_Lines'), createResignation);
+router.patch('/resubmit/resignation/:id', upload.array('Attachments2_Lines'), resubmitResignation);
+
+router.get('/all-certificates', listAllCertificates);
+router.get('/certificates', listCertificatesByEmpId);
+router.post('/certificate', addCertReq);
+router.get('/certificate/:id', ViewCerts);
+
+router.get('/payslip-month', payslipController.getPayslipMonths);
+router.post('/payslip', payslipController.reqEmployeePaySlip);
+
+router.get('/warnings', listWarnByEmpId);
+router.post('/warning', addWarnReq);
+router.get('/warning/:id', ViewWarnLtr);
+
+router.post('/loan/types', LoanTypes);
+router.get('/loans', getLoans);
+router.post('/loan', upload.array('Attachments2_Lines'), createLoan);
+router.get('/loan/:id', getLoan);
+
 
 module.exports = router;

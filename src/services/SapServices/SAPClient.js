@@ -1,5 +1,5 @@
-const {Endpoints, SAP_QUERIES} = require('../utils/sapEndPoints');
-const { sapGetRequest, sapPostRequest, sapPatchRequest } = require('../utils/sapRequestMethods');
+const {Endpoints, SAP_QUERIES} = require('../../utils/sapEndPoints');
+const { sapGetRequest, sapPostRequest, sapPatchRequest } = require('../../utils/sapRequestMethods');
 
 class SAPClient {
 
@@ -33,12 +33,49 @@ class SAPClient {
         );
     }
 
+    async patchEmployee(req, id, payload) {
+        console.log('url', `${Endpoints.Employees}(${id})`);
+        
+        return await sapPatchRequest(
+            req,
+            `${Endpoints.Employees}(${id})`,
+            payload
+        );
+    }
+
+    async employeeBenifites(req, id ) {
+        console.log('url', `${Endpoints.JournalEtry}?$select=JournalEntryLines &$ filter=ReferenceDate ge datetime'2026-01-01T00:00:00' and ReferenceDate le datetime'2026-02-28T23:59:59'`);
+        
+        return await sapGetRequest(
+            req,
+            `${Endpoints.JournalEtry}?$select=JournalEntryLines &$ filter=ReferenceDate ge datetime'2026-01-01T00:00:00' and ReferenceDate le datetime'2026-02-28T23:59:59'`
+        );
+    }
+
+    async employeeSalary(req, id ) {
+        console.log('url', `${Endpoints.EmpSalary}?$select =INPR_ECI4Collection &$filter=Code eq '3'`);
+        
+        return await sapGetRequest(
+            req,
+            `${Endpoints.EmpSalary}?$select =INPR_ECI4Collection &$filter=Code eq '3'`
+        );
+    }
+
     // dtynamic
 
     async getReqByEmp(req, EmpId, { endpoint, top = 20, skip = 0 }) {
         return await sapGetRequest(
             req,
             `${endpoint}?${Endpoints.OrderByDocEntry}&${SAP_QUERIES.FilByUempId}'${EmpId}'&$top=${top}&$skip=${skip}`
+        );
+    }
+
+    async getReqByEmpE_PC(req, EmpId, type, { endpoint, top = 20, skip = 0 }) {
+        console.log('url', `${endpoint}?${Endpoints.OrderByDocEntry}&${SAP_QUERIES.FilByUempId}'${EmpId}' and U_TransType eq '${type}'&$top=${top}&$skip=${skip}`);
+        
+        return await sapGetRequest(
+            req,
+            `${endpoint}?${Endpoints.OrderByDocEntry}&${SAP_QUERIES.FilByUempId}'${EmpId}' and U_TransType eq '${type}'&$top=${top}&$skip=${skip}`
         );
     }
 
@@ -79,10 +116,10 @@ class SAPClient {
     async checkApprovalLevels(req, position, model) {
         console.log('position', position);
         console.log('model', model);
-        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`);
+        console.log('sap url', `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and ${model} eq 'Y'`);
         return await sapGetRequest(
             req,
-            `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' AND ${model} eq 'Y'`
+            `${Endpoints.ApprovalLevels}?${SAP_QUERIES.ApprovalLvFilter}'${position}' and ${model} eq 'Y'`
         );
     }
 
@@ -97,6 +134,13 @@ class SAPClient {
         return await sapGetRequest(
             req,
             `${Endpoints.ExpanseTypes}?${SAP_QUERIES.ExpTypeSlct}`
+        );
+    }
+
+    async getPCTypes(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.PCTypes}?$select=Code,Name`
         );
     }
 
@@ -177,10 +221,12 @@ class SAPClient {
         );
     }
 
-    async getAprLogs(req, EmpId, {top = 20, skip = 0}) {
+    async getAprLogs(req, EmpId, {top = 20, skip = 0, status = ""}) {
         return await sapGetRequest(
             req,
-            `${Endpoints.AllLogEntries}?${SAP_QUERIES.OrderByCode}&$filter=U_AppId eq '${EmpId}' or U_DelID eq '${EmpId}'&$top=${top}&$skip=${skip}`
+            `${Endpoints.AllLogEntries}?${SAP_QUERIES.OrderByCode}&
+            $filter=${status ? `U_AppSts eq '${status}' and ` : ''}
+            (U_AppId eq '${EmpId}' or U_DelID eq '${EmpId}')&$top=${top}&$skip=${skip}`
         );
     }
 
@@ -201,6 +247,7 @@ class SAPClient {
     }
 
     async getRequestLogs(req, col ) {
+        console.log('sap url', `${Endpoints.AllLogEntries}?${SAP_QUERIES.LogFilterByReq} '${col.U_DocNo}' and U_DocType eq '${col.U_DocType}'`);
         console.log('log col', col);
         
         return await sapGetRequest(
@@ -238,6 +285,27 @@ class SAPClient {
         return await sapGetRequest(
             req,
             `${Endpoints.OTR}?${SAP_QUERIES.OrderByDocEntry}`
+        );
+    }
+
+    async getAllAT(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.AirTicket}?${SAP_QUERIES.OrderByDocEntry}`
+        );
+    }
+
+    async getAllLoan(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Loan}?${SAP_QUERIES.OrderByDocEntry}`
+        );
+    }
+    
+    async getAllRRs(req) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Resignation}?${SAP_QUERIES.OrderByDocEntry}`
         );
     }
 
@@ -311,11 +379,11 @@ class SAPClient {
 
     async patchLv(req, docEntry, payload) {
         console.log('docEntry', docEntry);
-        console.log('leave patch payload', payload);
+        console.log('leave balance patch payload', payload);
         
         return await sapPatchRequest(
             req,
-            `${Endpoints.Leave}(${docEntry})`,
+            `${Endpoints.LeaveType}('${docEntry}')`,
             payload
         );
     }
@@ -341,6 +409,80 @@ class SAPClient {
         return await sapPatchRequest(
             req,
             `${Endpoints.Attendance}(${docEntry})`,
+            payload
+        );
+    }
+
+    async terminationRN(req) {
+        return await sapGetRequest(req, `${Endpoints.TerminationRn}`);
+    }
+
+    async Certificates(req) {
+        return await sapGetRequest(req, `${Endpoints.Certificate}`);
+    }
+
+    async CertificatesByEmp(req, empId) {
+        return await sapGetRequest(req, `${Endpoints.Certificate}?$filter=U_EmpID eq '${empId}'`);
+    }
+
+    async ViewCert(req, id) {
+        console.log('url', `${Endpoints.Certificate}(${id})`);
+        return await sapGetRequest(req, `${Endpoints.Certificate}(${id})`);
+    }
+
+    async ReqCert(req, payload) {
+        return await sapPostRequest(req, `${Endpoints.Certificate}`, payload);
+    }
+
+    async WarnByEmp(req, empId) {
+        return await sapGetRequest(req, `${Endpoints.Warning}?$filter=U_EmpID eq '${empId}'`);
+    }
+
+    async WarnLtr(req, id) {
+        console.log('url', `${Endpoints.Warning}(${id})`);
+        return await sapGetRequest(req, `${Endpoints.Warning}(${id})`);
+    }
+
+    async addWarn(req, payload) {
+        return await sapPostRequest(req, `${Endpoints.Warning}`, payload);
+    }
+
+    async LoanTy(req, type="L") {
+        console.log('url', `${Endpoints.LoanTy}?$select=U_LoanCode,Name&$filter= U_DocType eq '${type}'`);
+        return await sapGetRequest(req, `${Endpoints.LoanTy}?$select=U_LoanCode,Name&$filter= U_DocType eq '${type}'`);
+    }
+
+    async LoanByEmp(req, empId) {
+        console.log('url', `${Endpoints.Loan}?$filter=U_EmpID eq '${empId}'`);
+        return await sapGetRequest(req, `${Endpoints.Loan}?$filter=U_empID eq '${empId}'`);
+    }
+
+    async LoanPost(req, payload) {
+        console.log('url', `${Endpoints.Loan}`);
+        return await sapPostRequest(req, `${Endpoints.Loan}`, payload);
+    }
+
+    async PayslipMonth(req) {
+        console.log('url', `${Endpoints.PayslipMonth}?$select=Code,U_PayMonth`);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.PayslipMonth}?$select=Code,U_PayMonth`
+        );
+    }
+
+    async getPayslip(req, empId, month) {
+        console.log('url', `${Endpoints.Payslip}?$select=U_Atch,U_RSts,U_PayPerd&$filter=U_EmpID eq ${empId} And U_RSts eq 'G' And U_PayPerd eq ${month}`);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Payslip}?$select=U_Atch,U_RSts,U_PayPerd&$filter=U_EmpID eq ${empId} And U_PayPerd eq ${month}`
+        );
+    }
+
+    async reqPayslip(req, payload) {
+        console.log('url', `${Endpoints.Payslip}`);
+        return await sapGetRequest(
+            req,
+            `${Endpoints.Payslip}`,
             payload
         );
     }

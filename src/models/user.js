@@ -19,6 +19,9 @@ class User extends Model {
             foreignKey: 'userId',
             otherKey: 'roleId'
         });
+
+        User.hasMany(models.DeviceToken);
+        User.hasMany(models.Notification);
     }
 }
 

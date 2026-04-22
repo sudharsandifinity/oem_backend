@@ -269,13 +269,22 @@ const isCheckedIn = async (req, res) => {
   const { date, time } = currentTime();
   const user = req.user;
   const missedOut = await findMissedCheckOuts(req, user.EmployeeId);
+  // res.send(missedOut)
   
   if(!missedOut){
     return res.status(404).json({message: 'Checkin not found!'});
   }
   const U_AttDt = missedOut.U_AttDt;
   const dateform = new Date(U_AttDt);
-  const formattedDate = `${dateform.getFullYear()}${dateform.getMonth() + 1}${dateform.getDate()}`;
+  const year = dateform.getFullYear();
+  const month = String(dateform.getMonth() + 1).padStart(2, '0');
+  const day = String(dateform.getDate()).padStart(2, '0');
+
+  const formattedDate = `${year}${month}${day}`;
+
+  // console.log('formattedDate', formattedDate);
+  // console.log('date', date);
+
   const isCheckedInToday = formattedDate === date;
   res.status(200).send(isCheckedInToday);
 }
@@ -298,6 +307,16 @@ const getAllExpType = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error fetching Exp Types';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const getAllPCType = async (req, res) => {
+  try {
+    const data = await sapService.getAllPCTypes(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error fetching Petty Cash Types';
     errorCatch(req, res, message, error);
   }
 }
@@ -956,9 +975,10 @@ const viewAttachment = async (req, res) => {
 const getExpanses = async (req, res) => {
   try {
     const { top = 20, skip = 0 } = req.query;
+     const DocType = "E";
     const endpoint = Endpoints.Expanses;
     const EmpId = req.user;
-    const data = await sapService.getReqByEmpId(req, EmpId.EmployeeId, { endpoint, top, skip });
+    const data = await sapService.getReqByEmpIdE_PC(req, EmpId.EmployeeId, DocType, { endpoint, top, skip });
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while getting Expanse request';
@@ -999,6 +1019,20 @@ const resubmitExp = async (req, res) => {
     errorCatch(req, res, message, error);
   }
 }
+
+const getPettyCashes = async (req, res) => {
+  try {
+    const { top = 20, skip = 0 } = req.query;
+     const DocType = "PC";
+    const endpoint = Endpoints.Expanses;
+    const EmpId = req.user;
+    const data = await sapService.getReqByEmpIdE_PC(req, EmpId.EmployeeId, DocType, { endpoint, top, skip });
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Petty Cash list';
+    errorCatch(req, res, message, error);
+  }
+} 
 
 const getTravelExpanses = async (req, res) => {
   try {
@@ -1211,9 +1245,9 @@ const updateMyAprvls = async (req, res) => {
 
 const getMyAprs = async (req, res) => {
   try {
-    const { top = 20, skip = 0 } = req.query;
+    const { top = 20, skip = 0, status = "" } = req.query;
     const user = req.user
-    const data = await sapService.getAprRqstList(req, user.EmployeeId, { top, skip });
+    const data = await sapService.getAprRqstList(req, user.EmployeeId, { top, skip, status });
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error while getting my approval requests!';
@@ -1232,6 +1266,17 @@ const getAttandanceData = async (req, res) => {
     }
 }
 
+const getEmpRegReq = async (req, res) => {
+    try {
+      const user = req.user; 
+      const data = await sapService.RegReqById(user.EmployeeId);
+      return res.status(200).json(data);
+    } catch (error) {
+      const message = 'Error while getting Regularization data!';
+      errorCatch(req, res, message, error);
+    }
+}
+
 const createRegularizeRequest = async (req, res) => {
   try {
     const data = await sapService.createRegularization(req);
@@ -1242,4 +1287,271 @@ const createRegularizeRequest = async (req, res) => {
   }
 }
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest }
+const getResignations = async (req, res) => {
+  try {
+    const { top = 20, skip = 0 } = req.query;
+    const endpoint = Endpoints.Resignation;
+    const EmpId = req.user;
+    const data = await sapService.getReqByEmpId(req, EmpId.EmployeeId, { endpoint, top, skip });
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Air Tickets!';
+    errorCatch(req, res, message, error);
+  }
+} 
+
+const getResignation = async (req, res) => {
+  try {
+    const {id} = req.params;
+    const endpoint = Endpoints.Resignation;
+    const response = await sapService.getRqstById(req, endpoint, id);
+    res.status(200).json(response);
+  } catch (error) {
+      const message = "Error while fetching air ticket!"
+      errorCatch(req, res, message, error);
+  }
+};
+
+const createResignation = async (req, res) => {
+  try {
+    const DocType = "RR";
+    const data = await sapService.createRequest(req, DocType);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while Resignation!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const resubmitResignation = async (req, res) => {
+  try {
+    const DocType = "RR";
+    const data = await sapService.resubmitRequest(req, DocType);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while resubmiting Resignation!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const getEmpBenifits = async (req, res) => {
+  try {
+    const data = await sapService.getEmpBenifits(req);
+    const line = data?.[0]?.JournalEntryLines?.[0];
+
+    if (!line) {
+      return res.status(404).json({ message: 'No journal entry lines found' });
+    }
+
+    const filteredResponse = {
+      Line_ID: line.Line_ID,
+      AccountCode: line.AccountCode,
+      Debit: line.Debit,
+      Credit: line.Credit
+    };
+
+    return res.status(200).json(filteredResponse);
+  } catch (error) {
+    const message = 'Error while getting Employee benifits!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const getEmpSalary = async (req, res) => {
+  try {
+    const data = await sapService.getEmpSalary(req);
+    const line = data?.[0]?.INPR_ECI4Collection?.[0];
+
+    if (!line) {
+      return res.status(404).json({ message: 'No journal entry lines found' });
+    }
+
+    const filteredResponse = {
+      U_PayElNam: line.U_PayElNam,
+      U_Amount: line.U_Amount
+    };
+
+    return res.status(200).json(filteredResponse);
+  } catch (error) {
+    const message = 'Error while getting Employee Salary!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const termination = async (req, res) => {
+  try {
+    const { EmployeeID, TreminationReason, TerminationDate } = req.body;
+    const payload = {
+      TerminationDate: TerminationDate,
+      TreminationReason: TreminationReason
+    }
+    const data = await sapService.patchEmp(req, EmployeeID, payload);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while terminatting!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const terminationReason = async (req, res) => {
+  try {
+    const data = await sapService.getTerRn(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while termination reasons!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const listAllCertificates = async (req, res) => {
+  try {
+    const data = await sapService.ListCertificates(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting certificates!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const listCertificatesByEmpId = async (req, res) => {
+  try {
+    const user = req.user;
+    const data = await sapService.ListCertificatesByEmp(req, user.EmployeeId);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting certificates!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const addCertReq = async (req, res) => {
+  try {
+    const data = await sapService.addCertReq(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while creating certificates!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const ViewCerts = async (req, res) => {
+  try {
+    const  {id} = req.params;
+    const data = await sapService.ViewCerts(req, id);
+    // return res.send(data)
+    if(!data.U_Atch) throw new Error("Attachment not found!");
+    const attachment = await sapService.getAttachment(req, data.U_Atch);
+    const attField = attachment.Attachments2_Lines?.[0];
+    // return res.send(attachment);
+    const attachmentUrl = `${sapAPIs.Attachments}(${attField.AbsoluteEntry})/$value?filename='${attField.FileName}.${attField.FileExtension}'`;
+    console.log('attachment link', attachmentUrl);
+
+    const response = await sapGetRequest(req, attachmentUrl, {}, {}, {
+      responseType: 'stream'
+    });
+
+    res.setHeader('Content-Disposition', `inline; filename="${attField.FileName}.${attField.FileExtension}"`);
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+
+    response.data.pipe(res);
+  } catch (error) {
+    const message = 'Error while getting certificate!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const listWarnByEmpId = async (req, res) => {
+  try {
+    const user = req.user;
+    const data = await sapService.ListWarnByEmp(req, user.EmployeeId);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Warning letter!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const addWarnReq = async (req, res) => {
+  try {
+    const data = await sapService.addWarnReq(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while creating Warning Letter!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const ViewWarnLtr = async (req, res) => {
+  try {
+    const  {id} = req.params;
+    const data = await sapService.ViewWarn(req, id);
+    // return res.send(data)
+    if(!data.U_Atch) throw new Error("Attachment not found!");
+    const attachment = await sapService.getAttachment(req, data.U_Atch);
+    const attField = attachment.Attachments2_Lines?.[0];
+    // return res.send(attachment);
+    const attachmentUrl = `${sapAPIs.Attachments}(${attField.AbsoluteEntry})/$value?filename='${attField.FileName}.${attField.FileExtension}'`;
+    console.log('attachment link', attachmentUrl);
+
+    const response = await sapGetRequest(req, attachmentUrl, {}, {}, {
+      responseType: 'stream'
+    });
+
+    res.setHeader('Content-Disposition', `inline; filename="${attField.FileName}.${attField.FileExtension}"`);
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+
+    response.data.pipe(res);
+  } catch (error) {
+    const message = 'Error while getting warning letter!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const LoanTypes = async (req, res) => {
+  try {
+    const { U_LType } = req.body;
+    const data = await sapService.LoanType(req, U_LType);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Loan Types!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const getLoans = async (req, res) => {
+  try {
+    const { top = 20, skip = 0 } = req.query;
+    const endpoint = Endpoints.Loan;
+    const EmpId = req.user;
+    const data = await sapService.getReqByEmpId(req, EmpId.EmployeeId, { endpoint, top, skip });
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting Loans!';
+    errorCatch(req, res, message, error);
+  }
+} 
+
+const createLoan = async (req, res) => {
+  try {
+    const DocType = "LA";
+    const data = await sapService.createRequest(req, DocType);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while Loan Request!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const getLoan = async (req, res) => {
+  try {
+    const {id} = req.params;
+    const endpoint = Endpoints.Loan;
+    const response = await sapService.getRqstById(req, endpoint, id);
+    res.status(200).json(response);
+  } catch (error) {
+      const message = "Error while fetching loan!"
+      errorCatch(req, res, message, error);
+  }
+};
+
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType }

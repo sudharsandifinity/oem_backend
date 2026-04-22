@@ -1,12 +1,15 @@
-const { currentTime } = require('../utils/currentTime');
+const { currentTime, addMinutes } = require('../utils/currentTime');
 const { Endpoints } = require('../utils/sapEndPoints');
 const { sapPatchRequest } = require('../utils/sapRequestMethods');
 const { AttendanceRegularizationDraft } = require('../models');
 const FormData = require('form-data');
 const path = require('path');
 const fs = require('fs');
-const SAPClient = require('./SAPClient');
+const SAPClient = require('./SapServices/SAPClient');
 const companyJson = require('../utils/Company.json');
+const { notificationService } = require('../routes/v1/user/notificaitonRoutes');
+const UserRepository = require('../repositories/userRepository');
+const userRepository = new UserRepository();
 
 class SAPService extends SAPClient{
 
@@ -26,6 +29,25 @@ class SAPService extends SAPClient{
     }
 
     // dynamic
+
+    async getReqByEmpIdE_PC(req, EmpId, type, query) {
+        const response = await this.getReqByEmpE_PC(req, EmpId, type, query);
+        const attachments = await this.getAllAtts(req);
+
+        const attachmentMap = new Map(
+            attachments.value.map(att => [att.AbsoluteEntry, att])
+        );
+
+        const expenseWithAttMap = response.data.value.map(exp => (
+            {
+                ...exp,
+                AttachmentData: exp.U_Atch
+                    ? attachmentMap.get(Number(exp.U_Atch)) || null
+                    : null
+            }));
+
+        return expenseWithAttMap;
+    }
 
     async getReqByEmpId(req, EmpId, query) {
         const response = await this.getReqByEmp(req, EmpId, query);
@@ -122,7 +144,7 @@ class SAPService extends SAPClient{
                 return {...response.data, AttachmentData: attachment, Logs: ATLogs};
 
             case "HLB_OECL":
-                const filLogE = myLogs.value.filter((log) => log.U_DocType == "E");
+                const filLogE = myLogs.value.filter((log) => log.U_DocType == "E" || log.U_DocType == "PC");
                 const ELogs = filLogE.filter((log) => log.U_DocNo == response.data.DocEntry);
                 return {...response.data, AttachmentData: attachment, Logs: ELogs};
 
@@ -130,6 +152,16 @@ class SAPService extends SAPClient{
                 const filLogRg = myLogs.value.filter((log) => log.U_DocType == "OR");
                 const RgLogs = filLogRg.filter((log) => log.U_DocNo == response.dataValues.DocEntry);
                 return {...response.dataValues, Logs: RgLogs};
+
+            case "HLB_ORRQ":
+                const filLogRR = myLogs.value.filter((log) => log.U_DocType == "RR");
+                const RRLogs = filLogRR.filter((log) => log.U_DocNo == response.data.DocEntry);
+                return {...response.data, Logs: RRLogs};
+
+             case "OLOA":
+                const filLogLA = myLogs.value.filter((log) => log.U_DocType == "LA");
+                const LALogs = filLogLA.filter((log) => log.U_DocNo == response.data.DocEntry);
+                return {...response.data, AttachmentData: attachment, Logs: LALogs};
 
             default:
                 return [];
@@ -146,6 +178,11 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
+    async patchEmp(req, EmpId, payload){
+        const response = await this.patchEmployee(req, EmpId, payload);
+        return response.data;
+    }
+
     // -----------------------------
 
     async attendanceData(req, EmpId){
@@ -159,9 +196,12 @@ class SAPService extends SAPClient{
         let count= 0;
 
         for(let cdt = today; today > last60Days; cdt.setDate(cdt.getDate()- 1)){
-            const formatted = cdt.toISOString().split('T')[0];
+            const formattedT = cdt.toISOString().split('T')[0];
             const fAttInfo = response.data.value.find((data) => {
-                return data.U_AttDt == formatted
+                const formattedD = data.U_AttDt.split('T')[0];
+                // console.log('formattedT', formattedT);
+                // console.log('formattedD', formattedD);
+                return formattedT == formattedD;
             })
 
             if(fAttInfo){           
@@ -173,7 +213,7 @@ class SAPService extends SAPClient{
                     "U_Task": "",
                     "U_InTime": "",
                     "U_OutTime": "",
-                    "U_AttDt": formatted,
+                    "U_AttDt": formattedT,
                     "U_OAttDt": ""
                 })
             }
@@ -184,6 +224,11 @@ class SAPService extends SAPClient{
 
     async getAllExpTypes(req) {
         const response = await this.getExpTypes(req);
+        return response.data;
+    }
+
+    async getAllPCTypes(req) {
+        const response = await this.getPCTypes(req);
         return response.data;
     }
 
@@ -277,6 +322,21 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
+    async getAllAirTicket(req){
+        const response = await this.getAllAT(req);
+        return response.data.value;
+    }
+
+    async getAllLoans(req){
+        const response = await this.getAllLoan(req);
+        return response.data.value;
+    }
+
+    async getAllRR(req){
+        const response = await this.getAllRRs(req);
+        return response.data.value;
+    }
+
     async getTExpByEmpId(req, EmpId, query){
         const response = await this.getTExpByEmp(req, EmpId, query);
         return response.data;
@@ -323,16 +383,34 @@ class SAPService extends SAPClient{
     }
 
     async calculateDays(fromDate, toDate) {
+        const formatDate = (dateStr) => {
+            if (/^\d{8}$/.test(dateStr)) {
+                return dateStr;
+            }
+
+            const d = new Date(dateStr);
+            if (isNaN(d)) {
+                throw new Error("Invalid date: " + dateStr);
+            }
+
+            return d.getUTCFullYear().toString() +
+                String(d.getUTCMonth() + 1).padStart(2, '0') +
+                String(d.getUTCDate()).padStart(2, '0');
+        };
+
+        const formattedFrom = formatDate(fromDate);
+        const formattedTo = formatDate(toDate);
+        
         const from = new Date(
-            fromDate.toString().slice(0,4),
-            fromDate.toString().slice(4,6) - 1,
-            fromDate.toString().slice(6,8)
+            formattedFrom.toString().slice(0,4),
+            formattedFrom.toString().slice(4,6) - 1,
+            formattedFrom.toString().slice(6,8)
         );
 
         const to = new Date(
-            toDate.toString().slice(0,4),
-            toDate.toString().slice(4,6) - 1,
-            toDate.toString().slice(6,8)
+            formattedTo.toString().slice(0,4),
+            formattedTo.toString().slice(4,6) - 1,
+            formattedTo.toString().slice(6,8)
         );
         
         const diffTime = to - from;
@@ -410,6 +488,15 @@ class SAPService extends SAPClient{
                     patch: this.patchReq.bind(this)
                 };
 
+            case "PC":
+                return {
+                    checkAprv: "U_HLB_PC",
+                    endpoint: Endpoints.Expanses,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchReq.bind(this)
+                };
+
             case "L":
                 return {
                     checkAprv: "U_HLB_LEV",
@@ -437,9 +524,34 @@ class SAPService extends SAPClient{
                     patch: this.patchRgDraft.bind(this)
                 };
 
+            case "RR":
+                return {
+                    checkAprv: "U_HLB_RERQ",
+                    endpoint: Endpoints.Resignation,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchReq.bind(this)
+                };
+
+            case "LA":
+                return {
+                    checkAprv: "U_HLB_OLON",
+                    endpoint: Endpoints.Loan,
+                    create: this.createReq.bind(this),
+                    getById: this.getRqstById.bind(this),
+                    patch: this.patchReq.bind(this)
+                };
+
             default:
                 throw new Error("Invalid DocType");
         }
+    }
+
+    async RegReqById (id){
+        const data = await AttendanceRegularizationDraft.findAll({
+            where: { U_EmpID: id },
+        });
+        return data;
     }
 
     async patchRgDraft (req, endpoint, docEntry, empReqPayload) {
@@ -482,11 +594,43 @@ class SAPService extends SAPClient{
         return response.data;
     }
 
-    async createRequest (req, DocType) {
+    async calculateOTHours(reqDate, fromTime, toTime) {
+        const start = new Date(`${reqDate.split('T')[0]}T${fromTime}`);
+        let end = new Date(`${reqDate.split('T')[0]}T${toTime}`);
 
-        const paymentMethod = companyJson.Companies.find(company => 
+        if (end < start) {
+            end.setDate(end.getDate() + 1);
+        }
+
+        const diffMs = end - start;
+        const hours = diffMs / (1000 * 60 * 60);
+        return hours;
+    }
+
+    async getMonthYear(dateString) {
+        const date = new Date(dateString);
+
+        return date.toLocaleString('en-US', {
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
+    async createRequest (req, gDocType) {
+
+        let DocType;
+        if(gDocType == "E"){
+            const { U_TransType } = req.body;
+            DocType = U_TransType == "PC" ? "PC":"E";
+        }else{
+            DocType = gDocType;
+        }
+        
+        const cmpJson = companyJson.Companies.find(company => 
            company.name == req.user.companyName
-        )?.paymentMethod || null;
+        );
+        const paymentMethod = cmpJson.paymentMethod || null;
+        const OTPayout = cmpJson.OTPayout || null;
 
         const { date, time } = currentTime();
         const { endpoint, create, checkAprv } = await this.checkModule(DocType);
@@ -532,10 +676,18 @@ class SAPService extends SAPClient{
         payload.U_Udt = date,
         payload.U_UTm = time,
         payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
+        if (DocType == "E" || DocType == "PC"){
+            payload.U_TransType = DocType
+        }
         
         if(DocType == "L"){
             console.log('inside L');
-            const noDays = await this.calculateDays(payload.U_FromDate, payload.U_Todate)
+            let noDays;
+            if(payload.U_LeaveMode == "F"){
+                noDays = await this.calculateDays(payload.U_FromDate, payload.U_Todate)
+            }else{
+                noDays = 0.5;
+            }
             console.log('no days', noDays);
             const leaves = await this.getAllLeaveType(req, user.EmployeeId);
             const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
@@ -547,41 +699,143 @@ class SAPService extends SAPClient{
             if(checkAva[0]?.U_BalLeave < noDays){
                 return {message: "Applied leave is greater than Balance!"}
             }
-            
+
+            payload.U_LvAppFDt = payload.U_FromDate;
+            payload.U_LvAppTDt = payload.U_Todate;
+            payload.U_NoLveApp = noDays || 0;
             payload.U_PreByCod = user.EmployeeId || 0;
             payload.U_NoDayLve = noDays || 0;
             if(!isNeedApproval){
                 payload.U_BalLeave = checkAva[0]?.U_BalLeave - noDays || 0;
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkAva[0]?.LineId,
+                        "U_BalLeave": checkAva[0]?.U_BalLeave - noDays || 0
+                        }
+                    ]
+                }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkAva[0]?.Code, leaveUpdatePayload);
+                console.log('leave updated');
             }
-        }
-
-        let accNo;
-        console.log('checking payment account');
-        const getData = await this.getPaymentAccount(req);
-
-        if(DocType === "E"){
-            const expTypes = await this.getAllExpTypes(req);
-            const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
-            accNo = val?.[0]?.U_DAccCode;
-        }else{
-            accNo = getData?.[0]?.U_BAcc;
         }
 
         console.log('payload', payload);
         // return payload
-        const response = await create(req, endpoint, payload);  
-        // const response = await this.createTravelExpReq(req, payload);  
+        const response = await create(req, endpoint, payload); 
+
+        let moduleName;
+        let moduleurl;
+
+        switch (DocType) {
+            case "TR":
+                moduleName = "Travel";
+                moduleurl = "Travel";
+                break;
+            case "OT":
+                moduleName = "Over Time";
+                moduleurl = "ess/requests/ot-requests/";
+                break;
+            case "E":
+                moduleName = "Expanse";
+                moduleurl = "ess/requests/expanse/";
+                break;
+            case "PC":
+                moduleName = "Petty cash";
+                moduleurl = "ess/requests/expanse/";
+                break;
+            case "L":
+                moduleName = "Leave";
+                moduleurl = "ess/requests/leave-requests/";
+                break;
+            case "AT":
+                moduleName = "Air Ticket";
+                moduleurl = "Travel";
+                break;
+            case "OR":
+                moduleName = "Regularization";
+                moduleurl = "Travel";
+                break;
+            case "RR":
+                moduleName = "Resignation";
+                moduleurl = "Travel";
+                break;
+            case "LA":
+                moduleName = "Loan";
+                moduleurl = "Travel";
+                break;
+            default:
+                moduleName = "General";
+                moduleurl = null;
+        }
+
+        let notificationPayload = {
+            userId: user.id,
+            title: `${moduleName} Request submitted successfully!`,
+            body: `Your ${moduleName} Request is successfully submitted!`,
+            type: `${moduleName}`,
+            referenceId: `${response.DocEntry}`,
+            url: `${moduleurl}${Number(response.DocEntry)}`,
+            application_status: isNeedApproval ? "P":"A",
+            meta_data: ''
+        };
+
+        const noti = await notificationService.createAndSend(notificationPayload);
+        console.log('Notification created:', noti);
         console.log('form response', response);
         // return response
         
         
         // console.log('isneedapproval', isNeedApproval);
         if(!isNeedApproval){
+            if(DocType == "OT" && OTPayout == "Compoff"){
+                const OTHours = await this.calculateOTHours(response.U_ReqDt, response.U_FrmTm, response.U_ToTm);
+                const compOffDays = OTHours / 8;
+                console.log('ot hours', OTHours);
+                console.log('compOffDays', compOffDays);
+
+                const leaves = await this.getAllLeaveType(req, emp.EmployeeID);
+                const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
+                const checkComb = collection.find(lev =>
+                    lev.U_LveCode?.trim() === "COMPOFF"
+                );
+                
+                if(!checkComb){
+                    throw new Error("Comboff not found!");
+                }
+                
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkComb.LineId,
+                        "U_BalLeave": checkComb.U_BalLeave + compOffDays
+                        }
+                    ]
+                }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkComb?.Code, leaveUpdatePayload);
+                console.log('leave updated');
+            }
+
             if(companyJson.paymentRequired.includes(DocType)){
                 if(paymentMethod == "Ap Invoice"){
                     await this.APInvoice(req, emp, response, DocType);
                 }else{
-                    await this.PayOut(req, response, accNo, getData, emp.BPLID);
+                    let accNo = {};
+                    console.log('checking payment account');
+                    const getData = await this.getPaymentAccount(req);
+
+                    if(DocType === "E"){
+                        const expTypes = await this.getAllExpTypes(req);
+                        const val = expTypes.value.filter((e) => e.U_ExpName == payload.U_ExpType);
+                        accNo.U_DAccCode = val?.[0]?.U_DAccCode;
+                        accNo.U_CAccCode = val?.[0]?.U_CAccCode;
+                    }else{
+                        accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
+                        accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;
+                    }
+                    await this.PayOut(req, response, accNo, getData, emp.BPLID, DocType);
                 }
             }
         }
@@ -629,16 +883,43 @@ class SAPService extends SAPClient{
                     "U_CDt": date,
                     "U_CTm": time
                 } 
-                console.log('logPayload', logPayload);
-                await this.createLog(req, logPayload)
+
+                const sapAppUser = await this.getEmployeeDetail(req, element.U_ApprID);
+                // console.log('sapuser', sapAppUser);
+                const appUser = await userRepository.findByEmail(sapAppUser.eMail);
+                if(!appUser) console.log('approver user not found! notification not added.');
+                
+                // console.log('appUser', appUser);
+                let logCode = await this.createLog(req, logPayload);
+
+                let devPay = {
+                    company: req.user.companyName
+                }
+
+                let notificationPayload = {
+                    userId: appUser.id,
+                    title: `New Request!`,
+                    body: `${payload.U_EmpName} Created a ${moduleName} Request!`,
+                    type: `${moduleName}`,
+                    referenceId: `${logCode.Code}`,
+                    url: `ess/requests/pending`,
+                    application_status: `${logCode.U_AppSts}`,
+                    meta_data: JSON.stringify(devPay)
+                };
+                // console.log('Approval Notification created:', notificationPayload);
+                const noti = await notificationService.createAndSend(notificationPayload);
+                // console.log('App Notification created:', noti);
             };
         }
         return response;
     } 
 
-    async PayOut(req, response, accNo, getData, branchId){
+    async PayOut(req, response, accNo, getData, branchId, DocType){
         const { date, time } = currentTime();
-
+        const { endpoint, patch } = await this.checkModule(DocType);
+        console.log('accNo', accNo);
+        console.log('branchId', branchId);
+        
         let isLocCur;
         if(response.U_CUR == getData?.[0]?.U_LCUR){
             isLocCur = true
@@ -646,46 +927,73 @@ class SAPService extends SAPClient{
             isLocCur = false
         }
 
+        let amount;
+        if(DocType == "LA"){
+            amount = response.U_SancnAmt;
+        }else{
+            amount = response.U_ExpAmt;
+        }
+
         const paymentPayload =  {
             "DocType": "rAccount",
             "DocDate": date,
+            "JournalRemarks": response.U_Rem ?? "",
             "CashAccount": null,
             "DocCurrency": response.U_CUR,
             "CashSum": 0.0,
-            "TransferAccount": accNo ?? "",
-            "TransferSum": response.U_ExpAmt,
+            "TransferAccount": DocType == "E" ? accNo.U_CAccCode:accNo.U_TRDAcc ?? "",
+            "TransferSum": amount,
             "TransferDate": date,
             "TaxDate": date,
             "VatDate": date,
             "DocTypte": "rAccount",
             "DueDate": date,
-            "BPLID": branchId,
+            "BPLID": branchId ?? "",
             "PaymentAccounts": [
                 {
                     "LineNum": 0,
-                    "AccountCode": accNo ?? "",
-                    "SumPaid": isLocCur ? response.U_ExpAmt:"",
-                    "SumPaidFC": isLocCur ? "":response.U_ExpAmt,
-                    "GrossAmount": response.U_ExpAmt,
+                    "AccountCode": DocType == "E" ? accNo.U_DAccCode:accNo.U_TRCAcc ?? "",
+                    ...(isLocCur ? { SumPaid: amount } : { SumPaidFC: amount }),
+                    "GrossAmount": amount,
                     "ProjectCode": null
                 }
             ]  
 
         }
         console.log('payout payload', paymentPayload);
-        await this.vendorPayment(req, paymentPayload);
+        try{
+            const payout = await this.vendorPayment(req, paymentPayload);
+            // console.log('payout entry', payout?.data);
+            const patchPayload = {
+                "U_OPNo": payout?.data?.DocEntry,
+                "U_PSts": payout?.data?.DocEntry?"Success":payout.error
+            }
+            // console.log('patch payload', patchPayload);
+            await patch(req, endpoint, response.DocEntry, patchPayload); 
+        
+        } catch(err){
+            const patchPayload = {
+                "U_OPNo": "",
+                "U_PSts": err.response?.data?.error?.message?.value
+            }
+            // console.log('patch payload', patchPayload);
+            await patch(req, endpoint, response.DocEntry, patchPayload); 
+        }
     }
 
     async APInvoice (req, emp, response, U_DocType){
         const { endpoint, patch } = await this.checkModule(U_DocType);
         // console.log('respos', response);
         // console.log('respos', response.DocEntry);
+        const frM = await this.getMonthYear(response.U_DtFrm);
 
         const APInvoicePayload = {
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
             "DocCurrency": response.U_CUR,
-            "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName}`:null,
+            "DocDate": response.U_Udt,
+            "TaxDate": response.U_CDt,
+            "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName} - ${frM}`:null,
             "Project": response.U_PrjCode,
             "DocTotal":response.U_ExpAmt??"0",
             "DocumentLines": [
@@ -700,7 +1008,7 @@ class SAPService extends SAPClient{
                     "LineTotal":response.U_ExpAmt??"0"
                 }
             ]
-            }
+        }
             console.log('APInvoicePayload', APInvoicePayload);
 
             try{
@@ -713,6 +1021,7 @@ class SAPService extends SAPClient{
             if(U_DocType != "OR"){
                 await patch(req, endpoint, response.DocEntry, patchPayload); 
             }
+            return patchPayload;
             } catch(err){
             const patchPayload = {
                 "U_OPNo": "",
@@ -721,20 +1030,56 @@ class SAPService extends SAPClient{
             if(U_DocType != "OR"){
                 await patch(req, endpoint, response.DocEntry, patchPayload); 
             }
+            return patchPayload;
         }
     }
 
-    async RequestResponse (req) {
-        const paymentMethod = companyJson.Companies.find(company => 
-           company.name == req.user.companyName
-        )?.paymentMethod || null;
+    async generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate) {
+        const installmentAmount = U_SancnAmt / U_NoOfInst;
+        const installments = [];
 
-        
+        const effectiveDate = new Date(U_EffDate); 
+
+        for (let i = 0; i < U_NoOfInst; i++) {
+            const currentMonth = new Date(effectiveDate);
+            currentMonth.setMonth(effectiveDate.getMonth() + i);
+            
+            const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentMonth).toUpperCase();
+            const year = currentMonth.getFullYear();
+
+            const installment = {
+                U_Month: monthName,
+                U_Year: year,
+                U_Date: currentMonth.toISOString(),
+                U_Amount: installmentAmount,
+                U_Status: "O"
+            };
+
+            installments.push(installment);
+        }
+
+        const result = {
+            U_NoOfInst: U_NoOfInst,
+            U_SancnAmt: U_SancnAmt,
+            U_EffDate: U_EffDate,
+            U_ApprSts: "A",
+            INPR_LOA1Collection: installments
+        };
+        console.log('loan result', result);
+        return result;
+    }
+
+    async RequestResponse (req) {
+        const cmpJson = companyJson.Companies.find(company => 
+           company.name == req.user.companyName
+        );
+        const paymentMethod = cmpJson.paymentMethod || null;
+        const OTPayout = cmpJson.OTPayout || null;
+
         const { date, time } = currentTime();
         const user = req.user;
         const {id} = req.params;
-        const {U_LvAppFDt, U_LvAppTDt, ...payload} = req.body;
-        
+        const {U_LvAppFDt, U_LvAppTDt, U_NoOfInst, U_SancnAmt, U_EffDate, ...payload} = req.body;
         const checkStatus = await this.getLogById(req, id);
         const { endpoint, getById, patch, checkAprv } = await this.checkModule(checkStatus.U_DocType);
         console.log('checkAprv', checkAprv);
@@ -753,23 +1098,50 @@ class SAPService extends SAPClient{
     
         console.log('payload', payload);
 
-        if(checkStatus.U_DocType == "L" && U_LvAppFDt && U_LvAppTDt){
-            const noDays = await this.calculateDays(U_LvAppFDt??expReq.U_FromDate, U_LvAppTDt??expReq.U_Todate)
+        if(checkStatus.U_DocType == "L"){
+
+            let noDays;
+            if(expReq.U_LeaveMode == "F"){
+                noDays = await this.calculateDays(U_LvAppFDt??expReq.U_FromDate, U_LvAppTDt??expReq.U_Todate);
+            }else{
+                noDays = 0.5;
+            }
 
             const formPayload = {
-                "U_LvAppFDt": U_LvAppFDt??"",
-                "U_LvAppTDt": U_LvAppTDt??"",
+                "U_LvAppFDt": U_LvAppFDt??expReq.U_FromDate,
+                "U_LvAppTDt": U_LvAppTDt??expReq.U_Todate,
                 "U_NoLveApp": noDays
             }
             console.log('form pay', formPayload);
             await patch(req, endpoint, checkStatus.U_DocNo, formPayload);
+        } else if(checkStatus.U_DocType == "LA"){
+
+            const formPayload = {
+                "U_NoOfInst": U_NoOfInst??"",
+                "U_SancnAmt": U_SancnAmt??"",
+                "U_EffDate": U_EffDate
+            }
+
+            const loanData = this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate);
+            console.log('loanData', loanData);
+            await patch(req, endpoint, checkStatus.U_DocNo, loanData);
+
         }
     
+        // const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        // const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        // const totalAprLevs = approvalCollection.length;
+
+        let approvalCollection;
         const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
-        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
-        const totalAprLevs = approvalCollection.length;
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
+        // return approvalCollection;
+        const totalAprLevs = approvalCollection?.length ?? 0;
+        const isNeedApproval = approvalCollection?.length ?? 0;
         
-        console.log('approvalCollection', approvalCollection);
+        // console.log('approvalCollection', approvalCollection);
         console.log('totalAprLevs', totalAprLevs);
         
         const getLogs = await this.getLogByDoc(req, checkStatus);
@@ -793,7 +1165,18 @@ class SAPService extends SAPClient{
     
         // console.log('checkStatus', checkStatus.data);
         // console.log('getLogs', getLogs.data.value.length);
-        const totalLogs = isResubmitted?latestLogs.length:getLogs.value.length;
+        let totalLogs;
+        if(checkStatus.U_DocType == "OR"){
+            const expDocDate = new Date(expReq.updatedAt);
+            latestLogs = getLogs.value.filter((i) => { 
+                const logDateTimeStr = `${i.U_CDt.split('T')[0]}T${i.U_CTm}`;
+                const logEntryDate = new Date(logDateTimeStr);
+                if(logEntryDate >= expDocDate) return i;
+            });
+            totalLogs = latestLogs.length;
+        }else{
+            totalLogs = isResubmitted?latestLogs.length:getLogs.value.length
+        }
     
         console.log('toallog', totalLogs);
         // console.log('totalAprLevs', totalAprLevs);
@@ -823,6 +1206,75 @@ class SAPService extends SAPClient{
         }
     
         const patchReq = await this.patchLogData(req, id, payload);
+        if(payload.U_AppSts == "R"){
+            const appUser = await userRepository.findByEmail(requester.eMail);
+            if(!appUser) console.log('User not found! notification not added.');
+            // console.log('appUser', appUser);
+
+            let moduleName;
+            let moduleurl;
+
+            switch (checkStatus.U_DocType) {
+                case "TR":
+                    moduleName = "Travel";
+                    moduleurl = "Travel";
+                    break;
+                case "OT":
+                    moduleName = "Over Time";
+                    moduleurl = "ess/requests/ot-requests/";
+                    break;
+                case "E":
+                    moduleName = "Expanse";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "PC":
+                    moduleName = "Petty cash";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "L":
+                    moduleName = "Leave";
+                    moduleurl = "ess/requests/leave-requests/";
+                    break;
+                case "AT":
+                    moduleName = "Air Ticket";
+                    moduleurl = "Travel";
+                    break;
+                case "OR":
+                    moduleName = "Regularization";
+                    moduleurl = "Travel";
+                    break;
+                case "RR":
+                    moduleName = "Resignation";
+                    moduleurl = "Travel";
+                    break;
+                case "LA":
+                    moduleName = "Loan";
+                    moduleurl = "Travel";
+                    break;
+                default:
+                    moduleName = "General";
+                    moduleurl = null;
+            }
+
+            let devPay = {
+                company: req.user.companyName
+            }
+            
+            
+            let notificationPayload = {
+                userId: appUser.id,
+                title: `Request Rejected!`,
+                body: `Hi ${requester.FirstName +" "+ requester.LastName}, Your ${moduleName} request is Rejected!`,
+                type: `${moduleName}`,
+                referenceId: `${checkStatus.U_DocNo}`,
+                url: `${moduleurl}${Number(checkStatus.U_DocNo)}`,
+                application_status: `R`,
+                meta_data: JSON.stringify(devPay)
+            };
+            // console.log('Approval Notification created:', notificationPayload);
+            const noti = await notificationService.createAndSend(notificationPayload);
+            console.log('final notification Notification created:', noti.dataValues);
+        }
 
         for(const item of get_sm_stg){
             if(item.Code == id){
@@ -851,7 +1303,7 @@ class SAPService extends SAPClient{
         // console.log('totalLogs', totalLogs);
         const updatedExpReq = await getById(req, endpoint,checkStatus.U_DocNo);
     
-        if(totalAprLevs == totalLogs){
+        if(totalAprLevs == totalLogs || !isNeedApproval){
           console.log('inside final approval');
     
           const getLatestLogs = await this.getLogByDoc(req, checkStatus);
@@ -884,45 +1336,202 @@ class SAPService extends SAPClient{
 
             
             if(checkStatus.U_DocType == "L"){
-                const noDays = await this.calculateDays(updatedExpReq.U_LvAppFDt, updatedExpReq.U_LvAppTDt);
+                // if(!updatedExpReq.U_LvAppTDt || !updatedExpReq.U_LvAppTDt){
+                //     throw new Error("Approved dates not found!");
+                // }
+                let noDays;
+                if(expReq.U_LeaveMode == "F"){
+                    noDays = await this.calculateDays(updatedExpReq.U_LvAppFDt, updatedExpReq.U_LvAppTDt);
+                }else{
+                    noDays = 0.5;
+                }
                 console.log('updatedExpReq', updatedExpReq);
                 console.log('no days', noDays);
                 console.log('inside L');
-                const leaves = await this.getAllLeaveType(req, user.EmployeeId);
+                const leaves = await this.getAllLeaveType(req, requester.EmployeeID);
                 const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
                 const checkAva = collection.filter(lev =>
                     lev.U_LveCode?.trim() === updatedExpReq.U_LveCode?.trim()
                 );
 
-                if(checkAva[0]?.U_BalLeave < noDays){
-                    return {message: "Applied leave is greater than Balance!"}
+                console.log('checkAva[0]', checkAva[0]);
+                console.log('checkAva[0]?.U_BalLeave', checkAva[0]?.U_BalLeave);
+                console.log('noDays', noDays);
+                console.log('checkAva[0]?.U_BalLeave < noDays', checkAva[0]?.U_BalLeave < noDays);
+                const balance_leave = checkAva[0]?.U_BalLeave - noDays || 0;
+
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkAva[0]?.LineId,
+                        "U_BalLeave": balance_leave
+                        }
+                    ]
                 }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkAva[0]?.Code, leaveUpdatePayload);
+                console.log('leave updated');
                 
-                empReqPayload.U_BalLeave = updatedExpReq.U_NoDayLve || 0;
+                empReqPayload.U_BalLeave = balance_leave;
             }
             console.log('empReqPayload', empReqPayload);
             
             await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
+            
+            if(updatedData.U_DocType == "OT" && OTPayout == "Compoff"){
+                const OTHours = await this.calculateOTHours(updatedExpReq.U_ReqDt, updatedExpReq.U_FrmTm, updatedExpReq.U_ToTm);
+                const compOffDays = OTHours / 8;
+                console.log('ot hours', OTHours);
+                console.log('compOffDays', compOffDays);
 
-            let accNo;
-            const getData = await this.getPaymentAccount(req);
-
-            if(checkStatus.U_DocType === "E"){
-                const expTypes = await this.getAllExpTypes(req);
-                const val = expTypes.value.filter((e) => e.U_ExpName == expReq.U_ExpType);
-                accNo = val?.[0]?.U_DAccCode;
-            }else{
-                accNo = getData?.[0]?.U_BAcc;
+                const leaves = await this.getAllLeaveType(req, requester.EmployeeID);
+                const collection = leaves?.value?.[0]?.INPR_ECI5Collection || [];
+                const checkComb = collection.find(lev =>
+                    lev.U_LveCode?.trim() === "COMPOFF"
+                );
+                
+                if(!checkComb){
+                    throw new Error("Comboff not found!");
+                }
+                
+                const leaveUpdatePayload  = {
+                    "INPR_ECI5Collection": [
+                        {
+                        "LineId": checkComb.LineId,
+                        "U_BalLeave": checkComb.U_BalLeave + compOffDays
+                        }
+                    ]
+                }
+                console.log('leaveUpdatePayload', leaveUpdatePayload);
+                await this.patchLvReq(req, checkComb?.Code, leaveUpdatePayload);
+                console.log('leave updated');
             }
 
             if(companyJson.paymentRequired.includes(checkStatus.U_DocType)){
                 if(paymentMethod == "Ap Invoice"){
-                    await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
+                    const apinvoice = await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
+                    if(apinvoice.U_PSts != "Success"){
+                        const getAllLatestLogs = getLatestLogs.value || [];
+                        if(getAllLatestLogs.length > 0){
+
+                            const maxStage = Math.max(...getAllLatestLogs.map(l => Number(l.U_Stg)));
+
+                            const maxStageLogs = getAllLatestLogs.filter(
+                                l => Number(l.U_Stg) === maxStage
+                            );
+
+                            let payload = {
+                                "U_AppSts": "P",
+                                "U_ApprDt": "",
+                                "U_ApprTm": "",
+                                "U_Comments": "",
+                                "U_ApprName": "",
+                                "U_AppByID": "",
+                                "U_AppByName": ""
+                            }
+
+                            await Promise.all(
+                                maxStageLogs.map(log =>
+                                    this.patchLogData(req, log.Code, payload)
+                                )
+                            );
+                        }
+
+                        const empReqPayload = {
+                            "U_ApprSts":"P",
+                            "U_Udt": "",
+                            "U_UTm": ""
+                        }
+                        console.log('revert status', empReqPayload);
+                        await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
+                        throw new Error("Please contact Administrator!");
+                    }
                 }else{
-                    await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID);
+                    let accNo = {};
+                    const getData = await this.getPaymentAccount(req);
+
+                    if(checkStatus.U_DocType === "E"){
+                        const expTypes = await this.getAllExpTypes(req);
+                        
+                        const val = expTypes.value.filter((e) => e.U_ExpCode == expReq.U_ExpType);
+                        console.log('E acc', val);
+                        accNo.U_DAccCode = val?.[0]?.U_DAccCode;
+                        accNo.U_CAccCode = val?.[0]?.U_CAccCode;
+                    }else{
+                        accNo.U_TRDAcc = getData?.[0]?.U_TRDAcc;
+                        accNo.U_TRCAcc = getData?.[0]?.U_TRCAcc;
+                    }
+                    await this.PayOut(req, updatedExpReq, accNo, getData, requester.BPLID, checkStatus.U_DocType);
                 }
             }
-            // await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType)
+
+            const appUser = await userRepository.findByEmail(requester.eMail);
+            if(!appUser) console.log('approver user not found! notification not added.');
+            // console.log('appUser', appUser);
+
+            let moduleName;
+            let moduleurl;
+
+            switch (checkStatus.U_DocType) {
+                case "TR":
+                    moduleName = "Travel";
+                    moduleurl = "Travel";
+                    break;
+                case "OT":
+                    moduleName = "Over Time";
+                    moduleurl = "ess/requests/ot-requests/";
+                    break;
+                case "E":
+                    moduleName = "Expanse";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "PC":
+                    moduleName = "Petty cash";
+                    moduleurl = "ess/requests/expanse/";
+                    break;
+                case "L":
+                    moduleName = "Leave";
+                    moduleurl = "ess/requests/leave-requests/";
+                    break;
+                case "AT":
+                    moduleName = "Air Ticket";
+                    moduleurl = "Travel";
+                    break;
+                case "OR":
+                    moduleName = "Regularization";
+                    moduleurl = "Travel";
+                    break;
+                case "RR":
+                    moduleName = "Resignation";
+                    moduleurl = "Travel";
+                    break;
+                case "LA":
+                    moduleName = "Loan";
+                    moduleurl = "Travel";
+                    break;
+                default:
+                    moduleName = "General";
+                    moduleurl = null;
+            }
+
+            let devPay = {
+                company: req.user.companyName
+            }
+            
+            
+            let notificationPayload = {
+                userId: appUser.id,
+                title: `Request Approved!`,
+                body: `Hi ${requester.FirstName +" "+ requester.LastName}, Your ${moduleName} request is approved successfully!`,
+                type: `${moduleName}`,
+                referenceId: `${checkStatus.U_DocNo}`,
+                url: `${moduleurl}${Number(checkStatus.U_DocNo)}`,
+                application_status: `A`,
+                meta_data: JSON.stringify(devPay)
+            };
+            // console.log('Approval Notification created:', notificationPayload);
+            const noti = await notificationService.createAndSend(notificationPayload);
+            console.log('final notification Notification created:', noti.dataValues);
             return
           }
         }
@@ -991,15 +1600,20 @@ class SAPService extends SAPClient{
 
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
-        const approvalCollection = app_lev.value?.[0]?.HLB_APP1Collection;
+        let approvalCollection;
+        const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
+        // return approvalCollection;
         const isNeedApproval = approvalCollection?.length ?? 0;
-
+        
         let stg_1;
         if(isNeedApproval){
             stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
             // console.log('stg1', stg_1);
         }
-
+        
         if(isNeedApproval){
             for (const element of stg_1) {
 
@@ -1047,23 +1661,6 @@ class SAPService extends SAPClient{
                 await this.createLog(req, logPayload)
             };
         }
-        
-        // let logPayload = {
-        //     "Name": `${emp.FirstName} ${emp.LastName}`,
-        //     "U_ReqID": user.EmployeeId,
-        //     "U_DocType": DocType,
-        //     "U_DocNo": docEntry,
-        //     "U_Stg": isNeedApproval?"1":"",
-        //     "U_AppId": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprID:"",
-        //     "U_ApprName": isNeedApproval?app_lev.value?.[0]?.HLB_APP1Collection?.[0]?.U_ApprName:"",
-        //     "U_AppSts": isNeedApproval?"P":"A",
-        //     "U_PosId": emp.Position,
-        //     "U_CDt": date,
-        //     "U_CTm": time
-        // } 
-
-        // console.log('logpyalod', logPayload);
-        // await this.createLog(req, logPayload);
         
         return {
             message: 'resubmit request log submited successfully'
@@ -1148,6 +1745,9 @@ class SAPService extends SAPClient{
             this.getAllAtts(req),
             this.getAllOTR(req),
             AttendanceRegularizationDraft.findAll(),
+            this.getAllAirTicket(req),
+            this.getAllLoans(req),
+            this.getAllRR(req),
         ]);
 
         const [
@@ -1157,16 +1757,22 @@ class SAPService extends SAPClient{
             leaveResult,
             attResult,
             otResult,
-            rgResult
+            rgResult,
+            airResult,
+            loanResult,
+            resignationResult
         ] = results;
 
         const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
         const allExpanses = expResult.status === 'fulfilled' ? expResult.value.value || [] : [];
-        const allTExpsReq = tExpResult.status === 'fulfilled' ? expResult.value.value || [] : [];
+        const allTExpsReq = tExpResult.status === 'fulfilled' ? tExpResult.value.value || [] : [];
         const allLeaveRq = leaveResult.status === 'fulfilled' ? leaveResult.value.value || [] : [];
         const attachments = attResult.status === 'fulfilled' ? attResult.value.value || [] : [];
         const OTs = otResult.status === 'fulfilled' ? otResult.value.value || [] : [];
         const Rgs = rgResult.status === 'fulfilled' ? rgResult.value || [] : [];
+        const ATs = airResult.status === 'fulfilled' ? airResult.value || [] : [];
+        const Loans = loanResult.status === 'fulfilled' ? loanResult.value || [] : [];
+        const RRs = resignationResult.status === 'fulfilled' ? resignationResult.value || [] : [];
 
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
@@ -1226,6 +1832,35 @@ class SAPService extends SAPClient{
             ])
         );
 
+        const AirTicketMap = new Map(
+            ATs.map(t => [
+                t.DocEntry,
+                {
+                    ...t,
+                    AttachmentData: attachmentMap.get(Number(t.U_Atch)) || null
+                }
+            ])
+        );
+
+        const LoanData = new Map(
+            Loans.map(t => [
+                t.DocEntry,
+                {
+                    ...t,
+                    AttachmentData: attachmentMap.get(Number(t.U_Atch)) || null
+                }
+            ])
+        );
+
+        const RR = new Map(
+            RRs.map(r => [
+                r.DocEntry,
+                {
+                    ...r
+                }
+            ])
+        );
+
         const result = logs.map(log => {
             let expenseData = null;
 
@@ -1242,12 +1877,28 @@ class SAPService extends SAPClient{
                     expenseData = expenseWithAttMap.get(Number(log.U_DocNo)) || null;
                     break;
 
+                case "PC":
+                    expenseData = expenseWithAttMap.get(Number(log.U_DocNo)) || null;
+                    break;
+
                 case "L":
                     expenseData = LeaveMap.get(Number(log.U_DocNo)) || null;
                     break;
 
                 case "OR":
                     expenseData = Rg.get(Number(log.U_DocNo)) || null;
+                    break;
+
+                case "AT":
+                    expenseData = AirTicketMap.get(Number(log.U_DocNo)) || null;
+                    break;
+
+                case "LA":
+                    expenseData = LoanData.get(Number(log.U_DocNo)) || null;
+                    break;
+
+                case "RR":
+                    expenseData = RR.get(Number(log.U_DocNo)) || null;
                     break;
             }
 
@@ -1272,13 +1923,21 @@ class SAPService extends SAPClient{
         const emp = await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, emp.Position, checkAprv);
         // console.log('app lev', app_lev);return
+        let approvalCollection;
         const approvalCollectionArr = app_lev.value?.[0]?.HLB_APP1Collection;
-        const approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        if(Array.isArray(approvalCollectionArr)){
+            approvalCollection = approvalCollectionArr.filter(stg => stg.U_Stg && stg.U_ApprID);
+        }
         const isNeedApproval = approvalCollection?.length ?? 0;
         // console.log('approvalCollection', approvalCollection);
         // console.log('isNeedApproval', isNeedApproval);
         // console.log('req.files', req.files);
         // return approvalCollection;
+        let stg_1;
+        if(isNeedApproval){
+            stg_1 =  approvalCollection.filter(i => i.U_Stg === "1");
+            // console.log('stg1', stg_1);
+        }
 
         let attachments = null;
 
@@ -1305,49 +1964,50 @@ class SAPService extends SAPClient{
         // if(response.U_ApprSts == 'P'){
         //     return ('Request is already Pending!')
         // }
-
         const createdData = await AttendanceRegularizationDraft.create(payload);
         if(isNeedApproval){
-            const isDelegationId = approvalCollection?.[0]?.U_DlgID;
-            let isDelegationValid = false;
+            for (const element of stg_1) {
+                const isDelegationId = element.U_DlgID;
+                let isDelegationValid = false;
 
-            // console.log('isDelegationId', isDelegationId);
+                // console.log('isDelegationId', isDelegationId);
 
-            if(isDelegationId){
-                const currentDate = new Date(
-                `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
-                    .toString()
-                    .slice(6, 8)}`
-                );
+                if(isDelegationId){
+                    const currentDate = new Date(
+                    `${date.toString().slice(0, 4)}-${date.toString().slice(4, 6)}-${date
+                        .toString()
+                        .slice(6, 8)}`
+                    );
 
-                const fromDate = new Date(approvalCollection?.[0]?.U_FrmDt);
-                const toDate = new Date(approvalCollection?.[0]?.U_ToDt);
+                    const fromDate = new Date(element.U_FrmDt);
+                    const toDate = new Date(element.U_ToDt);
 
-                // console.log("currentDate", currentDate);
-                // console.log("fromDate", fromDate);
-                // console.log("toDate", toDate);
-            
-                isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
-                // console.log("isDelegationValid", isDelegationValid);
+                    // console.log("currentDate", currentDate);
+                    // console.log("fromDate", fromDate);
+                    // console.log("toDate", toDate);
+                
+                    isDelegationValid = currentDate >= fromDate && currentDate <= toDate;
+                    // console.log("isDelegationValid", isDelegationValid);
+                }
+                const newTime = addMinutes(time, 1);
+                let logPayload = {
+                    "Name": payload.Name,
+                    "U_ReqID": user.EmployeeId,
+                    "U_DocType": "OR",
+                    "U_DocNo": payload.Code ?? createdData.id,
+                    "U_Stg": isNeedApproval?"1":"",
+                    "U_AppId": isNeedApproval?element.U_ApprID:"",
+                    "U_ApprName": isNeedApproval?element.U_ApprName:"",
+                    "U_AppSts": isNeedApproval?"P":"A",
+                    "U_PosId": emp.Position,
+                    "U_DelID": isDelegationValid?element.U_DlgID:"",
+                    "U_DelName": isDelegationValid?element.U_DlgName:"",
+                    "U_CDt": date,
+                    "U_CTm": newTime
+                } 
+                console.log('logpayload', logPayload);
+                await this.createLog(req, logPayload); 
             }
-            
-            let logPayload = {
-                "Name": payload.Name,
-                "U_ReqID": user.EmployeeId,
-                "U_DocType": "OR",
-                "U_DocNo": payload.Code ?? createdData.id,
-                "U_Stg": isNeedApproval?"1":"",
-                "U_AppId": isNeedApproval?approvalCollection?.[0]?.U_ApprID:"",
-                "U_ApprName": isNeedApproval?approvalCollection?.[0]?.U_ApprName:"",
-                "U_AppSts": isNeedApproval?"P":"A",
-                "U_PosId": emp.Position,
-                "U_DelID": isDelegationValid?approvalCollection?.[0]?.U_DlgID:"",
-                "U_DelName": isDelegationValid?approvalCollection?.[0]?.U_DlgName:"",
-                "U_CDt": date,
-                "U_CTm": time
-            } 
-            console.log('logpayload', logPayload);
-            await this.createLog(req, logPayload); 
         }else{
             delete payload.U_ApprSts;
             if(payload.Code){
@@ -1361,6 +2021,98 @@ class SAPService extends SAPClient{
         
         return "Request submited successfully!";
     }
+
+    async getEmpBenifits (req) {
+        const res = await this.employeeBenifites(req);
+        return res.data.value;
+    }
+
+    async getEmpSalary (req) {
+        const res = await this.employeeSalary(req);
+        return res.data.value;
+    }
+
+    async getTerRn(req) {
+        const res = await this.terminationRN(req);
+        return res.data.value;
+    }
+
+    async ListCertificates(req) {
+        const res = await this.Certificates(req);
+        return res.data.value;
+    }
+
+    async ListCertificatesByEmp(req, EmpID) {
+        const res = await this.CertificatesByEmp(req, EmpID);
+        return res.data.value;
+    }
+
+    async addCertReq(req) {
+        const { date } = currentTime();
+        const user = req.user;
+        const emp = await this.getEmployeeDetail(req, user.EmployeeId);
+        let payload = {
+            ...req.body,
+            U_EmpName: emp.FirstName +" "+ emp.LastName || "",
+            U_EmpID: emp.EmployeeID || "",
+            U_ApprSts: "P",
+            U_ReqDt: date
+        };
+        const res = await this.ReqCert(req, payload);
+        return res.data;
+    }
+
+    async ViewCerts(req, id) {
+        const res = await this.ViewCert(req, id);
+        return res.data;
+    }
+
+    async ListWarnByEmp(req, EmpID) {
+        const res = await this.WarnByEmp(req, EmpID);
+        return res.data.value;
+    }
+
+    async addWarnReq(req) {
+        let payload = req.body;
+        const emp = await this.getEmployeeDetail(req, payload.U_EmpID);
+
+        payload.U_EmpID = emp.EmployeeID || "";
+        payload.U_EmpName = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_ApprSts = "P";
+
+        const res = await this.addWarn(req, payload);
+        return res.data;
+    }
+
+    async ViewWarn(req, id) {
+        const res = await this.WarnLtr(req, id);
+        return res.data;
+    }
+
+    async LoanType(req, type) {
+        const res = await this.LoanTy(req, type);
+        return res.data.value;
+    }
+
+    async LoanList(req, id) {
+        const res = await this.LoanByEmp(req, id);
+        return res.data.value;
+    }
+
+    async LoanReq(req, EmpId) {
+        let payload = req.body;
+        const emp = await this.getEmployeeDetail(req, EmpId);
+
+        payload.U_empID = emp.EmployeeID || "";
+        payload.U_empName = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_PreByCod = emp.EmployeeID || "";
+        payload.U_PreByNam = emp.FirstName +" "+ emp.LastName || "";
+        payload.U_ApprSts = "P";
+
+        const res = await this.LoanPost(req, payload);
+        return res.data;
+    }
+
 }
 
 module.exports = SAPService;

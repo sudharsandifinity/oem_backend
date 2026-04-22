@@ -2,50 +2,66 @@
   "Companies": [
     {
       "name": "HLB_Demo",
-      "paymentMethod": "Payout"
+      "paymentMethod": "Payout",
+      "OTPayout": "Payout"
     },
     {
       "name": "HLB_Demo2",
-      "paymentMethod": "Payout"
+      "paymentMethod": "Payout",
+      "OTPayout": "Payout"
     },
     {
       "name": "INSTINCTIF-KSA",
-      "paymentMethod": "Ap Invoice"
+      "paymentMethod": "Ap Invoice",
+      "OTPayout": "Compoff"
     },
     {
       "name": "INSTINCTIF-ABUDHABI",
-      "paymentMethod": "Ap Invoice"
+      "paymentMethod": "Ap Invoice",
+      "OTPayout": "Compoff"
     },
     {
       "name": "INSTINCTIF-DMCC",
-      "paymentMethod": "Ap Invoice"
+      "paymentMethod": "Ap Invoice",
+      "OTPayout": "Compoff"
     },
     {
       "name": "INSTINCTIF-DUBAI-Live",
-      "paymentMethod": "Ap Invoice"
+      "paymentMethod": "Ap Invoice",
+      "OTPayout": "Compoff"
     },
     {
       "name": "INSTINCTIF-KSA-Live",
-      "paymentMethod": "Ap Invoice"
+      "paymentMethod": "Ap Invoice",
+      "OTPayout": "Compoff"
     },
     {
       "name": "INSTINCTIF-ABU_DHABI-Live",
-      "paymentMethod": "Ap Invoice"
+      "paymentMethod": "Ap Invoice",
+      "OTPayout": "Compoff"
     },
     {
       "name": "Duagh",
-      "paymentMethod": "Payout"
+      "paymentMethod": "Payout",
+      "OTPayout": "Payout"
     },
     {
       "name": "Prime Plastic Test",
-      "paymentMethod": "Payout"
+      "paymentMethod": "Payout",
+      "OTPayout": "Payout"
     },
     {
       "name": "Prime Plastic",
-      "paymentMethod": "Payout"
+      "paymentMethod": "Payout",
+      "OTPayout": "Payout"
+    },
+    {
+      "name": "Elite Ventures test",
+      "paymentMethod": "Payout",
+      "OTPayout": "Payout"
     }
   ],
   "paymentRequired": [
-    "TR", "OT", "E", "AT"
+    "TR", "E", "AT", "LA", "PC"
   ]
 }

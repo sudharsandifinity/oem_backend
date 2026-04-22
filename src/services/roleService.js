@@ -61,10 +61,10 @@ class RoleService extends BaseService{
         try {
             data.branchId = decodeId(data.branchId);
 
-            const existing = await this.repository.findByName(data.name);
-            if (existing) {
-            throw new Error('Role name already exists!');
-            }
+            // const existing = await this.repository.findByName(data.name);
+            // if (existing) {
+            // throw new Error('Role name already exists!');
+            // }
 
             const role = await this.repository.create(data, { transaction: t });
 
@@ -107,12 +107,12 @@ class RoleService extends BaseService{
             data.branchId = decodeId(data.branchId);
             }
 
-            if (data.name) {
-            const existing = await this.repository.findByName(data.name);
-            if (existing && existing.id != id) {
-                throw new Error('Role name already exists!');
-            }
-            }
+            // if (data.name) {
+            // const existing = await this.repository.findByName(data.name);
+            // if (existing && existing.id != id) {
+            //     throw new Error('Role name already exists!');
+            // }
+            // }
 
             const role = await this.repository.findById(id);
             if (!role) throw new Error('Role not found');

@@ -121,4 +121,4 @@ router.put('/:id', validateParams(getByPkSchema), userController.update);
 router.delete('/:id', validateParams(getByPkSchema), userController.delete);
 router.post('/sync', sapEmpSync);
 
-module.exports = router;
+module.exports = { router, userRepository, userService };

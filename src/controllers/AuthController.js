@@ -27,7 +27,8 @@ class AuthController {
                     id: menu.id,
                     name: menu.name,
                     display_name: menu.display_name,
-                    order_number: menu.order_number
+                    order_number: menu.order_number,
+                    status: menu.order_number
                 }
             });
 
@@ -67,7 +68,8 @@ class AuthController {
                     id: menu.id,
                     name: menu.name,
                     display_name: menu.display_name,
-                    order_number: menu.order_number
+                    order_number: menu.order_number,
+                    status: menu.order_number,
                 }
             });
 
