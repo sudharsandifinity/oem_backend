@@ -1,4 +1,5 @@
 const SapBaseSetvice = require("./SapBaseService");
+const AuthSetvice = require("../AuthService");
 const SapBranchRepository = require("../../repositories/SapBranchRepository");
 const { exist } = require("joi");
 
@@ -8,6 +9,7 @@ class BranchService extends SapBaseSetvice {
     constructor(){
         super();
         this.SapBranchRepository = new SapBranchRepository();
+        this.authService = new AuthSetvice();
     }
 
     async listAll(req) {
@@ -16,6 +18,9 @@ class BranchService extends SapBaseSetvice {
     }
 
      async syncBranch(req) {
+        const sapLogin = await this.authService.sapLogin(req, req.user.id);
+        console.log('sapLogin', sapLogin);
+        
         const branches = await this.getBranches(req);
         if(!branches){ 
             return "Branches not availble!";

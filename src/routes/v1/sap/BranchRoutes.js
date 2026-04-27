@@ -3,6 +3,6 @@ const SapBranchController = require('../../../controllers/SapControllers/SapBran
 const sapBranchController = new SapBranchController();
 
 router.get('/', sapBranchController.getAll);
-router.get('/sync', sapBranchController.getSapBranches);
+router.post('/sync', sapBranchController.getSapBranches);
 
 module.exports = router;

@@ -18,7 +18,8 @@ class CompanyService extends BaseService{
                 json.branches = json.branches.map((branch) => ({
                     ...branch,
                     id: encodeId(branch.id),
-                    companyId: encodeId(branch.companyId)
+                    companyId: encodeId(branch.companyId),
+                    CompanyId: encodeId(branch.CompanyId)
                 }))
             }
             return json;
@@ -43,7 +44,8 @@ class CompanyService extends BaseService{
             result.branches = result.branches.map((branch) => ({
                 ...branch,
                 id: encodeId(branch.id),
-                companyId: encodeId(branch.companyId)
+                companyId: encodeId(branch.companyId),
+                CompanyId: encodeId(branch.CompanyId),
             }))
         }
         return result;
