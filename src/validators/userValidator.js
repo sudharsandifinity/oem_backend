@@ -23,6 +23,9 @@ const createUserSchema = Joi.object({
         'number.base': 'is_super_user must be a number',
         'number.max': 'is_super_user cannot be more than 1'
     }),
+    is_com_admin: Joi.boolean().optional().messages({
+        'boolean.base': 'is_super_user must be a boolean'
+    }),
     roleIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Role IDs must be an array of strings',
         'array.includes': 'Each role ID must be a string'
