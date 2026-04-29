@@ -1,4 +1,5 @@
-const { User, Role, Branch, Company, UserMenu, Permission } = require('../models');
+const { Op } = require('sequelize');
+const { User, Role, Branch, Company, UserMenu, UserBranch, Permission } = require('../models');
 const BaseRepository = require('./baseRepository');
 
 class UserRepository extends BaseRepository {
@@ -120,6 +121,41 @@ class UserRepository extends BaseRepository {
                         {
                             model: Company,
                             attributes: {exclude: ['createdAt', 'updatedAt']},
+                        }
+                    ]
+                }
+            ]
+        });
+    }
+
+    async getUserCompanyIds(userId) {
+
+        console.log('uid repo', userId);
+        const records = await UserBranch.findAll({
+            where: { userId },
+            attributes: ['companyId'],
+            raw: true
+        });
+        console.log('recs', records);
+        return [...new Set(records.map(r => r.companyId))];
+    }
+
+    async getUsersByCompanies(companyIds) {
+        return await User.findAll({
+            attributes: { exclude: ['password'] },
+            include: [
+                {
+                    model: Branch,
+                    required: true,
+                    through: { attributes: [] },
+                    include: [
+                        {
+                            model: Company,
+                            where: {
+                                id: {
+                                    [Op.in]: companyIds
+                                }
+                            }
                         }
                     ]
                 }

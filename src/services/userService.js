@@ -327,6 +327,11 @@ class UserService extends BaseService {
         return;
     }
 
+    async getCompanyUsers(userId) {
+        const companyIds = await this.repository.getUserCompanyIds(userId);
+        return await this.repository.getUsersByCompanies(companyIds);
+    }
+
 }
 
 module.exports = UserService;
