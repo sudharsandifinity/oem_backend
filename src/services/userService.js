@@ -1,5 +1,6 @@
+const { Op } = require('sequelize');
 const { sendEmail, sendBranchAssignEmail } = require('../config/mail');
-const { UserBranch, UserRole } = require('../models');
+const { UserBranch, UserRole, Company, UserMenu } = require('../models');
 const { encodeId, decodeId } = require('../utils/hashids');
 const BaseService = require('./baseService');
 
@@ -278,10 +279,10 @@ class UserService extends BaseService {
             })
         }
         if(data.branchIds?.length){
-            const branchIdsArray = data.branchIds.map((branch) => {
-                return decodeId(branch);
-            })
-            branchIdsArray.map(async branch => {
+            // const branchIdsArray = data.branchIds.map((branch) => {
+            //     return decodeId(branch);
+            // })
+            data.branchIds.map(async branch => {
                 const payload = {
                     userId: user.id,
                     companyId: data.companyId,
@@ -311,10 +312,10 @@ class UserService extends BaseService {
             })
         }
         if(data.branchIds?.length){
-            const branchIdsArray = data.branchIds.map((branch) => {
-                return decodeId(branch);
-            })
-            branchIdsArray.map(async branch => {
+            // const branchIdsArray = data.branchIds.map((branch) => {
+            //     return decodeId(branch);
+            // })
+            data.branchIds.map(async branch => {
                 const payload = {
                     userId: user.id,
                     companyId: data.companyId,
@@ -330,6 +331,39 @@ class UserService extends BaseService {
     async getCompanyUsers(userId) {
         const companyIds = await this.repository.getUserCompanyIds(userId);
         return await this.repository.getUsersByCompanies(companyIds);
+    }
+
+    async getAdminCompanies(userId) {
+        const companyIds = await this.repository.getUserCompanyIds(userId);
+
+        if (companyIds && companyIds.length > 0) {
+            return await Company.findAll({
+                where: {
+                    id: { [Op.in]: companyIds }
+                },
+                attributes: ['id', 'name', 'company_code'],
+                raw: true
+            });
+        } else {
+            return [];
+        }
+    }
+
+    async getCompanyMenus (userId) {
+        const companyIds = await this.repository.getUserCompanyIds(userId);
+
+        if (companyIds && companyIds.length > 0) {
+            return await UserMenu.findAll({
+                where: {
+                    companyId: { [Op.in]: companyIds },
+                    status: 1
+                },
+                attributes: ['id', 'name', 'companyId', 'display_name'],
+                raw: true
+            });
+        } else {
+            return [];
+        }
     }
 
 }

@@ -17,7 +17,7 @@ class BranchService extends SapBaseSetvice {
         return data;
     }
 
-     async syncBranch(req) {
+    async syncBranch(req) {
         const sapLogin = await this.authService.sapLogin(req, req.user.id);
         console.log('sapLogin', sapLogin);
         

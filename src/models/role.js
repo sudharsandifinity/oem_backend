@@ -26,8 +26,8 @@ module.exports = (sequelize, DataTypes) => {
   }
   Role.init({
     name: DataTypes.STRING,
-    scope: DataTypes.ENUM('master', 'user'),
-    branchId: DataTypes.INTEGER,
+    // scope: DataTypes.ENUM('master', 'user'),
+    companyId: DataTypes.INTEGER,
     status: DataTypes.TINYINT
   }, {
     sequelize,

@@ -1,4 +1,5 @@
 const { callSAP } = require("../utils/sapRequest");
+const { SapBranch } = require('../models');
 const UserController = require("./UserController");
 const UserService = require("../services/userService")
 const UserRepository = require("../repositories/userRepository");
@@ -80,8 +81,8 @@ const getProjects = async (req, res) => {
 
 const getAllEmployees = async (req, res) => {
   try {
-    const { top = 20, skip = 0 } = req.query;
-    const data = await sapService.getAllEmployees(req, { top, skip });
+    const { select = Endpoints.EmployeesSelect, top = 20, skip = 0 } = req.query;
+    const data = await sapService.getAllEmployees(req, { top, skip, select });
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error fetching Employees';
@@ -167,9 +168,9 @@ const findMissedCheckOuts = async (req, EmpId) => {
 
 const syncEmployees = async (req, res) => {
   try {
-    const { roleIds, branchIds, company_id }= req.body;
+    const { roleIds, company_id }= req.body;
     const companyId = decodeId(company_id);    
-    const employees = await sapService.getAllEmployees(req);
+    const employees = await sapService.getAllEmployees(req, {"select": "EmployeeID,LastName,FirstName,eMail,MobilePhone,Department, EmployeeBranchAssignment"}, true);
     const userRepository = new UserRepository();
     const userService = new UserService(userRepository);
     const userController = new UserController(userService);
@@ -180,6 +181,19 @@ const syncEmployees = async (req, res) => {
     
     for (const employee of employees.value) {
       const { EmployeeID, eMail, FirstName, LastName, MobilePhone, Department } = employee;
+      let branchIds = [];
+
+      if (Array.isArray(employee.EmployeeBranchAssignment) && employee.EmployeeBranchAssignment.length > 0) {
+        for (const assignment of employee.EmployeeBranchAssignment) {
+          console.log('as branch', assignment);
+          const findBranch = await SapBranch.findOne({ where: { companyId: companyId, BPLID: assignment.BPLID }, raw: true});
+          console.log('cc',companyId, assignment.BPLID, findBranch);
+          branchIds.push(findBranch.id);
+          
+        }
+      } else {
+        console.log(`No branch assignments for Employee ${employee.EmployeeID}`);
+      }
       
       if(!eMail){
         skippedEmployeeIDs.push({SAP_ID: EmployeeID, Reason: "E-Mail not found!"});
@@ -202,14 +216,14 @@ const syncEmployees = async (req, res) => {
           newRoleIds = roleIds.filter( role =>  
             !uniRoles.has(role)
           )
-          const existingBranchIds = existingUser.Branches.map(b => encodeId(b.id));
-          const uniqueBranches = new Set(existingBranchIds);
-          newBranchIds = branchIds.filter(id => 
-            !uniqueBranches.has(id)
-          )
-          console.log('current brances', existingBranchIds);
-          console.log('filtered newbranch ids', newBranchIds.map(i => (i)));
-          console.log('given newbranch ids', branchIds.map(i => (i)));
+          // const existingBranchIds = existingUser.Branches.map(b => encodeId(b.id));
+          // const uniqueBranches = new Set(existingBranchIds);
+          // newBranchIds = branchIds.filter(id => 
+          //   !uniqueBranches.has(id)
+          // )
+          // console.log('current brances', existingBranchIds);
+          // console.log('filtered newbranch ids', newBranchIds.map(i => (i)));
+          // console.log('given newbranch ids', branchIds.map(i => (i)));
     
           const updatedUserPayload = {
             first_name: FirstName,
@@ -220,10 +234,11 @@ const syncEmployees = async (req, res) => {
             is_sap_user: 1,
             department: Department,
             companyId: companyId,
-            branchIds: newBranchIds,
+            branchIds: branchIds,
             roleIds: newRoleIds,
           };
           existingpayload.push(updatedUserPayload)
+          // console.log('existing payload', existingpayload);
           const data = await userController.updateSapEmployees(existingUser.id, updatedUserPayload);
           if(data === "duplicate"){
             skippedEmployeeIDs.push(EmployeeID);
@@ -245,6 +260,7 @@ const syncEmployees = async (req, res) => {
           status: 1
         };
         newpayload.push(userPayload)
+        // console.log('newpayload', userPayload);
         await userController.syncSapEmployees(userPayload);
       }
       

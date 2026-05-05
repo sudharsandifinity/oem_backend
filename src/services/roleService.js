@@ -14,7 +14,7 @@ class RoleService extends BaseService{
         return datas.map((data) => {
             const json = data.toJSON();
             json.id = encodeId(json.id);
-            json.branchId = encodeId(json.branchId);
+            json.companyId = encodeId(json.companyId);
             // json.Permissions.map((permission) => {
             //     permission.id = encodeId(permission.id)
             // })
@@ -34,7 +34,7 @@ class RoleService extends BaseService{
         if(!role) return null;
         const result = role.toJSON();
         result.id = encodeId(result.id);
-        result.branchId = encodeId(result.branchId);
+        result.companyId = encodeId(result.companyId);
         if (result.Permissions) {
             result.Permissions = result.Permissions.map((permi) => ({
                 ...permi,
@@ -59,7 +59,7 @@ class RoleService extends BaseService{
         const t = await sequelize.transaction();
 
         try {
-            data.branchId = decodeId(data.branchId);
+            data.companyId = decodeId(data.companyId);
 
             // const existing = await this.repository.findByName(data.name);
             // if (existing) {
@@ -68,15 +68,14 @@ class RoleService extends BaseService{
 
             const role = await this.repository.create(data, { transaction: t });
 
-            if (data.scope === 'master' && Array.isArray(data.permissionIds)) {
+            if (Array.isArray(data.permissionIds)) {
             const permissionIds = data.permissionIds.map(decodeId);
             await role.setPermissions(permissionIds, { transaction: t });
             }
 
-            if (data.scope === 'user' && Array.isArray(data.userMenus)) {
+            if (Array.isArray(data.userMenus)) {
                 for (const menu of data.userMenus) {
                     const menuId = decodeId(menu.menuId);
-
                     await RoleMenu.create({
                     roleId: role.id,
                     userMenuId: menuId,
@@ -103,8 +102,8 @@ class RoleService extends BaseService{
         const t = await sequelize.transaction();
 
         try {
-            if (data.branchId) {
-            data.branchId = decodeId(data.branchId);
+            if (data.companyId) {
+                data.companyId = decodeId(data.companyId);
             }
 
             // if (data.name) {
@@ -119,30 +118,30 @@ class RoleService extends BaseService{
 
             await this.repository.update(id, data, { transaction: t });
 
-            if (data.scope === 'master' && Array.isArray(data.permissionIds)) {
-            const permissionIds = data.permissionIds.map(decodeId);
-            await role.setPermissions(permissionIds, { transaction: t });
+            if (Array.isArray(data.permissionIds)) {
+                const permissionIds = data.permissionIds.map(decodeId);
+                await role.setPermissions(permissionIds, { transaction: t });
             }
 
-            if (data.scope === 'user' && Array.isArray(data.userMenus)) {
-            await RoleMenu.destroy({
-                where: { roleId: role.id },
-                transaction: t,
-            });
+            if (Array.isArray(data.userMenus)) {
+                await RoleMenu.destroy({
+                    where: { roleId: role.id },
+                    transaction: t,
+                });
 
-            for (const menu of data.userMenus) {
-                const menuId = decodeId(menu.menuId || menu.id);
+                for (const menu of data.userMenus) {
+                    const menuId = decodeId(menu.menuId || menu.id);
 
-                await RoleMenu.create({
-                roleId: role.id,
-                userMenuId: menuId,
-                can_list_view: menu.can_list_view ?? false,
-                can_create: menu.can_create ?? false,
-                can_edit: menu.can_edit ?? false,
-                can_view: menu.can_view ?? false,
-                can_delete: menu.can_delete ?? false,
-                }, { transaction: t });
-            }
+                    await RoleMenu.create({
+                    roleId: role.id,
+                    userMenuId: menuId,
+                    can_list_view: menu.can_list_view ?? false,
+                    can_create: menu.can_create ?? false,
+                    can_edit: menu.can_edit ?? false,
+                    can_view: menu.can_view ?? false,
+                    can_delete: menu.can_delete ?? false,
+                    }, { transaction: t });
+                }
             }
 
             await t.commit();
