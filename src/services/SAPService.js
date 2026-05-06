@@ -222,8 +222,9 @@ class SAPService extends SAPClient{
         // return response.data;
     }
 
-    async getAllExpTypes(req) {
-        const response = await this.getExpTypes(req);
+    async getAllExpTypes(req, query = false) {
+        // const query = "$filter=U_ExpCode eq 'TR'"
+        const response = await this.getExpTypes(req, query);
         return response.data;
     }
 
@@ -738,7 +739,7 @@ class SAPService extends SAPClient{
                 moduleurl = "ess/requests/ot-requests/";
                 break;
             case "E":
-                moduleName = "Expanse";
+                moduleName = "Expense";
                 moduleurl = "ess/requests/expanse/";
                 break;
             case "PC":
@@ -985,7 +986,14 @@ class SAPService extends SAPClient{
         const { endpoint, patch } = await this.checkModule(U_DocType);
         // console.log('respos', response);
         // console.log('respos', response.DocEntry);
+        let expenseType=null;
+        let expTypeData=null;
         const frM = await this.getMonthYear(response.U_DtFrm);
+
+        if(response.U_ExpType){
+            expenseType = await this.getAllExpTypes(req, `$filter=U_ExpCode eq '${response.U_ExpType}'`);
+            expTypeData = expenseType?.value[0];
+        }
 
         const APInvoicePayload = {
             "DocType": "dDocument_Service",
@@ -993,14 +1001,14 @@ class SAPService extends SAPClient{
             "DocCurrency": response.U_CUR,
             "DocDate": response.U_Udt,
             "TaxDate": response.U_CDt,
-            "JournalMemo": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName} - ${frM}`:null,
+            "JournalMemo": expTypeData.U_ExpName?`${expTypeData.U_ExpName} - ${emp.FirstName} ${emp.LastName} - ${frM}`:null,
             "Project": response.U_PrjCode,
             "DocTotal":response.U_ExpAmt??"0",
             "DocumentLines": [
                 {
                     "LineNum":0,
-                    "ItemDescription": response.U_ExpType?`${response.U_ExpType} - ${emp.FirstName} ${emp.LastName}`:`${emp.FirstName} ${emp.LastName}`,
-                    "ExpenseType": response.U_ExpType?response.U_ExpType:null,
+                    "ItemDescription": expTypeData.U_ExpName?`${expTypeData.U_ExpName} - ${emp.FirstName} ${emp.LastName}`:`${emp.FirstName} ${emp.LastName}`,
+                    "ExpenseType": expTypeData.U_ExpCode?expTypeData.U_ExpCode:null,
                     "ProjectCode": response.U_PrjCode,
                     "CostingCode2": emp.CostCenterCode,
                     "CostingCode": emp.U_BU,
@@ -1197,9 +1205,9 @@ class SAPService extends SAPClient{
           return { message: "You don't have permission to approve this request!" };
         }
     
-        if(checkStatus.U_AppSts === "A"){
-          return {message: "This request is already approved!"};
-        }
+        // if(checkStatus.U_AppSts === "A"){
+        //   return {message: "This request is already approved!"};
+        // }
     
         if(checkStatus.U_AppSts === "R"){
           return {message: "This request is already Rejected!"};
@@ -1224,7 +1232,7 @@ class SAPService extends SAPClient{
                     moduleurl = "ess/requests/ot-requests/";
                     break;
                 case "E":
-                    moduleName = "Expanse";
+                    moduleName = "Expense";
                     moduleurl = "ess/requests/expanse/";
                     break;
                 case "PC":
@@ -1439,8 +1447,8 @@ class SAPService extends SAPClient{
 
                         const empReqPayload = {
                             "U_ApprSts":"P",
-                            "U_Udt": "",
-                            "U_UTm": ""
+                            "U_Udt": date,
+                            "U_UTm": time
                         }
                         console.log('revert status', empReqPayload);
                         await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
@@ -1482,7 +1490,7 @@ class SAPService extends SAPClient{
                     moduleurl = "ess/requests/ot-requests/";
                     break;
                 case "E":
-                    moduleName = "Expanse";
+                    moduleName = "Expense";
                     moduleurl = "ess/requests/expanse/";
                     break;
                 case "PC":

@@ -130,10 +130,14 @@ class SAPClient {
         );
     }
 
-    async getExpTypes(req) {
+    async getExpTypes(req, query) {
+        let comQry = `${Endpoints.ExpanseTypes}?${SAP_QUERIES.ExpTypeSlct}`;
+        if(query){
+            comQry = `${Endpoints.ExpanseTypes}?${SAP_QUERIES.ExpTypeSlct}&${query}`;
+        }
         return await sapGetRequest(
             req,
-            `${Endpoints.ExpanseTypes}?${SAP_QUERIES.ExpTypeSlct}`
+            comQry
         );
     }
 
