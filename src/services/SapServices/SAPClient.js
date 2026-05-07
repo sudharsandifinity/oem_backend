@@ -495,6 +495,19 @@ class SAPClient {
         return await sapGetRequest(req, `${Endpoints.Branches}`);
     }
 
+    // BOQ
+
+    async GetBOQs(req, qry) {
+        let com_qry = `${Endpoints.BOQ}`;
+        if(qry.filter){
+            com_qry = `${Endpoints.BOQ}?${qry.filter}`;
+        }
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
 }
 
 module.exports = SAPClient;
