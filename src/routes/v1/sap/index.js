@@ -19,6 +19,7 @@ const TaxCodeRoutes = require('./taxCodeRoutes');
 const AttachmentRoutes = require('./attachmentRoutes');
 const PurchaseDeliveryNote = require('./purchaseDeliverytNoteRoutes');
 const BOQRoutes = require('./BOQRoutes');
+const MaterialReqRoute = require('./MaterialReqRoute');
 const OtherRoutes = require('./otherRoutes');
 
 router.use('/branches', BranchRoutes);
@@ -39,6 +40,7 @@ router.use('/profit-centers', ProfitCenterRoutes);
 router.use('/attachments', AttachmentRoutes);
 router.use('/purchase-delivery-notes', PurchaseDeliveryNote);
 router.use('/boq', BOQRoutes);
+router.use('/mr', MaterialReqRoute);
 router.use('/others', OtherRoutes);
 
 module.exports = router;

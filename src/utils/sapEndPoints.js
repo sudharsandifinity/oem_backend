@@ -30,7 +30,8 @@ const Endpoints = {
   PayslipMonth: "OPYP",
   Payslip: "HLB_PYSL",
   Branches: "BusinessPlaces",
-  BOQ: "HLB_OBOQT"
+  BOQ: "HLB_OBOQT",
+  MR: "HLB_OMRQ"
 };
 
 const SAP_QUERIES = {

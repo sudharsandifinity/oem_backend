@@ -508,6 +508,21 @@ class SAPClient {
         );
     }
 
+    // MR
+
+    async GetAllMRs(req, qry) {
+        const top = qry.top || 20;
+        const skip = qry.skip || 0;
+
+        let com_qry = `${Endpoints.MR}?$top=${top}&$skip=${skip}`;
+        
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
+
 }
 
 module.exports = SAPClient;

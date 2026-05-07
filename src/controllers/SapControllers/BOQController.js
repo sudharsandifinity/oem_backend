@@ -17,7 +17,7 @@ class BOQController extends SapBaseController {
             const response = await this.boqService.getOpenBOQs(req, qry);
             res.status(200).json(response);
         } catch (error) {
-            const message = "Error while fetching payslip months"
+            const message = "Error while fetching BOQs"
             return this.errorCatch(req, res, message, error);
         }
     }
