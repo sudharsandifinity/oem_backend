@@ -1,5 +1,7 @@
 const Endpoints = {
   Employees: "EmployeesInfo",
+  Users: "Users",
+  Departments: "Departments",
   EmployeesSelect:
     "$select=EmployeeID, ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department,PassportNumber,Picture,WorkStreet,WorkZipCode,LinkedVendor,CostCenterCode,Position, BPLID, U_BU",
   Attendance: "U_HLB_OATT",

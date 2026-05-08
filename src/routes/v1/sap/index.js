@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
+const UserRoutes = require('./UserRoutes');
+const EmployeRoutes = require('./EmployeRoutes');
+const DepartmentRoutes = require('./DepartmentRoutes');
 const BPRoutes = require('./businesspartnerRoutes');
 const BranchRoutes = require('./BranchRoutes');
 const OrderRoutes = require('./orderRoutes');
@@ -22,6 +25,9 @@ const BOQRoutes = require('./BOQRoutes');
 const MaterialReqRoute = require('./MaterialReqRoute');
 const OtherRoutes = require('./otherRoutes');
 
+router.use('/users', UserRoutes);
+router.use('/employees', EmployeRoutes);
+router.use('/departments', DepartmentRoutes);
 router.use('/branches', BranchRoutes);
 router.use('/business-partners', BPRoutes);
 router.use('/orders', OrderRoutes);

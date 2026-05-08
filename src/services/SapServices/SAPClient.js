@@ -522,6 +522,69 @@ class SAPClient {
         );
     }
 
+    // Users
+
+    async GetUsers(req, qry) {
+        let com_qry = `${Endpoints.Users}?$select=InternalKey,UserCode,UserName,eMail,Department`;
+        
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
+    async GetEmployees(req, qry) {
+        let com_qry = `${Endpoints.Employees}?$select=EmployeeID,FirstName,LastName,eMail,JobTitle, Department`;
+        
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
+    async GetDepartments(req, qry) {
+        let com_qry = `${Endpoints.Departments}`;
+        
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
+
+    // Common template
+    
+    // Get Request
+
+    async getAll(req, module, query) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints[module]}`
+        );
+    }
+
+    async getById(req, module, id) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints[module]}(${id})`
+        );
+    }
+
+    async create(req, module, payload) {
+        return await sapPostRequest(
+            req,
+            `${Endpoints[module]}`,
+            payload
+        );
+    }
+
+    async patch(req, module, id, payload) {
+        return await sapPatchRequest(
+            req,
+            `${Endpoints[module]}(${id})`,
+            payload
+        );
+    }
 
 }
 

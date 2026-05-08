@@ -1,17 +1,16 @@
 const SapBaseController = require("./SapBaseController");
 const MaterialRequestService = require('../../services/SapServices/MaterialRequestService');
 
+class MaterialRequestController extends SapBaseController {
 
-class PayslipController extends SapBaseController {
-
-    constructor(){
-        super()
+    constructor() {
+        super(new MaterialRequestService(), "MR");
         this.materialRequestService = new MaterialRequestService();
     }
 
     getMaterialRqs = async (req, res) => {
         try {
-            const { skip=0, top=20 } = req.body;
+            const { skip=0, top=20 } = req.body || {};
             const qry = {};
             qry.skip = skip;
             qry.top = top;
@@ -25,4 +24,4 @@ class PayslipController extends SapBaseController {
 
 }
 
-module.exports = PayslipController;
+module.exports = MaterialRequestController;
