@@ -27,9 +27,12 @@ class SapBaseController {
     getAll = async (req, res) => {
         try {
 
-            const { skip = 0, top = 20 } = req.body || {};
+            const { select = "", filter = "", orderBy = "DocEntry desc", skip = "", top = "" } = req.query || {};
 
             const query = {
+                orderBy,
+                select,
+                filter,
                 skip,
                 top
             };

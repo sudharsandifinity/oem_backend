@@ -33,7 +33,9 @@ const Endpoints = {
   Payslip: "HLB_PYSL",
   Branches: "BusinessPlaces",
   BOQ: "HLB_OBOQT",
-  MR: "HLB_OMRQ"
+  MR: "HLB_OMRQ",
+  GRPO: "PurchaseDeliveryNotes",
+  GOODSISSUE: "InventoryGenExits"
 };
 
 const SAP_QUERIES = {

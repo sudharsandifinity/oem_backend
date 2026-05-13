@@ -514,7 +514,7 @@ class SAPClient {
         const top = qry.top || 20;
         const skip = qry.skip || 0;
 
-        let com_qry = `${Endpoints.MR}?$top=${top}&$skip=${skip}`;
+        let com_qry = `${Endpoints.MR}?$orderby=DocEntry desc&$top=${top}&$skip=${skip}`;
         
         return await sapGetRequest(
             req,
@@ -557,9 +557,28 @@ class SAPClient {
     // Get Request
 
     async getAll(req, module, query) {
+
+        const mapping = {
+            select: '$select',
+            filter: '$filter',
+            orderBy: '$orderby',
+            skip: '$skip',
+            top: '$top'
+        };
+
+        const queryParams = Object.entries(mapping)
+            .filter(([key]) => query[key] !== undefined && query[key] !== '')
+            .map(([key, value]) => {
+                return `${value}=${encodeURIComponent(query[key])}`;
+            });
+
+        const queryString = queryParams.length
+            ? `?${queryParams.join('&')}`
+            : '';
+
         return await sapGetRequest(
             req,
-            `${Endpoints[module]}`
+            `${Endpoints[module]}${queryString}`
         );
     }
 
