@@ -1570,4 +1570,34 @@ const getLoan = async (req, res) => {
   }
 };
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType }
+const AllUsers = async (req, res) => {
+  try {
+    const data = await sapService.getUsers(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting  Users!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const AllEmployees = async (req, res) => {
+  try {
+    const data = await sapService.getEmployees(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting  Employees!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const AllDepartments = async (req, res) => {
+  try {
+    const data = await sapService.getDepartments(req);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while getting  Departments!';
+    errorCatch(req, res, message, error);
+  }
+}
+
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, AllUsers, AllEmployees, AllDepartments }

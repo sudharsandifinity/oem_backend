@@ -2113,6 +2113,21 @@ class SAPService extends SAPClient{
         return res.data;
     }
 
+    async getUsers(req) {
+        const response = await this.GetUsers(req);
+        return response.data.value;
+    }
+
+    async getEmployees(req) {
+        const response = await this.GetEmployees(req);
+        return response.data.value;
+    }
+
+    async getDepartments(req) {
+        const response = await this.GetDepartments(req);
+        return response.data.value;
+    }
+
 }
 
 module.exports = SAPService;

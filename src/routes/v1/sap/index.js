@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
+const UserRoutes = require('./UserRoutes');
+const EmployeRoutes = require('./EmployeRoutes');
+const DepartmentRoutes = require('./DepartmentRoutes');
 const BPRoutes = require('./businesspartnerRoutes');
 const BranchRoutes = require('./BranchRoutes');
 const OrderRoutes = require('./orderRoutes');
@@ -20,8 +23,12 @@ const AttachmentRoutes = require('./attachmentRoutes');
 const PurchaseDeliveryNote = require('./purchaseDeliverytNoteRoutes');
 const BOQRoutes = require('./BOQRoutes');
 const MaterialReqRoute = require('./MaterialReqRoute');
+const GoodsIssueRoutes = require('./GoodsIssueRoutes');
 const OtherRoutes = require('./otherRoutes');
 
+router.use('/users', UserRoutes);
+router.use('/employees', EmployeRoutes);
+router.use('/departments', DepartmentRoutes);
 router.use('/branches', BranchRoutes);
 router.use('/business-partners', BPRoutes);
 router.use('/orders', OrderRoutes);
@@ -41,6 +48,7 @@ router.use('/attachments', AttachmentRoutes);
 router.use('/purchase-delivery-notes', PurchaseDeliveryNote);
 router.use('/boq', BOQRoutes);
 router.use('/mr', MaterialReqRoute);
+router.use('/gi', GoodsIssueRoutes);
 router.use('/others', OtherRoutes);
 
 module.exports = router;

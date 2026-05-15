@@ -514,7 +514,7 @@ class SAPClient {
         const top = qry.top || 20;
         const skip = qry.skip || 0;
 
-        let com_qry = `${Endpoints.MR}?$top=${top}&$skip=${skip}`;
+        let com_qry = `${Endpoints.MR}?$orderby=DocEntry desc&$top=${top}&$skip=${skip}`;
         
         return await sapGetRequest(
             req,
@@ -522,6 +522,88 @@ class SAPClient {
         );
     }
 
+    // Users
+
+    async GetUsers(req, qry) {
+        let com_qry = `${Endpoints.Users}?$select=InternalKey,UserCode,UserName,eMail,Department`;
+        
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
+    async GetEmployees(req, qry) {
+        let com_qry = `${Endpoints.Employees}?$select=EmployeeID,FirstName,LastName,eMail,JobTitle, Department`;
+        
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
+    async GetDepartments(req, qry) {
+        let com_qry = `${Endpoints.Departments}`;
+        
+        return await sapGetRequest(
+            req,
+            com_qry
+        );
+    }
+
+
+    // Common template
+    
+    // Get Request
+
+    async getAll(req, module, query) {
+
+        const mapping = {
+            select: '$select',
+            filter: '$filter',
+            orderBy: '$orderby',
+            skip: '$skip',
+            top: '$top'
+        };
+
+        const queryParams = Object.entries(mapping)
+            .filter(([key]) => query[key] !== undefined && query[key] !== '')
+            .map(([key, value]) => {
+                return `${value}=${encodeURIComponent(query[key])}`;
+            });
+
+        const queryString = queryParams.length
+            ? `?${queryParams.join('&')}`
+            : '';
+
+        return await sapGetRequest(
+            req,
+            `${Endpoints[module]}${queryString}`
+        );
+    }
+
+    async getById(req, module, id) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints[module]}(${id})`
+        );
+    }
+
+    async create(req, module, payload) {
+        return await sapPostRequest(
+            req,
+            `${Endpoints[module]}`,
+            payload
+        );
+    }
+
+    async patch(req, module, id, payload) {
+        return await sapPatchRequest(
+            req,
+            `${Endpoints[module]}(${id})`,
+            payload
+        );
+    }
 
 }
 
