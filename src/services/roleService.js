@@ -1,12 +1,15 @@
 const { decodeId, encodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
-const { RoleMenu } = require('../models');
+const { Role, RoleMenu } = require('../models');
+const UserRepository = require('../repositories/userRepository');
+const { Op } = require("sequelize");
 
 
 class RoleService extends BaseService{
 
     constructor(roleRepository){
         super(roleRepository);
+        this.userRepository = new UserRepository();
     }
 
     async getAll(){
@@ -150,6 +153,24 @@ class RoleService extends BaseService{
         } catch (error) {
             await t.rollback();
             throw new Error(`Error while updating role: ${error.message}`);
+        }
+    }
+
+    async getCompanyRoles(userId) {
+        const companyIds = await this.userRepository.getUserCompanyIds(userId);
+        console.log('cccid', companyIds);
+        
+
+        if (companyIds && companyIds.length > 0) {
+            return await Role.findAll({
+                where: {
+                    companyId: { [Op.in]: companyIds },
+                },
+                attributes: ['id', 'name', 'companyId', 'status'],
+                raw: true
+            });
+        } else {
+            return [];
         }
     }
 

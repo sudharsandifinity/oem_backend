@@ -15,4 +15,4 @@ router.post('/', validate(createRoleSchema),roleController.create);
 router.put('/:id', validateParams(getByPkSchema), validate(updateRoleSchema), roleController.update);
 router.delete('/:id', validateParams(getByPkSchema),roleController.delete);
 
-module.exports = router;
+module.exports = { router, roleController, roleService };

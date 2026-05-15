@@ -3,6 +3,7 @@ const CompanyRepository = require("../repositories/CompanyRepository");
 const UserService = require('../services/userService');
 const CompanyService = require('../services/CompanyService');
 const { encodeId } = require("../utils/hashids");
+const { roleService } = require("../routes/v1/admin/roleRoutes");
 
 class CompanyAdmin {
     constructor(){
@@ -19,6 +20,22 @@ class CompanyAdmin {
             return res.status(200).json(users);
         } catch (error) {
             console.log('error while getting company users', error);
+            return res.status(500).json({ message: "Internal Server Error" });
+        }
+    }
+
+    CompanyRoles = async (req, res) => {
+        try {
+            const roles = await roleService.getCompanyRoles(req.user.id);
+            const encodedRoles = roles.map(role => {
+                const json = role;
+                json.id = encodeId(json.id);
+                json.companyId = encodeId(json.companyId);
+                return json;
+            });
+            return res.status(200).json(encodedRoles);
+        } catch (error) {
+            console.log('error while getting company roles', error);
             return res.status(500).json({ message: "Internal Server Error" });
         }
     }
