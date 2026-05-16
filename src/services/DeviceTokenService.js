@@ -13,14 +13,31 @@ class DeviceTokenService extends BaseService{
     return usernotifications;
   }
 
-  async create(req){
-    let payload = {
-        "userId": req.user.id || null,
-        "token": req.body.token || null,
-        "platform": req.body.platform || null
-    }
+  // async create(req){
+  //   let payload = {
+  //       "userId": req.user.id || null,
+  //       "token": req.body.token || null,
+  //       "platform": req.body.platform || null
+  //   }
 
-    const item = await this.repository.create(payload);
+  //   const item = await this.repository.create(payload);
+  //   const result = item.toJSON();
+  //   result.id = encodeId(result.id);
+  //   return result;
+  // }
+
+  async create(req) {
+    const payload = {
+      userId: req.user.id || null,
+      token: req.body.token || null,
+      platform: req.body.platform || null
+    };
+
+    const [item] = await DeviceToken.findOrCreate({
+      where: { token: payload.token },
+      defaults: payload
+    });
+
     const result = item.toJSON();
     result.id = encodeId(result.id);
     return result;
