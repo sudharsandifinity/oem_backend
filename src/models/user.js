@@ -19,6 +19,11 @@ class User extends Model {
             foreignKey: 'userId',
             otherKey: 'roleId'
         });
+        User.belongsToMany(models.Project, {
+            through: 'user_projects',
+            foreignKey: 'userId',
+            otherKey: 'projectId',
+        });
 
         User.hasMany(models.DeviceToken);
         User.hasMany(models.Notification);

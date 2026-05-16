@@ -105,6 +105,14 @@ class UserService extends BaseService {
             await user.setBranches(branchIdsArray);
         }
 
+        if(data.projectIds?.length){
+            const projectIdsArray = data.projectIds.map((project) => {
+                return decodeId(project);
+            });
+
+            await user.setProjects(projectIdsArray);
+        }
+
         const userData = await this.repository.findById(user.id);
         
         // const mailDesign = `
@@ -182,6 +190,12 @@ class UserService extends BaseService {
         const user = await this.repository.findById(id);
         if(!user) throw new Error('user not found!');
         await this.repository.update(id, data);
+        if(data.projectIds?.length){
+            const projectIdsArray = data.projectIds.map((project) => {
+                return decodeId(project);
+            })
+            await user.setProjects(projectIdsArray);
+        }
         if(data.roleIds?.length){
             const roleIdsArray = data.roleIds.map((role) => {
                 return decodeId(role);

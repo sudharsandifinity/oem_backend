@@ -34,6 +34,10 @@ const createUserSchema = Joi.object({
         'array.base': 'Branch IDs must be an array of strings',
         'array.includes': 'Each branch ID must be a string'
     }),
+    projectIds: Joi.array().items(Joi.string()).optional().messages({
+        'array.base': 'Project IDs must be an array of strings',
+        'array.includes': 'Each project ID must be a string'
+    }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
@@ -64,6 +68,10 @@ const updateUserSchema = Joi.object({
     branchIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Branch IDs must be an array of strings',
         'array.includes': 'Each branch ID must be a string'
+    }),
+    projectIds: Joi.array().items(Joi.string()).optional().messages({
+        'array.base': 'Project IDs must be an array of strings',
+        'array.includes': 'Each project ID must be a string'
     }),
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
