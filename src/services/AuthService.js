@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { SAPSession, User, Role, Permission, UserMenu, UserBranch, Branch, Company, Form, FormTab, SubForm, FormField } = require('../models');
+const { SAPSession, User, Role, Permission, UserMenu, UserBranch, Branch, Company, Project, Form, FormTab, SubForm, FormField } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
@@ -346,10 +346,21 @@ class AuthService {
                             attributes: {exclude: ['createdAt', 'updatedAt']},
                         }
                     ]
-                }
+                },
+                {
+                    model: Project,
+                    through: { attributes: [] },
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt']
+                    },
+                    raw: true
+                },
             ]
         });
         if (!user) throw new Error('Invalid email or user not found!');
+
+        console.log('userrrr', user);
+        
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) throw new Error('Invalid password!');
@@ -403,6 +414,10 @@ class AuthService {
             delete branch.Company.base_url;
             delete branch.Company.sap_username;
             delete branch.Company.secret_key;
+        })
+
+        data.Projects.map((project) => {
+            project.id = encodeId(project.id)
         })
         
 
