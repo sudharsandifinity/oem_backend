@@ -3,6 +3,7 @@ const { sendEmail, sendBranchAssignEmail } = require('../config/mail');
 const { UserBranch, UserRole, Company, UserMenu } = require('../models');
 const { encodeId, decodeId } = require('../utils/hashids');
 const BaseService = require('./baseService');
+const { usermenu } = require('../utils/usermenu');
 
 class UserService extends BaseService {
   
@@ -371,16 +372,49 @@ class UserService extends BaseService {
 
     async getCompanyMenus (userId) {
         const companyIds = await this.repository.getUserCompanyIds(userId);
-
-        if (companyIds && companyIds.length > 0) {
-            return await UserMenu.findAll({
+            if (companyIds && companyIds.length > 0) {
+                const userMenus = await UserMenu.findAll({
                 where: {
                     companyId: { [Op.in]: companyIds },
                     status: 1
                 },
-                attributes: ['id', 'name', 'companyId', 'display_name'],
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt']
+                },
                 raw: true
             });
+
+            const menuTree = usermenu(userMenus);
+
+            const encodeMenuTree = (menuItem) => {
+                menuItem.id = encodeId(menuItem.id);
+                menuItem.parentUserMenuId = encodeId(menuItem.parentUserMenuId);
+                menuItem.companyId = encodeId(menuItem.companyId);
+                menuItem.branchId = encodeId(menuItem.branchId);
+                menuItem.formId = encodeId(menuItem.formId);
+
+                if (menuItem.Form) {
+                    menuItem.Form.id = encodeId(menuItem.Form.id);
+                    menuItem.Form.parentFormId = encodeId(menuItem.Form.parentFormId);
+                    menuItem.Form.companyId = encodeId(menuItem.Form.companyId);
+                    menuItem.Form.branchId = encodeId(menuItem.Form.branchId);
+
+                    if (Array.isArray(menuItem.Form.FormFields)) {
+                        menuItem.Form.FormFields = menuItem.Form.FormFields.map(field => {
+                        field.id = encodeId(field.id);
+                        field.formId = encodeId(field.formId);
+                        field.formSectionId = encodeId(field.formSectionId);
+                        return field;
+                        });
+                    }
+                }
+
+                if (Array.isArray(menuItem.children)) {
+                menuItem.children = menuItem.children.map(child => encodeMenuTree(child));
+                }
+                return menuItem;
+            };
+            return menuTree.map(menuItem => encodeMenuTree(menuItem));
         } else {
             return [];
         }

@@ -63,13 +63,7 @@ class CompanyAdmin {
     CompanyMenus = async (req, res) => {
         try {
             const menus = await this.userService.getCompanyMenus(req.user.id);
-            const encodedMenues = menus.map(menu => {
-                const json = menu;
-                json.id = encodeId(json.id);
-                json.companyId = encodeId(json.companyId);
-                return json;
-            });
-            return res.status(200).json(encodedMenues);
+            return res.status(200).json(menus);
         } catch (error) {
             console.log('Error while getting company menus', error);
             return res.status(500).json({ message: "Internal Server Error" });

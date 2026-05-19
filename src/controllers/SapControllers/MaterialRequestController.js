@@ -17,6 +17,10 @@ class MaterialRequestController extends SapBaseController {
                 project => project.Code
             );
 
+            if(!userProjects.length){
+                return res.status(200).json('No data found!');
+            }
+
             const projectFilter = userProjects.length
                 ? userProjects.map(code => `U_PrjCode eq '${code}'`).join(' or ')
                 : "";
