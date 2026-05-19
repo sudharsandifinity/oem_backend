@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const CompanyAdmin = require('../../../controllers/CompanyAdmin');
 const { syncEmployees } = require('../../../controllers/ESSController');
-const { validateParams, getByPkSchema, validate, createRoleSchema, updateRoleSchema } = require('../../../validators/roleValidation');
+const { validateParams, getByPkSchema, validate, createRoleSchema, updateRoleSchema } = require('../../../validators/CARoleValidation');
 const { roleController } = require('../admin/roleRoutes');
 
 const companyAdmin = new CompanyAdmin();

@@ -6,6 +6,7 @@ const upload = require('../../../middlewares/uploadMiddleware');
 
 router.get('/', purchaseDeliveryNoteController.getAll);
 router.get('/:id', purchaseDeliveryNoteController.getById);
+router.post('/',upload.array('Attachments2_Lines'), SAPController.createPurchaseDeliveryNotes);
 router.patch('/:docEntry',upload.array('Attachments2_Lines'), SAPController.updatePurchaseDeliveryNote);
 router.get('/:docEntry', SAPController.getPurchaseDeliveryNotesById);
 
