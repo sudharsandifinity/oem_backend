@@ -135,6 +135,52 @@ class UserRepository extends BaseRepository {
         });
     }
 
+    async findByIdCA(id){
+        return await this.model.findByPk(id, {
+            attributes: ['id', 'first_name', 'last_name', 'email','status'],
+            include: [
+                {
+                    model: Company,
+                    through: { attributes: [] },
+                    attributes: ['id', 'name','status']
+                },
+                {
+                    model: Role,
+                    through: { attributes: [] },
+                    attributes: {exclude: ['createdAt', 'updatedAt']},
+                    include: [
+                        {
+                            model: Permission,
+                            through: { attributes: [] },
+                            attributes: {exclude: ['createdAt', 'updatedAt']},
+                        },
+                        {
+                            model: UserMenu,
+                            attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
+                            through: {
+                                attributes: [
+                                'can_list_view',
+                                'can_create',
+                                'can_edit',
+                                'can_view',
+                                'can_delete'
+                                ]
+                            },
+                        }
+                    ]
+                },
+                {
+                    model: Project,
+                    through: { attributes: [] },
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt']
+                    }
+                }
+            ]
+        });
+    }
+
+
     async getUserCompanyIds(userId) {
 
         console.log('uid repo', userId);
@@ -149,23 +195,28 @@ class UserRepository extends BaseRepository {
 
     async getUsersByCompanies(companyIds) {
         return await User.findAll({
-            attributes: { exclude: ['password'] },
+            attributes: { exclude: ['password','createdAt','updatedAt'] },
             include: [
                 {
-                    model: Branch,
-                    required: true,
+                    model: Company,
                     through: { attributes: [] },
-                    include: [
-                        {
-                            model: Company,
-                            where: {
-                                id: {
-                                    [Op.in]: companyIds
-                                }
-                            }
-                        }
-                    ]
+                    attributes: ['id', 'name','status']
+                },
+                {
+                    model: Project,
+                    through: { attributes: [] },
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt']
+                    }
+                },
+                {
+                    model: Role,
+                    through: { attributes: [] },
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt']
+                    }
                 }
+
             ]
         });
     }

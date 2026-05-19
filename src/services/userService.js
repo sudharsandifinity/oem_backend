@@ -370,6 +370,65 @@ class UserService extends BaseService {
         }
     }
 
+    async getByIdCA(userId) {
+        const user = await this.repository.findByIdCA(userId);
+        const json = user.toJSON();
+        json.id = encodeId(json.id);
+        if (json.Companies) {
+            json.Companies = json.Companies.map((company) => ({
+                ...company,
+                id: encodeId(company.id)
+            }));
+        }
+
+        if (json.Roles) {
+            json.Roles = json.Roles.map((role) => ({
+
+                ...role,
+
+                id: encodeId(role.id),
+
+                companyId: role.companyId
+                    ? encodeId(role.companyId)
+                    : null,
+
+                UserMenus: role.UserMenus?.map((menu) => ({
+
+                    ...menu,
+
+                    id: encodeId(menu.id),
+
+                    companyId: menu.companyId
+                        ? encodeId(menu.companyId)
+                        : null,
+
+                    branchId: menu.branchId
+                        ? encodeId(menu.branchId)
+                        : null,
+
+                    formId: menu.formId
+                        ? encodeId(menu.formId)
+                        : null,
+
+                    parentUserMenuId: menu.parentUserMenuId
+                        ? encodeId(menu.parentUserMenuId)
+                        : null
+
+                })) || []
+
+            }));
+        }
+
+        if (json.Projects) {
+            json.Projects = json.Projects.map((project) => ({
+                ...project,
+                id: encodeId(project.id)
+            }));
+        }
+
+        return json;
+    }
+
     async getCompanyMenus (userId) {
         const companyIds = await this.repository.getUserCompanyIds(userId);
             if (companyIds && companyIds.length > 0) {
