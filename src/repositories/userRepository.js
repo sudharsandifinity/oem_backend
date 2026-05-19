@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { User, Role, Branch, Company, UserMenu, UserBranch, Permission } = require('../models');
+const { User, Role, Branch, Company, UserMenu, UserBranch, Permission, Project } = require('../models');
 const BaseRepository = require('./baseRepository');
 
 class UserRepository extends BaseRepository {
@@ -76,6 +76,13 @@ class UserRepository extends BaseRepository {
                             attributes: {exclude: ['createdAt', 'updatedAt']},
                         }
                     ]
+                },
+                {
+                    model: Project,
+                    through: { attributes: [] },
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt']
+                    }
                 }
             ]
         });

@@ -3,7 +3,8 @@ const MaterialRequestController = require('../../../controllers/SapControllers/M
 const mrController = new MaterialRequestController();
 const upload = require('../../../middlewares/uploadMiddleware');
 
-router.get('/', mrController.getMaterialRqs);
+router.get('/', mrController.projectBasedFilter);
+router.get('/list', mrController.getAll);
 router.get('/:id', mrController.getById);
 router.post('/', mrController.create);
 router.patch('/:id', mrController.patch);

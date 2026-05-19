@@ -320,7 +320,7 @@ class AuthService {
                                 ]
                             }
                         ],
-                        attributes: { exclude: ['status', 'createdAt', 'updatedAt'] },
+                        attributes: { exclude: ['createdAt', 'updatedAt'] },
                         through: {
                             attributes: [
                             'can_list_view',

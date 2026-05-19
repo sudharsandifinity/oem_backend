@@ -82,6 +82,12 @@ class UserService extends BaseService {
                 }
             }))
         }
+         if(result.Projects){
+            result.Projects = result.Projects.map((project) => ({
+                ...project,
+                id: encodeId(project.id),
+            }))
+        }
         return result;
     }
 
