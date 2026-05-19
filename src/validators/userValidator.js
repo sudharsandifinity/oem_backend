@@ -79,6 +79,40 @@ const updateUserSchema = Joi.object({
     })
 });
 
+const companyUserUpdateSchema = Joi.object({
+    first_name: Joi.string().optional().messages({
+        'string.empty': 'First name cannot be empty'
+    }),
+
+    last_name: Joi.string().optional().messages({
+        'string.empty': 'Last name cannot be empty'
+    }),
+
+    roleIds: Joi.array()
+        .items(Joi.string())
+        .optional()
+        .messages({
+            'array.base': 'Role IDs must be an array of strings',
+            'array.includes': 'Each role ID must be a string'
+        }),
+
+    projectIds: Joi.array()
+        .items(Joi.string())
+        .optional()
+        .messages({
+            'array.base': 'Project IDs must be an array of strings',
+            'array.includes': 'Each project ID must be a string'
+        }),
+
+    status: Joi.number()
+        .max(1)
+        .optional()
+        .messages({
+            'number.base': 'Status must be a number',
+            'number.max': 'Status cannot be more than 1'
+        })
+});
+
 const getByPkSchema = Joi.object({
     id: Joi.string().required().messages({
         'any.required': 'ID is required'
@@ -108,6 +142,7 @@ function validateParams(schema) {
 module.exports = {
     createUserSchema,
     updateUserSchema,
+    companyUserUpdateSchema,
     getByPkSchema,
     validate,
     validateParams

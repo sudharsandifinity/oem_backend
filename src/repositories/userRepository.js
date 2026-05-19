@@ -199,6 +199,11 @@ class UserRepository extends BaseRepository {
             include: [
                 {
                     model: Company,
+                    where: {
+                        id: {
+                            [Op.in]: companyIds
+                        }
+                    },
                     through: { attributes: [] },
                     attributes: ['id', 'name','status']
                 },
