@@ -15,12 +15,41 @@ class CompanyAdmin {
 
     CompanyUsers = async (req, res) => {
         try {
-            console.log('uid', req.user.id);
+
             const users = await this.userService.getCompanyUsers(req.user.id);
-            return res.status(200).json(users);
+
+            const encoded = users.map((user) => {
+                const plain = user.get ? user.get({ plain: true }) : user;
+
+                return {
+                    ...plain,
+                    id: encodeId(plain.id),
+
+                    Companies: plain.Companies?.map((company) => ({
+                        ...company,
+                        id: encodeId(company.id)
+                    })),
+
+                    Projects: plain.Projects?.map((project) => ({
+                        ...project,
+
+                        id: encodeId(project.id)
+                    })),
+
+                    Roles: plain.Roles?.map((role) => ({
+                        ...role,
+                        id: encodeId(role.id),
+                        companyId: encodeId(role.companyId)
+                    }))
+                };
+            });
+            return res.status(200).json(encoded);
+
         } catch (error) {
             console.log('error while getting company users', error);
-            return res.status(500).json({ message: "Internal Server Error" });
+            return res.status(500).json({
+                message: "Internal Server Error"
+            });
         }
     }
 
@@ -69,6 +98,15 @@ class CompanyAdmin {
             return res.status(500).json({ message: "Internal Server Error" });
         }
     };
+
+    getByIdCAdmin = async (req, res) => {
+        try{
+            const userdata = await this.userService.getByIdCA(req.user.id);
+            return res.status(200).json(userdata);
+        }catch(error){
+            this.handleError(res, `getting ${this.entityName}s`, error);
+        }
+    }
 
 }
 

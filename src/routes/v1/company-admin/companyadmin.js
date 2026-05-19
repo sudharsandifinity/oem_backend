@@ -11,6 +11,8 @@ router.get('/users', companyAdmin.CompanyUsers);
 router.get('/menus', companyAdmin.CompanyMenus);
 router.post('/employees/sync', syncEmployees);
 
+router.get('/users/:id', validateParams(getByPkSchema), companyAdmin.getByIdCAdmin);
+
 router.get('/roles', companyAdmin.CompanyRoles);
 router.get('/roles/:id', validateParams(getByPkSchema),roleController.getById);
 router.post('/roles', validate(createRoleSchema),roleController.create);

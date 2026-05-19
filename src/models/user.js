@@ -9,6 +9,11 @@ class User extends Model {
 
     static associate(models) {
         // User.belongsTo(models.Role);
+        User.belongsToMany(models.Company, {
+            through: models.UserBranch,
+            foreignKey: 'userId',
+            otherKey: 'companyId'
+        });
         User.belongsToMany(models.Branch, {
             through: models.UserBranch,
             foreignKey: 'userId',
