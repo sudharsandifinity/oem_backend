@@ -31,6 +31,11 @@ class AuthService {
             where: { email:authUser.email },
             include: [
                 {
+                    model: Company,
+                    through: { attributes: [] },
+                    attributes: ['id', 'name','status']
+                },
+                {
                 model: Role,
                 through: { attributes: [] },
                 include: [
@@ -85,7 +90,8 @@ class AuthService {
         });
         // const getCompany = userData.Branches.map(bch => bch.Company.id)
         // console.log('getCompany', getCompany);
-        const decodedCompanyId = decodeId(companyId) ?? userData?.Branches?.[0]?.Company.id;
+        
+        const decodedCompanyId = decodeId(companyId) ?? userData?.Companies?.[0]?.id;
         console.log('decodedCompanyId', decodedCompanyId);
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
             throw new Error('Decoded company ID is invalid');
