@@ -292,7 +292,6 @@ class AuthService {
             return { token, user, data, sapLogin };
         }
 
-        // regular llogin
         const user = await User.findOne({
             where: { email },
             include: [
@@ -359,9 +358,6 @@ class AuthService {
         });
         if (!user) throw new Error('Invalid email or user not found!');
 
-        console.log('userrrr', user);
-        
-
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) throw new Error('Invalid password!');
 
@@ -377,7 +373,7 @@ class AuthService {
         // console.log('companyName', companyName);
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: fst_branch_sap_id ?? null, companyID: companyID, companyName: companyName },
+            { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: fst_branch_sap_id ?? null, companyID: companyID, companyName: companyName, isComAdmin: user.is_com_admin, isSapUser: user.is_sap_user },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );

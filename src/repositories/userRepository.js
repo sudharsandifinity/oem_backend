@@ -189,7 +189,6 @@ class UserRepository extends BaseRepository {
             attributes: ['companyId'],
             raw: true
         });
-        console.log('recs', records);
         return [...new Set(records.map(r => r.companyId))];
     }
 
