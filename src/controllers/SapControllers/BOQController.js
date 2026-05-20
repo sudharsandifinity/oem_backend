@@ -11,13 +11,29 @@ class BOQController extends SapBaseController {
 
     getOpenBoqs = async (req, res) => {
         try {
-            const qry = {
-                filter: "$filter=U_Status eq 'open'"
+
+            const { U_BPCode, U_PrjCode } = req.query;
+            
+            let filters = [`U_Status eq 'open'`];
+
+            if (U_BPCode) {
+                filters.push(`U_BPCode eq '${U_BPCode}'`);
             }
-            const response = await this.boqService.getOpenBOQs(req, qry);
-            res.status(200).json(response);
+
+            if (U_PrjCode) {
+                filters.push(`U_PrjCode eq '${U_PrjCode}'`);
+            }
+
+            const qry = {
+                filter: filters.join(' and ')
+            };
+
+            const response = await this.boqService.getOpenBOQs(req, `$filter=${qry}`);
+
+            return res.status(200).json(response);
+
         } catch (error) {
-            const message = "Error while fetching BOQs"
+            const message = "Error while fetching BOQs";
             return this.errorCatch(req, res, message, error);
         }
     }
