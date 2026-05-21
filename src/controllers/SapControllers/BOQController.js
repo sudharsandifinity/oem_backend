@@ -14,7 +14,7 @@ class BOQController extends SapBaseController {
 
             const { U_BPCode, U_PrjCode } = req.query;
             
-            let filters = [`U_Status eq 'open'`];
+            let filters = [`U_Status eq 'Open'`];
 
             if (U_BPCode) {
                 filters.push(`U_BPCode eq '${U_BPCode}'`);
@@ -28,7 +28,10 @@ class BOQController extends SapBaseController {
                 filter: filters.join(' and ')
             };
 
-            const response = await this.boqService.getOpenBOQs(req, `$filter=${qry}`);
+            console.log('qqqruy', qry);
+            
+
+            const response = await this.boqService.getOpenBOQs(req, qry);
 
             return res.status(200).json(response);
 
