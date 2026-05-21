@@ -497,10 +497,10 @@ class SAPClient {
 
     // BOQ
 
-    async GetBOQs(req, qry) {
+    async GetBOQs(req, qry) { 
         let com_qry = `${Endpoints.BOQ}`;
         if(qry.filter){
-            com_qry = `${Endpoints.BOQ}?${qry.filter}`;
+            com_qry = `${Endpoints.BOQ}?$filter=${qry.filter}`;
         }
         return await sapGetRequest(
             req,
