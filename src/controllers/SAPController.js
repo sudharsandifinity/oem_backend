@@ -2052,7 +2052,7 @@ const getSOTax = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/VatGroups?$filter=Category eq 'O'"
+      "/VatGroups?$filter=Category eq 'O' and Inactive eq 'tNO'"
     );
     res.status(200).json(response.data);
   } catch (err) {
@@ -2067,7 +2067,7 @@ const getPOTax = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/VatGroups?$filter=Category eq 'I'"
+      "/VatGroups?$filter=Category eq 'I' and Inactive eq 'tNO'"
     );
     res.status(200).json(response.data);
   } catch (err) {
