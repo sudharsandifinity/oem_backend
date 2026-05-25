@@ -1378,7 +1378,7 @@ const getPurchaseOrders = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/PurchaseOrders?$orderby=DocEntry desc"
+      "/PurchaseOrders?$orderby=DocEntry desc&$top=200&$skip=0"
     );
     res.status(200).json(response.data);
   } catch (err) {
@@ -1702,7 +1702,7 @@ const getItems = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/Items?$select=ItemCode,ItemName,ForeignName"
+      "/Items?$select=ItemCode,ItemName,ForeignName,ItemWarehouseInfoCollection"
     );
     res.status(200).json(response.data);
   } catch (err) {
@@ -1753,7 +1753,7 @@ const getPurchaseDeliveryNotes = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/PurchaseDeliveryNotes?$orderby=DocEntry desc"
+      "/PurchaseDeliveryNotes?$orderby=DocEntry desc&$top=200&$skip=0"
     );
     res.status(200).json(response.data);
   } catch (err) {
@@ -2022,7 +2022,7 @@ const getProjects = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/Projects?$select=Code,Name,ValidFrom,Active"
+      "/Projects?$select=Code,Name,ValidFrom,Active&$filter=Active eq 'tYES'"
     );
     res.status(200).json(response.data);
   } catch (err) {
