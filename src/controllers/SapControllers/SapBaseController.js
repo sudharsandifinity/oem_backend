@@ -58,19 +58,25 @@ class SapBaseController {
 
     getById = async (req, res) => {
         try {
-
             const { id } = req.params;
+            const {
+                select = '',
+                expand = ''
+            } = req.query;
 
+            const query = {
+                select,
+                expand
+            };
+            
             const response = await this.service.getById(
                 req,
                 this.module,
-                id
+                id,
+                query
             );
-
             return res.status(200).json(response);
-
         } catch (error) {
-
             return this.errorCatch(
                 req,
                 res,
@@ -78,7 +84,7 @@ class SapBaseController {
                 error
             );
         }
-    }
+    };
 
     create = async (req, res) => {
         try {
