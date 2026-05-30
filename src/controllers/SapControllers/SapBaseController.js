@@ -3,9 +3,8 @@ const SAPService = require('../../services/SAPService');
 
 class SapBaseController {
 
-    constructor(service, module){
+    constructor(service){
         this.service = service;
-        this.module = module;
         this.sapService = new SAPService();
     }
 
@@ -39,7 +38,6 @@ class SapBaseController {
 
             const response = await this.service.getAll(
                 req,
-                this.module,
                 query
             );
 
@@ -71,7 +69,6 @@ class SapBaseController {
             
             const response = await this.service.getById(
                 req,
-                this.module,
                 id,
                 query
             );
@@ -91,7 +88,6 @@ class SapBaseController {
 
             const response = await this.service.create(
                 req,
-                this.module,
                 req.body
             );
 
@@ -115,7 +111,6 @@ class SapBaseController {
 
             const response = await this.service.patch(
                 req,
-                this.module,
                 id,
                 req.body
             );

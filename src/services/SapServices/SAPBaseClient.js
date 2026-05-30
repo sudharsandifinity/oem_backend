@@ -8,36 +8,42 @@ const buildQueryString = require('../../utils/buildSapQuery');
 
 class SAPBaseClient {
 
-    async getAll(req, module, query = {}) {
+    constructor(module) {
+        this.endpoint = Endpoints[module];
+    }
+
+    async getAll(req, query = {}) {
+        console.log('qqqr', query);
+        
         const queryString = buildQueryString(query);
         return await sapGetRequest(
             req,
-            `${Endpoints[module]}${queryString}`
+            `${this.endpoint}${queryString}`
         );
     }
 
-    async getById(req, module, id, query = {}) {
+    async getById(req, id, query = {}) {
         const queryString = buildQueryString(query);
         return await sapGetRequest(
             req,
-            `${Endpoints[module]}(${id})${queryString}`
+            `${this.endpoint}(${id})${queryString}`
         );
     }
 
-    async create(req, module, payload) {
+    async create(req, payload) {
 
         return await sapPostRequest(
             req,
-            Endpoints[module],
+            this.endpoint,
             payload
         );
     }
 
-    async patch(req, module, id, payload) {
+    async patch(req, id, payload) {
 
         return await sapPatchRequest(
             req,
-            `${Endpoints[module]}(${id})`,
+            `${this.endpoint}(${id})`,
             payload
         );
     }

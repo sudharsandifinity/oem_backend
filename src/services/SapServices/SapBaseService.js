@@ -2,25 +2,23 @@ const SAPClient = require("./SAPClient");
 const SAPBaseClient = require("./SAPBaseClient");
 class SapBaseService {
 
-    constructor(){
+    constructor(module){
         this.sapClient = new SAPClient();
-        this.sapBaseClient = new SAPBaseClient();
+        this.sapBaseClient = new SAPBaseClient(module);
     }
 
-    async getAll(req, module, query = {}) {
+    async getAll(req, query = {}) {
         const response = await this.sapBaseClient.getAll(
             req,
-            module,
             query
         );
 
         return response.data?.value || response.data;
     }
 
-    async getById(req, module, id, query) {
+    async getById(req, id, query) {
         const response = await this.sapBaseClient.getById(
             req,
-            module,
             id,
             query
         );
@@ -28,20 +26,18 @@ class SapBaseService {
         return response.data;
     }
 
-    async create(req, module, payload) {
+    async create(req, payload) {
         const response = await this.sapBaseClient.create(
             req,
-            module,
             payload
         );
 
         return response.data;
     }
 
-    async patch(req, module, id, payload) {
+    async patch(req, id, payload) {
         const response = await this.sapBaseClient.patch(
             req,
-            module,
             id,
             payload
         );

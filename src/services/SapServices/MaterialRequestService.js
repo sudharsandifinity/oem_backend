@@ -5,7 +5,7 @@ const SAPService = new require('../SAPService');
 class MaterialRequestService extends SapBaseSetvice {
 
     constructor(){
-        super();
+        super("MR");
     }
 
     async getMRs(req, qry) {

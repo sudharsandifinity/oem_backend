@@ -5,7 +5,7 @@ const { userService } = require("../../routes/v1/admin/userRoutes");
 class MaterialRequestController extends SapBaseController {
 
     constructor() {
-        super(new MaterialRequestService(), "MR");
+        super(new MaterialRequestService());
         this.materialRequestService = new MaterialRequestService();
     }
 
@@ -43,7 +43,6 @@ class MaterialRequestController extends SapBaseController {
 
             const response = await this.service.getAll(
                 req,
-                this.module,
                 query
             );
 
