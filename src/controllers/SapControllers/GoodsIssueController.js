@@ -4,7 +4,7 @@ const GoodsIssueService = require('../../services/SapServices/GoodsIssueService'
 class GoodsIssueController extends SapBaseController {
 
     constructor(){
-        super(new GoodsIssueService(), 'GOODSISSUE')
+        super(new GoodsIssueService())
     }
 
 }

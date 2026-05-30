@@ -3,7 +3,7 @@ const SapBaseSetvice = require("./SapBaseService");
 class GoodsIssueService extends SapBaseSetvice {
 
     constructor(){
-        super();
+        super('GOODSISSUE');
     }
 
 }

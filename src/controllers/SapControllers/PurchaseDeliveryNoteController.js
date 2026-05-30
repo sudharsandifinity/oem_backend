@@ -4,7 +4,7 @@ const PurchaseDeliveryNoteService = require('../../services/SapServices/Purchase
 class PurchaseDeliveryNoteController extends SapBaseController {
 
     constructor(){
-        super(new PurchaseDeliveryNoteService(), 'GRPO')
+        super(new PurchaseDeliveryNoteService())
     }
 
 }

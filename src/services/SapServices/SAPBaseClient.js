@@ -13,7 +13,6 @@ class SAPBaseClient {
     }
 
     async getAll(req, query = {}) {
-        console.log('qqqr', query);
         
         const queryString = buildQueryString(query);
         return await sapGetRequest(
