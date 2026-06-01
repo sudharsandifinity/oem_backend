@@ -5,7 +5,8 @@ const buildSapQuery = (query = {}) => {
         filter: '$filter',
         orderBy: '$orderby',
         skip: '$skip',
-        top: '$top'
+        top: '$top',
+        count: '$count'
     };
 
     const queryParams = Object.entries(mapping)

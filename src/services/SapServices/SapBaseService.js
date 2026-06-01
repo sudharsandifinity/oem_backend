@@ -13,7 +13,7 @@ class SapBaseService {
             query
         );
 
-        return response.data?.value || response.data;
+        return response?.data;
     }
 
     async getById(req, id, query) {
