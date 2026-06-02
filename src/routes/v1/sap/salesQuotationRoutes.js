@@ -1,10 +1,11 @@
 const router = require('express').Router();
-const SAPController = require('../../../controllers/SAPController');
+const SalesQuotationController = require('../../../controllers/SapControllers/SalesQuotationController')
+const salesQuotationController = new SalesQuotationController();
 const upload = require('../../../middlewares/uploadMiddleware');
 
-router.get('/', SAPController.getSalesQuotations);
-router.post('/', upload.array('Attachments2_Lines'), SAPController.createSalesQuotations);
-router.patch('/:docEntry', upload.array('Attachments2_Lines'), SAPController.updateSalesQuotations);
-router.get('/:docEntry', SAPController.getSalesQuotationById);
+router.get('/', salesQuotationController.getAll);
+router.post('/', upload.array('Attachments2_Lines'), salesQuotationController.create);
+router.patch('/:id', upload.array('Attachments2_Lines'), salesQuotationController.patch);
+router.get('/:id', salesQuotationController.getById);
 
 module.exports = router;

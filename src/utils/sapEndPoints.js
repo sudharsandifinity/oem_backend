@@ -33,12 +33,18 @@ const Endpoints = {
   Payslip: "HLB_PYSL",
   Branches: "BusinessPlaces",
   BOQ: "HLB_OBOQT",
-  MR: "HLB_OMRQ",
+  Projects: "Projects",
+  
+  // Masters
+  ORDERS: "Orders",
+  PO: "PurchaseOrders",
+  S_QUOTATION: "Quotations",
+  P_QUOTATION: "PurchaseQuotations",
+  PR: "PurchaseRequests",
+  ATTACHMENT: "Attachments2",
   GRPO: "PurchaseDeliveryNotes",
   GOODSISSUE: "InventoryGenExits",
-  Projects: "Projects",
-  ORDERS: "Orders",
-  PO: "PurchaseOrders"
+  MR: "HLB_OMRQ",
 };
 
 const SAP_QUERIES = {
