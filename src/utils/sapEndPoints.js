@@ -45,6 +45,8 @@ const Endpoints = {
   GRPO: "PurchaseDeliveryNotes",
   GOODSISSUE: "InventoryGenExits",
   MR: "HLB_OMRQ",
+  S_INVOICE: "Invoices",
+  P_INVOICE: "PurchaseInvoices",
 };
 
 const SAP_QUERIES = {
