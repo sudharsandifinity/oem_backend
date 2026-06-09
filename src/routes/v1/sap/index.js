@@ -16,6 +16,7 @@ const ItemRoutes = require('./itemRoutes');
 const ServiceRoutes = require('./serviceRoutes');
 const WareHousesRoutes = require('./WareHousesRoutes');
 const PurchaseOrderRoutes = require('./purchaseOrderRoutes');
+const DraftRoutes = require('./DraftRoutes');
 const ProjectRoutes = require('./projectRoutes');
 const ItemPricesRoutes = require('./ItemPricesRoutes');
 const DimensionRoutes = require('./DimensionsRoutes');
@@ -54,5 +55,10 @@ router.use('/boq', BOQRoutes);
 router.use('/mr', MaterialReqRoute);
 router.use('/gi', GoodsIssueRoutes);
 router.use('/others', OtherRoutes);
+
+// Masters
+router.use('/drafts', DraftRoutes);
+
+
 
 module.exports = router;

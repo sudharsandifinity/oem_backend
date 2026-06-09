@@ -47,6 +47,7 @@ const Endpoints = {
   MR: "HLB_OMRQ",
   S_INVOICE: "Invoices",
   P_INVOICE: "PurchaseInvoices",
+  DRAFT: "Drafts"
 };
 
 const SAP_QUERIES = {
