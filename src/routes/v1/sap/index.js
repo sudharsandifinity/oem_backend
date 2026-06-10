@@ -17,6 +17,7 @@ const ServiceRoutes = require('./serviceRoutes');
 const WareHousesRoutes = require('./WareHousesRoutes');
 const PurchaseOrderRoutes = require('./purchaseOrderRoutes');
 const DraftRoutes = require('./DraftRoutes');
+const UOMRoutes = require('./UOMRoutes');
 const ProjectRoutes = require('./projectRoutes');
 const ItemPricesRoutes = require('./ItemPricesRoutes');
 const DimensionRoutes = require('./DimensionsRoutes');
@@ -58,6 +59,7 @@ router.use('/others', OtherRoutes);
 
 // Masters
 router.use('/drafts', DraftRoutes);
+router.use('/uoms', UOMRoutes);
 
 
 

@@ -1698,19 +1698,125 @@ const getVendors = async (req, res) => {
   }
 };
 
+// const getItems = async (req, res) => {
+//   try {
+//     const response = await sapGetRequest(
+//       req,
+//       "/Items?$select=ItemCode,ItemName,ForeignName, UoMGroupEntry, ItemWarehouseInfoCollection"
+//     );
+//     res.status(200).json(response.data);
+//   } catch (err) {
+//     console.error("SAP error:", err.message);
+//     res
+//       .status(500)
+//       .json({ message: "Error fetching Items", error: err.message });
+//   }
+// };
+
 const getItems = async (req, res) => {
-  try {
-    const response = await sapGetRequest(
-      req,
-      "/Items?$select=ItemCode,ItemName,ForeignName,ItemWarehouseInfoCollection"
-    );
-    res.status(200).json(response.data);
-  } catch (err) {
-    console.error("SAP error:", err.message);
-    res
-      .status(500)
-      .json({ message: "Error fetching Items", error: err.message });
-  }
+    try {
+        const [
+            itemsResponse,
+            uomGroupsResponse,
+            uomsResponse
+        ] = await Promise.all([
+            sapGetRequest(
+                req,
+                "/Items?$select=ItemCode,ItemName,ForeignName,UoMGroupEntry,ItemWarehouseInfoCollection"
+            ),
+            sapGetRequest(
+                req,
+                "/UnitOfMeasurementGroups"
+            ),
+            sapGetRequest(
+                req,
+                "/UnitOfMeasurements?$select=AbsEntry,Code,Name"
+            )
+        ]);
+
+        const items =
+            itemsResponse.data.value || [];
+
+        const uomGroups =
+            uomGroupsResponse.data.value || [];
+
+        const uoms =
+            uomsResponse.data.value || [];
+
+        const uomMap = new Map(
+            uoms.map(uom => [
+                uom.AbsEntry,
+                uom
+            ])
+        );
+
+        const uomGroupMap = new Map(
+            uomGroups.map(group => [
+                group.AbsEntry,
+                group
+            ])
+        );
+
+        const enrichedItems = items.map(item => {
+            const group = uomGroupMap.get(item.UoMGroupEntry);
+            let OEM = { UOM: [] };
+            if (group) {
+                const uomList = [];
+                if (group.BaseUoM) {
+                    const baseUom =
+                        uomMap.get(
+                            group.BaseUoM
+                        );
+                    if (baseUom) {
+                        uomList.push(baseUom);
+                    }
+                }
+
+                if (group.UoMGroupDefinitionCollection) {
+                    group
+                        .UoMGroupDefinitionCollection
+                        .forEach(def => {
+                            const altUom = uomMap.get(def.AlternateUoM);
+                            if (
+                                altUom &&
+                                !uomList.some(
+                                    x =>
+                                        x.AbsEntry ===
+                                        altUom.AbsEntry
+                                )
+                            ) {
+                                uomList.push(altUom);
+                            }
+                        });
+                }
+
+                OEM = {
+                    UOM: uomList
+                };
+            }
+
+            return {
+                ...item,
+                OEM
+            };
+        });
+
+        return res.status(200).json({
+            value: enrichedItems
+        });
+
+    } catch (err) {
+
+        console.error(
+            "SAP error:",
+            err.message
+        );
+
+        return res.status(500).json({
+            message: "Error fetching Items",
+            error: err.message
+        });
+    }
 };
 
 const getServices = async (req, res) => {
