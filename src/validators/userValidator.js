@@ -79,6 +79,39 @@ const updateUserSchema = Joi.object({
     })
 });
 
+const createCompanyUserSchema = Joi.object({
+    first_name: Joi.string().required().messages({
+        'string.empty': 'First name is required',
+        'any.required': 'First name is required'
+    }),
+    last_name: Joi.string().required().messages({
+        'string.empty': 'Last name is required',
+        'any.required': 'Last name is required'
+    }),
+    email: Joi.string().email().required().messages({
+        'string.empty': 'Email is required',
+        'string.email': 'Email must be a valid email address',
+        'any.required': 'Email is required'
+    }),
+    password: Joi.string().min(6).required().messages({
+        'string.empty': 'Password is required',
+        'string.min': 'Password must be at least 6 characters',
+        'any.required': 'Password is required'
+    }),
+    roleIds: Joi.array().items(Joi.string()).optional().messages({
+        'array.base': 'Role IDs must be an array of strings',
+        'array.includes': 'Each role ID must be a string'
+    }),
+    projectIds: Joi.array().items(Joi.string()).optional().messages({
+        'array.base': 'Project IDs must be an array of strings',
+        'array.includes': 'Each project ID must be a string'
+    }),
+    status: Joi.number().max(1).optional().messages({
+        'number.base': 'Status must be a number',
+        'number.max': 'Status cannot be more than 1'
+    })
+});
+
 const companyUserUpdateSchema = Joi.object({
     first_name: Joi.string().optional().messages({
         'string.empty': 'First name cannot be empty'
@@ -142,6 +175,7 @@ function validateParams(schema) {
 module.exports = {
     createUserSchema,
     updateUserSchema,
+    createCompanyUserSchema,
     companyUserUpdateSchema,
     getByPkSchema,
     validate,
