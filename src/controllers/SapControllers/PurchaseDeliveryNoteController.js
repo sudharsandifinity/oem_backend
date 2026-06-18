@@ -1,7 +1,7 @@
-const SapBaseController = require("./SapBaseController");
-const PurchaseDeliveryNoteService = require('../../services/SapServices/PurchaseDeliveryNoteService')
+const PurchaseDeliveryNoteService = require('../../services/SapServices/PurchaseDeliveryNoteService');
+const SapDocumentController = require("./SapDocumentController");
 
-class PurchaseDeliveryNoteController extends SapBaseController {
+class PurchaseDeliveryNoteController extends SapDocumentController {
 
     constructor(){
         super(new PurchaseDeliveryNoteService())
