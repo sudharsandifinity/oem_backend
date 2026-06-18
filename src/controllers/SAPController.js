@@ -54,7 +54,7 @@ const getBusinessPartners = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/BusinessPartners?$filter=CardType eq 'C'"
+      "/BusinessPartners?$filter=CardType eq 'C'&$select=CardCode,CardName,ContactPerson,CardType,MailAddress,GroupCode"
     );
     res.status(200).json(response.data);
   } catch (err) {
@@ -1687,7 +1687,7 @@ const getVendors = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      `BusinessPartners?$filter=CardType eq 'cSupplier'`
+      `BusinessPartners?$filter=CardType eq 'cSupplier'&$select=CardCode,CardName,ContactPerson,CardType,MailAddress,GroupCode`
     );
     res.status(200).json(response.data);
   } catch (err) {
