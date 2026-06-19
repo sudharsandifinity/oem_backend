@@ -75,6 +75,72 @@ class MaterialRequestController extends SapBaseController {
         }
     }
 
+    // Always create a Material Request as a Draft
+    create = async (req, res) => {
+        try {
+            req.body.U_DocStatus = 'D';
+            const response = await this.service.create(req, req.body);
+            return res.status(201).json(response);
+        } catch (error) {
+            return this.errorCatch(req, res, 'Error while creating record', error);
+        }
+    }
+
+    // Pending approvals: Draft MRs scoped to the approver's assigned projects
+    getPendingApprovals = async (req, res) => {
+        try {
+            const userdetails = await userService.getById(req.user.id);
+            const projectCodes = (userdetails.Projects || []).map(p => p.Code);
+
+            if (!projectCodes.length) {
+                return res.status(200).json({ value: [] });
+            }
+
+            const projectFilter = projectCodes
+                .map(code => `U_PrjCode eq '${code}'`)
+                .join(' or ');
+
+            const { skip = '', top = '' } = req.query || {};
+
+            const response = await this.service.getAll(req, {
+                orderBy: 'DocEntry desc',
+                filter: `(${projectFilter}) and U_DocStatus eq 'D'`,
+                skip,
+                top
+            });
+
+            return res.status(200).json(response);
+        } catch (error) {
+            return this.errorCatch(req, res, 'Error while fetching approvals', error);
+        }
+    }
+
+    // Single-stage decision guard: only a Draft MR within the user's projects may move
+    decide = (newStatus) => async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const mr = await this.service.getById(req, id, {});
+            if (mr.U_DocStatus !== 'D') {
+                return res.status(409).json({ message: 'Only draft requests can be actioned' });
+            }
+
+            const userdetails = await userService.getById(req.user.id);
+            const projectCodes = (userdetails.Projects || []).map(p => p.Code);
+            if (!projectCodes.includes(mr.U_PrjCode)) {
+                return res.status(403).json({ message: 'You are not assigned to this project' });
+            }
+
+            const response = await this.service.patch(req, id, { U_DocStatus: newStatus });
+            return res.status(200).json(response);
+        } catch (error) {
+            return this.errorCatch(req, res, 'Error while updating approval', error);
+        }
+    }
+
+    approve = this.decide('O');
+    reject  = this.decide('C');
+
 }
 
 module.exports = MaterialRequestController;
