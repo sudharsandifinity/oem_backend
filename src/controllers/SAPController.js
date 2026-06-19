@@ -1378,7 +1378,7 @@ const getPurchaseOrders = async (req, res) => {
   try {
     const response = await sapGetRequest(
       req,
-      "/PurchaseOrders?$orderby=DocEntry desc&$top=200&$skip=0"
+      "/PurchaseOrders?$orderby=DocEntry desc"
     );
     res.status(200).json(response.data);
   } catch (err) {
@@ -1722,7 +1722,7 @@ const getItems = async (req, res) => {
         ] = await Promise.all([
             sapGetRequest(
                 req,
-                "/Items?$select=ItemCode,ItemName,ForeignName,UoMGroupEntry,ItemWarehouseInfoCollection"
+                "/Items?$select=ItemCode,ItemName,U_HLB_ParItm,ForeignName,UoMGroupEntry,ItemWarehouseInfoCollection"
             ),
             sapGetRequest(
                 req,
@@ -1815,6 +1815,69 @@ const getItems = async (req, res) => {
         return res.status(500).json({
             message: "Error fetching Items",
             error: err.message
+        });
+    }
+};
+
+const getChildItemsByParent = async (req, res) => {
+    try {
+        const { parentCode } = req.query;
+
+        if (!parentCode) {
+            return res.status(400).json({
+                message: "parentCode query parameter is required"
+            });
+        }
+
+        const safeParentCode = parentCode.replace(/'/g, "''");
+
+        const [
+            itemsResponse,
+            uomGroupsResponse,
+            uomsResponse
+        ] = await Promise.all([
+            sapGetRequest(
+                req,
+                `/Items?$select=ItemCode,ItemName,U_HLB_ParItm,ForeignName,UoMGroupEntry,ItemWarehouseInfoCollection&$filter=U_HLB_ParItm eq '${safeParentCode}'`
+            ),
+            sapGetRequest(
+                req,
+                "/UnitOfMeasurementGroups"
+            ),
+            sapGetRequest(
+                req,
+                "/UnitOfMeasurements?$select=AbsEntry,Code,Name"
+            )
+        ]);
+
+        const items =
+            itemsResponse.data.value || [];
+
+        const uomGroups =
+            uomGroupsResponse.data.value || [];
+
+        const uoms =
+            uomsResponse.data.value || [];
+
+        const uomMap = new Map(
+            uoms.map(uom => [
+                uom.AbsEntry,
+                uom
+            ])
+        );
+
+        const uomGroupMap = new Map(
+            uomGroups.map(group => [
+                group.AbsEntry,
+                group
+            ])
+        );
+
+        return res.json({ value: items });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || "Failed to load child items"
         });
     }
 };
@@ -2333,5 +2396,6 @@ module.exports = {
   getPurchaseDeliveryNotes,
   createPurchaseDeliveryNotes,
   getPurchaseDeliveryNotesById,
-  updatePurchaseDeliveryNote
+  updatePurchaseDeliveryNote,
+  getChildItemsByParent
 };
