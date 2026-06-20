@@ -44,6 +44,7 @@ module.exports = (sequelize) => {
         },
         is_sap_user: {type: DataTypes.TINYINT},
         is_com_admin: {type: DataTypes.BOOLEAN},
+        is_approver: {type: DataTypes.BOOLEAN, defaultValue: false},
         sap_emp_id: {type: DataTypes.STRING},
         department: {type: DataTypes.STRING},
         first_name: {

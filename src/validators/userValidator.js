@@ -26,6 +26,9 @@ const createUserSchema = Joi.object({
     is_com_admin: Joi.boolean().optional().messages({
         'boolean.base': 'is_super_user must be a boolean'
     }),
+    is_approver: Joi.boolean().optional().messages({
+        'boolean.base': 'is_approver must be a boolean'
+    }),
     roleIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Role IDs must be an array of strings',
         'array.includes': 'Each role ID must be a string'
@@ -60,6 +63,9 @@ const updateUserSchema = Joi.object({
     is_super_user: Joi.number().max(1).optional().messages({
         'number.base': 'is_super_user must be a number',
         'number.max': 'is_super_user cannot be more than 1'
+    }),
+    is_approver: Joi.boolean().optional().messages({
+        'boolean.base': 'is_approver must be a boolean'
     }),
     roleIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Role IDs must be an array of strings',
@@ -98,6 +104,9 @@ const createCompanyUserSchema = Joi.object({
         'string.min': 'Password must be at least 6 characters',
         'any.required': 'Password is required'
     }),
+    is_approver: Joi.boolean().optional().messages({
+        'boolean.base': 'is_approver must be a boolean'
+    }),
     roleIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Role IDs must be an array of strings',
         'array.includes': 'Each role ID must be a string'
@@ -123,6 +132,10 @@ const companyUserUpdateSchema = Joi.object({
 
     last_name: Joi.string().optional().messages({
         'string.empty': 'Last name cannot be empty'
+    }),
+
+    is_approver: Joi.boolean().optional().messages({
+        'boolean.base': 'is_approver must be a boolean'
     }),
 
     roleIds: Joi.array()

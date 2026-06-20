@@ -106,7 +106,8 @@ class MaterialRequestController extends SapBaseController {
                 orderBy: 'DocEntry desc',
                 filter: `(${projectFilter}) and U_DocStatus eq 'D'`,
                 skip,
-                top
+                top,
+                count: true
             });
 
             return res.status(200).json(response);
