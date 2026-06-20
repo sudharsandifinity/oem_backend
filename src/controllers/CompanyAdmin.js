@@ -2,7 +2,7 @@ const UserRepository = require("../repositories/userRepository");
 const CompanyRepository = require("../repositories/CompanyRepository");
 const UserService = require('../services/userService');
 const CompanyService = require('../services/CompanyService');
-const { encodeId } = require("../utils/hashids");
+const { encodeId, decodeId } = require("../utils/hashids");
 const { roleService } = require("../routes/v1/admin/roleRoutes");
 
 class CompanyAdmin {
@@ -101,9 +101,10 @@ class CompanyAdmin {
 
     getByIdCAdmin = async (req, res) => {
         try{
-            const userdata = await this.userService.getByIdCA(req.user.id);
+            const userdata = await this.userService.getByIdCA(decodeId(req.params.id));
             return res.status(200).json(userdata);
         }catch(error){
+            console.log('Error while getting company admin user', error);
             this.handleError(res, `getting ${this.entityName}s`, error);
         }
     }

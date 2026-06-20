@@ -75,8 +75,7 @@ class MaterialRequestController extends SapBaseController {
         }
     }
 
-    // Always create a Material Request as a Draft
-    create = async (req, res) => {
+        create = async (req, res) => {
         try {
             req.body.U_DocStatus = 'D';
             const response = await this.service.create(req, req.body);
@@ -86,8 +85,7 @@ class MaterialRequestController extends SapBaseController {
         }
     }
 
-    // Pending approvals: Draft MRs scoped to the approver's assigned projects
-    getPendingApprovals = async (req, res) => {
+        getPendingApprovals = async (req, res) => {
         try {
             const userdetails = await userService.getById(req.user.id);
             const projectCodes = (userdetails.Projects || []).map(p => p.Code);
@@ -116,8 +114,7 @@ class MaterialRequestController extends SapBaseController {
         }
     }
 
-    // Single-stage decision guard: only a Draft MR within the user's projects may move
-    decide = (newStatus) => async (req, res) => {
+        decide = (newStatus) => async (req, res) => {
         try {
             const { id } = req.params;
 
@@ -132,7 +129,11 @@ class MaterialRequestController extends SapBaseController {
                 return res.status(403).json({ message: 'You are not assigned to this project' });
             }
 
-            const response = await this.service.patch(req, id, { U_DocStatus: newStatus });
+            const { U_Apr_remark } = req.body || {};
+            const patchPayload = { U_DocStatus: newStatus };
+            if (U_Apr_remark !== undefined) patchPayload.U_Apr_remark = U_Apr_remark;
+
+            const response = await this.service.patch(req, id, patchPayload);
             return res.status(200).json(response);
         } catch (error) {
             return this.errorCatch(req, res, 'Error while updating approval', error);
@@ -140,7 +141,7 @@ class MaterialRequestController extends SapBaseController {
     }
 
     approve = this.decide('O');
-    reject  = this.decide('C');
+    reject  = this.decide('R');
 
 }
 
