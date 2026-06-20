@@ -76,8 +76,8 @@ class RoleService extends BaseService{
             await role.setPermissions(permissionIds, { transaction: t });
             }
 
-            if (Array.isArray(data.userMenus)) {
-                for (const menu of data.userMenus) {
+            if (Array.isArray(data.userMenuIds)) {
+                for (const menu of data.userMenuIds) {
                     const menuId = decodeId(menu.menuId);
                     await RoleMenu.create({
                     roleId: role.id,
@@ -126,13 +126,13 @@ class RoleService extends BaseService{
                 await role.setPermissions(permissionIds, { transaction: t });
             }
 
-            if (Array.isArray(data.userMenus)) {
+            if (Array.isArray(data.userMenuIds)) {
                 await RoleMenu.destroy({
                     where: { roleId: role.id },
                     transaction: t,
                 });
 
-                for (const menu of data.userMenus) {
+                for (const menu of data.userMenuIds) {
                     const menuId = decodeId(menu.menuId || menu.id);
 
                     await RoleMenu.create({

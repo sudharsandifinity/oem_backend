@@ -1,14 +1,38 @@
 const { Op } = require('sequelize');
 const { sendEmail, sendBranchAssignEmail } = require('../config/mail');
-const { UserBranch, UserRole, Company, UserMenu } = require('../models');
+const { UserBranch, UserRole, Company, UserMenu, Branch } = require('../models');
 const { encodeId, decodeId } = require('../utils/hashids');
 const BaseService = require('./baseService');
 const { usermenu } = require('../utils/usermenu');
 
 class UserService extends BaseService {
-  
+
     constructor(userRepository){
         super(userRepository)
+    }
+
+    async _assignBranches(user, data) {
+        const branchIdsArray = (data.branchIds || []).map((b) => decodeId(b));
+        const companyIdsArray = (data.companyIds || []).map((c) => decodeId(c));
+        if (!branchIdsArray.length && !companyIdsArray.length) return;
+
+        const where = {};
+        if (branchIdsArray.length && companyIdsArray.length) {
+            where[Op.or] = [{ id: { [Op.in]: branchIdsArray } }, { companyId: { [Op.in]: companyIdsArray } }];
+        } else if (branchIdsArray.length) {
+            where.id = { [Op.in]: branchIdsArray };
+        } else {
+            where.companyId = { [Op.in]: companyIdsArray };
+        }
+
+        const branches = await Branch.findAll({ where, attributes: ['id', 'companyId'] });
+
+        await UserBranch.destroy({ where: { userId: user.id } });
+        await UserBranch.bulkCreate(branches.map((branch) => ({
+            userId: user.id,
+            branchId: branch.id,
+            companyId: branch.companyId
+        })));
     }
 
     async getAll(){
@@ -105,12 +129,7 @@ class UserService extends BaseService {
             })
             await user.setRoles(roleIdsArray);
         }
-        if(data.branchIds?.length){
-            const branchIdsArray = data.branchIds.map((permission) => {
-                return decodeId(permission);
-            })
-            await user.setBranches(branchIdsArray);
-        }
+        await this._assignBranches(user, data);
 
         if(data.projectIds?.length){
             const projectIdsArray = data.projectIds.map((project) => {
@@ -121,7 +140,7 @@ class UserService extends BaseService {
         }
 
         const userData = await this.repository.findById(user.id);
-        
+
         // const mailDesign = `
         // <!DOCTYPE html>
         // <html>
@@ -209,15 +228,7 @@ class UserService extends BaseService {
             })
             await user.setRoles(roleIdsArray);
         }
-        if(data.branchIds?.length){
-            const branchIdsArray = data.branchIds.map((permission) => {
-                return decodeId(permission);
-            })
-            // const assignedBranches = branchIdsArray.map((branch) => {
-            //     return Branch.findById(branch);
-            // })
-            await user.setBranches(branchIdsArray);
-        }
+        await this._assignBranches(user, data);
 
         const userData = await this.repository.findById(id);
 
