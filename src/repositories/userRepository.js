@@ -137,7 +137,7 @@ class UserRepository extends BaseRepository {
 
     async findByIdCA(id){
         return await this.model.findByPk(id, {
-            attributes: ['id', 'first_name', 'last_name', 'email','status'],
+            attributes: ['id', 'first_name', 'last_name', 'email', 'status', 'is_approver'],
             include: [
                 {
                     model: Company,
