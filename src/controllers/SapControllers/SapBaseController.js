@@ -1,6 +1,8 @@
 const { sapLogger } = require('../../config/logger');
 const SAPService = require('../../services/SAPService');
 
+const PROTECTED_AUDIT_FIELDS = ['U_OEM_UID', 'U_OEM_UEMAIL', 'U_OEM_UName', 'U_PreparedBy'];
+
 class SapBaseController {
 
     constructor(service){
@@ -109,11 +111,13 @@ class SapBaseController {
         try {
 
             const { id } = req.params;
+            const body = { ...req.body };
+            PROTECTED_AUDIT_FIELDS.forEach((field) => delete body[field]);
 
             const response = await this.service.patch(
                 req,
                 id,
-                req.body
+                body
             );
 
             return res.status(200).json(response);
