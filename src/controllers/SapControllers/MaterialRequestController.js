@@ -116,11 +116,22 @@ class MaterialRequestController extends SapBaseController {
 
         getPendingApprovalReport = async (req, res) => {
         try {
+            const userdetails = await userService.getById(req.user.id);
+            const projectCodes = (userdetails.Projects || []).map(p => p.Code);
+
+            if (!projectCodes.length) {
+                return res.status(200).json({ value: [] });
+            }
+
+            const projectFilter = projectCodes
+                .map(code => `U_PrjCode eq '${code}'`)
+                .join(' or ');
+
             const { skip = '', top = '' } = req.query || {};
 
             const response = await this.service.getAll(req, {
                 orderBy: 'DocEntry desc',
-                filter: "U_DocStatus eq 'D'",
+                filter: `(${projectFilter}) and U_DocStatus eq 'D'`,
                 skip,
                 top,
                 count: true
