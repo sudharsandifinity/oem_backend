@@ -114,6 +114,24 @@ class MaterialRequestController extends SapBaseController {
         }
     }
 
+        getPendingApprovalReport = async (req, res) => {
+        try {
+            const { skip = '', top = '' } = req.query || {};
+
+            const response = await this.service.getAll(req, {
+                orderBy: 'DocEntry desc',
+                filter: "U_DocStatus eq 'D'",
+                skip,
+                top,
+                count: true
+            });
+
+            return res.status(200).json(response);
+        } catch (error) {
+            return this.errorCatch(req, res, 'Error while fetching pending approval report', error);
+        }
+    }
+
         decide = (newStatus) => async (req, res) => {
         try {
             const { id } = req.params;

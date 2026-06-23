@@ -6,6 +6,7 @@ const upload = require('../../../middlewares/uploadMiddleware');
 router.get('/', mrController.projectBasedFilter);
 router.get('/list', mrController.getAll);
 router.get('/approvals', mrController.getPendingApprovals);
+router.get('/pending-report', mrController.getPendingApprovalReport);
 router.get('/:id', mrController.getById);
 router.post('/', mrController.create);
 router.patch('/:id/approve', mrController.approve);
