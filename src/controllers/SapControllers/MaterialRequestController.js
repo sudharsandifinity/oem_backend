@@ -85,7 +85,7 @@ class MaterialRequestController extends SapBaseController {
         }
     }
 
-        getPendingApprovals = async (req, res) => {
+    getPendingApprovals = async (req, res) => {
         try {
             const userdetails = await userService.getById(req.user.id);
             const projectCodes = (userdetails.Projects || []).map(p => p.Code);
@@ -131,7 +131,8 @@ class MaterialRequestController extends SapBaseController {
 
             const response = await this.service.getAll(req, {
                 orderBy: 'DocEntry desc',
-                filter: `(${projectFilter}) and U_DocStatus eq 'D'`,
+                // filter: `(${projectFilter}) and U_DocStatus eq 'D'`,
+                filter: `U_OEM_UEMAIL eq '${req.user.email}' and U_DocStatus eq 'D'`,
                 skip,
                 top,
                 count: true
