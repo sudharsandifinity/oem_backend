@@ -233,7 +233,7 @@ class MaterialRequestController extends SapBaseController {
             const poByMR = this._indexFirstBy(pos, 'U_MRNo');
 
             const poEntries = pos.map((p) => String(p.DocEntry));
-            const grpos = await this._fetchByAnyValue(req, this.purchaseDeliveryNoteService, 'U_PONo', poEntries, { quote: true });
+            const grpos = await this._fetchByAnyValue(req, this.purchaseDeliveryNoteService, 'U_PONo', poEntries);
             const grpoByPO = this._indexFirstBy(grpos, 'U_PONo');
 
             const rows = [];
