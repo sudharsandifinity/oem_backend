@@ -11,6 +11,46 @@ class UserService extends BaseService {
         super(userRepository)
     }
 
+    async _resolveTargetCompanyIds(data) {
+        const branchIdsArray = (data.branchIds || []).map((b) => decodeId(b));
+        const companyIdsArray = (data.companyIds || []).map((c) => decodeId(c));
+
+        if (branchIdsArray.length) {
+            const branches = await Branch.findAll({
+                where: { id: { [Op.in]: branchIdsArray } },
+                attributes: ['companyId']
+            });
+            branches.forEach((b) => companyIdsArray.push(b.companyId));
+        }
+
+        return [...new Set(companyIdsArray.filter((id) => id != null))];
+    }
+
+    async checkCompanyUserLimit(data) {
+        const companyIds = await this._resolveTargetCompanyIds(data);
+        if (!companyIds.length) return { ok: true };
+
+        for (const companyId of companyIds) {
+            const company = await Company.findByPk(companyId, { attributes: ['name', 'max_users'] });
+            if (!company || company.max_users == null) continue;
+
+            const count = await UserBranch.count({
+                where: { companyId },
+                distinct: true,
+                col: 'userId'
+            });
+
+            if (count >= company.max_users) {
+                return {
+                    ok: false,
+                    message: `User limit reached for ${company.name}. Please contact your administrator.`
+                };
+            }
+        }
+
+        return { ok: true };
+    }
+
     async _assignBranches(user, data) {
         const branchIdsArray = (data.branchIds || []).map((b) => decodeId(b));
         const companyIdsArray = (data.companyIds || []).map((c) => decodeId(c));

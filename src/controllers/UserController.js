@@ -11,6 +11,19 @@ class UserController extends BaseController {
         this.userServiceClass = new UserService(this.userRepository);
     }
 
+    create = async (req, res) => {
+        try {
+            const limit = await this.service.checkCompanyUserLimit(req.body);
+            if (!limit.ok) {
+                return res.status(409).json({ message: limit.message });
+            }
+            const item = await this.service.create(req.body);
+            return res.status(201).json(item);
+        } catch (error) {
+            this.handleError(res, 'creating the user', error);
+        }
+    }
+
     async syncSapEmployees(data){
         await this.userServiceClass.createSapUser(data);
         return;

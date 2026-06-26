@@ -25,6 +25,10 @@ const createCompanySchema = Joi.object({
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
+    }),
+    max_users: Joi.number().integer().min(1).allow(null).optional().messages({
+        'number.base': 'Max users must be a number',
+        'number.min': 'Max users must be at least 1'
     })
 });
 
@@ -52,6 +56,10 @@ const updateCompanySchema = Joi.object({
     status: Joi.number().max(1).optional().messages({
         'number.base': 'Status must be a number',
         'number.max': 'Status cannot be more than 1'
+    }),
+    max_users: Joi.number().integer().min(1).allow(null).optional().messages({
+        'number.base': 'Max users must be a number',
+        'number.min': 'Max users must be at least 1'
     })
 });
 

@@ -21,7 +21,12 @@ module.exports = (sequelize, DataTypes) => {
     base_url: DataTypes.TEXT,
     sap_username: DataTypes.STRING,
     secret_key: DataTypes.TEXT,
-    status: DataTypes.TINYINT
+    status: DataTypes.TINYINT,
+    max_users: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 20
+    }
   }, {
     sequelize,
     modelName: 'Company',
