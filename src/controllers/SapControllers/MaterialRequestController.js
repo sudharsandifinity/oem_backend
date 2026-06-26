@@ -226,8 +226,8 @@ class MaterialRequestController extends SapBaseController {
 
             const mrEntries = mrs.map((m) => m.DocEntry);
 
-            const prs = await this._fetchByAnyValue(req, this.purchaseRequestService, 'U_MRNo', mrEntries);
-            const pos = await this._fetchByAnyValue(req, this.purchaseOrderService, 'U_MRNo', mrEntries);
+            const prs = await this._fetchByAnyValue(req, this.purchaseRequestService, 'U_MRNo', mrEntries, { quote: true });
+            const pos = await this._fetchByAnyValue(req, this.purchaseOrderService, 'U_MRNo', mrEntries, { quote: true });
 
             const prByMR = this._indexFirstBy(prs, 'U_MRNo');
             const poByMR = this._indexFirstBy(pos, 'U_MRNo');
