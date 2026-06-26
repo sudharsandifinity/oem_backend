@@ -1,6 +1,8 @@
 const SapBaseController = require("./SapBaseController");
 const MaterialRequestService = require('../../services/SapServices/MaterialRequestService');
 const PurchaseRequestService = require('../../services/SapServices/PurchaseRequestService');
+const PurchaseOrderService = require('../../services/SapServices/PurchaseOrderService');
+const PurchaseDeliveryNoteService = require('../../services/SapServices/PurchaseDeliveryNoteService');
 const { userService } = require("../../routes/v1/admin/userRoutes");
 
 class MaterialRequestController extends SapBaseController {
@@ -9,6 +11,8 @@ class MaterialRequestController extends SapBaseController {
         super(new MaterialRequestService());
         this.materialRequestService = new MaterialRequestService();
         this.purchaseRequestService = new PurchaseRequestService();
+        this.purchaseOrderService = new PurchaseOrderService();
+        this.purchaseDeliveryNoteService = new PurchaseDeliveryNoteService();
     }
 
     buildPRPayloadFromMR = (mr) => {
@@ -181,6 +185,88 @@ class MaterialRequestController extends SapBaseController {
             return res.status(200).json(response);
         } catch (error) {
             return this.errorCatch(req, res, 'Error while fetching pending approval report', error);
+        }
+    }
+
+    _fetchByAnyValue = async (req, service, field, values, { quote = false } = {}) => {
+        const unique = [...new Set(values.filter((v) => v !== null && v !== undefined && v !== ''))];
+        if (!unique.length) return [];
+
+        const chunkSize = 20;
+        const all = [];
+        for (let i = 0; i < unique.length; i += chunkSize) {
+            const chunk = unique.slice(i, i + chunkSize);
+            const filter = chunk.map((v) => `${field} eq ${quote ? `'${v}'` : v}`).join(' or ');
+            const resp = await service.getAll(req, { filter, top: chunkSize });
+            (resp?.value || []).forEach((row) => all.push(row));
+        }
+        return all;
+    }
+
+    _indexFirstBy = (rows, key) => {
+        const map = {};
+        for (const row of rows) {
+            const k = row[key];
+            if (k !== null && k !== undefined && map[k] === undefined) map[k] = row;
+        }
+        return map;
+    }
+
+    getPendingDeliveryReport = async (req, res) => {
+        try {
+            const email = req.user.email;
+
+            const mrResp = await this.service.getAll(req, {
+                orderBy: 'DocEntry desc',
+                filter: `U_OEM_UEMAIL eq '${email}' and U_DocStatus eq 'O'`,
+                top: 200
+            });
+            const mrs = mrResp?.value || [];
+            if (!mrs.length) return res.status(200).json({ value: [] });
+
+            const mrEntries = mrs.map((m) => m.DocEntry);
+
+            const prs = await this._fetchByAnyValue(req, this.purchaseRequestService, 'U_MRNo', mrEntries);
+            const pos = await this._fetchByAnyValue(req, this.purchaseOrderService, 'U_MRNo', mrEntries);
+
+            const prByMR = this._indexFirstBy(prs, 'U_MRNo');
+            const poByMR = this._indexFirstBy(pos, 'U_MRNo');
+
+            const poEntries = pos.map((p) => String(p.DocEntry));
+            const grpos = await this._fetchByAnyValue(req, this.purchaseDeliveryNoteService, 'U_PONo', poEntries, { quote: true });
+            const grpoByPO = this._indexFirstBy(grpos, 'U_PONo');
+
+            const rows = [];
+            for (const mr of mrs) {
+                const pr = prByMR[mr.DocEntry] || null;
+                const po = poByMR[mr.DocEntry] || null;
+                const grpo = po ? grpoByPO[String(po.DocEntry)] || null : null;
+
+                if (po && po.DocumentStatus === 'bost_Close') continue;
+
+                let status;
+                if (!pr) status = 'PR Pending';
+                else if (!po) status = 'PO Pending';
+                else if (!grpo) status = 'Delivery Pending';
+                else status = 'Partially Delivered';
+
+                rows.push({
+                    mrDocEntry: mr.DocEntry,
+                    prDocEntry: pr?.DocEntry ?? null,
+                    poDocEntry: po?.DocEntry ?? null,
+                    grpoDocEntry: grpo?.DocEntry ?? null,
+                    projectCode: mr.U_PrjCode ?? '',
+                    projectName: mr.U_PrjDesc ?? '',
+                    requiredDate: mr.U_ReqDate ?? null,
+                    supplierCode: po?.CardCode ?? grpo?.CardCode ?? '',
+                    supplierName: po?.CardName ?? grpo?.CardName ?? '',
+                    status
+                });
+            }
+
+            return res.status(200).json({ value: rows });
+        } catch (error) {
+            return this.errorCatch(req, res, 'Error while fetching pending delivery report', error);
         }
     }
 
