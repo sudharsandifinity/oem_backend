@@ -146,7 +146,7 @@ class MaterialRequestController extends SapBaseController {
 
             const response = await this.service.getAll(req, {
                 orderBy: 'DocEntry desc',
-                filter: `(${projectFilter}) and U_DocStatus eq 'D'`,
+                filter: `(${projectFilter})`,
                 skip,
                 top,
                 count: true
