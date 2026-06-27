@@ -23,6 +23,9 @@ router.get('/users/:id', validateParams(getByPkSchema), companyAdmin.getByIdCAdm
 router.post('/users', validate(createCompanyUserSchema), userController.create);
 router.patch('/users/:id',validateParams(getByPkSchema), validate(companyUserUpdateSchema), userController.update);
 
+router.get('/projects', companyAdmin.CompanyProjects);
+router.post('/projects/sync', companyAdmin.SyncCompanyProjects);
+
 router.get('/roles', companyAdmin.CompanyRoles);
 router.get('/roles/:id', validateParams(getByPkSchema),roleController.getById);
 router.post('/roles', validate(createRoleSchema),roleController.create);

@@ -10,18 +10,18 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      Project.belongsTo(models.Company, { foreignKey: 'companyId' });
     }
   }
   Project.init({
     Code: {
       type: DataTypes.STRING,
-      unique: true,
     },
     Name: DataTypes.STRING,
     ValidFrom: DataTypes.STRING,
     ValidTo: DataTypes.STRING,
-    Active: DataTypes.STRING
+    Active: DataTypes.STRING,
+    companyId: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'Project',

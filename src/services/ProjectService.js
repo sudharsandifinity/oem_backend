@@ -31,6 +31,27 @@ class ProjectService extends BaseService{
         };
     }
 
+    async syncCompanyProjects(req, companyId) {
+
+        const sapProjects = await sapProjectConroller.getAll(req, req);
+
+        if (!sapProjects || !sapProjects.length) {
+            return {
+                message: "No projects found in SAP",
+                inserted: 0,
+                updated: 0,
+            };
+        }
+
+        const { inserted, updated } = await this.repository.bulkUpsertByCompany(sapProjects, companyId);
+
+        return {
+            message: "Projects synced successfully",
+            inserted,
+            updated,
+        };
+    }
+
 }
 
 module.exports = ProjectService;

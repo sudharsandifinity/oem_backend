@@ -1,7 +1,9 @@
 const UserRepository = require("../repositories/userRepository");
 const CompanyRepository = require("../repositories/CompanyRepository");
+const ProjectRepository = require("../repositories/ProjectRepository");
 const UserService = require('../services/userService');
 const CompanyService = require('../services/CompanyService');
+const ProjectService = require('../services/ProjectService');
 const { encodeId, decodeId } = require("../utils/hashids");
 const { roleService } = require("../routes/v1/admin/roleRoutes");
 
@@ -9,8 +11,10 @@ class CompanyAdmin {
     constructor(){
         this.userRepository = new UserRepository();
         this.companyRepository = new CompanyRepository();
+        this.projectRepository = new ProjectRepository();
         this.userService = new UserService(this.userRepository);
         this.companyService = new CompanyService(this.companyRepository);
+        this.projectService = new ProjectService(this.projectRepository);
     }
 
     CompanyUsers = async (req, res) => {
@@ -106,6 +110,50 @@ class CompanyAdmin {
         }catch(error){
             console.log('Error while getting company admin user', error);
             this.handleError(res, `getting ${this.entityName}s`, error);
+        }
+    }
+
+    CompanyProjects = async (req, res) => {
+        try {
+            const companyIds = await this.userRepository.getUserCompanyIds(req.user.id);
+            if (!companyIds.length) {
+                return res.status(200).json([]);
+            }
+
+            const projects = await this.projectRepository.getByCompany(companyIds[0]);
+            const encoded = projects.map((project) => {
+                const plain = project.get ? project.get({ plain: true }) : project;
+                return { ...plain, id: encodeId(plain.id) };
+            });
+
+            return res.status(200).json(encoded);
+        } catch (error) {
+            console.log('Error while getting company projects', error);
+            return res.status(500).json({ message: "Internal Server Error" });
+        }
+    }
+
+    SyncCompanyProjects = async (req, res) => {
+        try {
+            let companyId = req.body?.company_id ? decodeId(req.body.company_id) : null;
+            if (!companyId) {
+                const companyIds = await this.userRepository.getUserCompanyIds(req.user.id);
+                companyId = companyIds[0];
+            }
+
+            if (!companyId) {
+                return res.status(400).json({ message: "Company not found for this admin" });
+            }
+
+            const result = await this.projectService.syncCompanyProjects(req, companyId);
+
+            return res.status(200).json(result);
+        } catch (error) {
+            console.log('Error while syncing company projects', error);
+            return res.status(500).json({
+                message: "Error while syncing company projects",
+                error: error.response?.data || error.message
+            });
         }
     }
 
