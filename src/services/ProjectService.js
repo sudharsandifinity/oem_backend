@@ -1,55 +1,35 @@
-const { decodeId, encodeId } = require("../utils/hashids");
 const BaseService = require("./baseService");
-const SapProjectService = require('./SapServices/ProjectService');
-const sapProjectService = new SapProjectService();
-const SapProjectConroller = require('../controllers/SapControllers/SapProjectController');
-const sapProjectConroller = new SapProjectConroller();
+const SAPBaseClient = require('./SapServices/SAPBaseClient');
 
+const sapProjectsClient = new SAPBaseClient('Projects');
 
-class ProjectService extends BaseService{
+const fetchSapProjects = async (req) => {
+    const response = await sapProjectsClient.getAll(req, {});
+    return response?.data?.value || [];
+};
 
-    constructor(projectRepository){
+class ProjectService extends BaseService {
+
+    constructor(projectRepository) {
         super(projectRepository);
     }
 
     async syncProjects(req) {
-        
-        const sapProjects = await sapProjectConroller.getAll(req, req);
-
-        if (!sapProjects || !sapProjects.length) {
-        return {
-            message: "No projects found in SAP",
-            inserted: 0,
-        };
+        const sapProjects = await fetchSapProjects(req);
+        if (!sapProjects.length) {
+            return { message: "No projects found in SAP", inserted: 0 };
         }
-
         await this.repository.bulkUpsert(sapProjects);
-
-        return {
-            message: "Projects synced successfully",
-            count: sapProjects.length,
-        };
+        return { message: "Projects synced successfully", count: sapProjects.length };
     }
 
     async syncCompanyProjects(req, companyId) {
-
-        const sapProjects = await sapProjectConroller.getAll(req, req);
-
-        if (!sapProjects || !sapProjects.length) {
-            return {
-                message: "No projects found in SAP",
-                inserted: 0,
-                updated: 0,
-            };
+        const sapProjects = await fetchSapProjects(req);
+        if (!sapProjects.length) {
+            return { message: "No projects found in SAP", inserted: 0, updated: 0 };
         }
-
         const { inserted, updated } = await this.repository.bulkUpsertByCompany(sapProjects, companyId);
-
-        return {
-            message: "Projects synced successfully",
-            inserted,
-            updated,
-        };
+        return { message: "Projects synced successfully", inserted, updated };
     }
 
 }
