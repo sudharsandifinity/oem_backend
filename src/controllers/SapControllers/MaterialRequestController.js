@@ -242,11 +242,10 @@ class MaterialRequestController extends SapBaseController {
                 const po = poByMR[mr.DocEntry] || null;
                 const grpo = po ? grpoByPO[String(po.DocEntry)] || null : null;
 
-                if (po && po.DocumentStatus === 'bost_Close') continue;
-
                 let status;
                 if (!pr) status = 'PR Pending';
                 else if (!po) status = 'PO Pending';
+                else if (po.DocumentStatus === 'bost_Close') status = 'Completed';
                 else if (!grpo) status = 'Delivery Pending';
                 else status = 'Partially Delivered';
 
