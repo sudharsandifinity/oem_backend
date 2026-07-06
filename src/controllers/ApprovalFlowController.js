@@ -39,7 +39,7 @@ class ApprovalFlowController {
       return res.status(200).json(shapeFlow(flow, docType));
     } catch (error) {
       console.log('Error while getting approval flow', error);
-      return res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: 'Internal Server Error', error: error?.original?.message || error?.message });
     }
   };
 
@@ -58,7 +58,7 @@ class ApprovalFlowController {
       return res.status(200).json(shapeFlow(flow, docType));
     } catch (error) {
       console.log('Error while saving approval flow', error);
-      return res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: 'Internal Server Error', error: error?.original?.message || error?.message });
     }
   };
 }
