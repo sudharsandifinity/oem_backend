@@ -3,6 +3,8 @@ const MaterialRequestService = require('../../services/SapServices/MaterialReque
 const PurchaseRequestService = require('../../services/SapServices/PurchaseRequestService');
 const PurchaseOrderService = require('../../services/SapServices/PurchaseOrderService');
 const PurchaseDeliveryNoteService = require('../../services/SapServices/PurchaseDeliveryNoteService');
+const ApprovalService = require('../../services/ApprovalService');
+const UserRepository = require('../../repositories/userRepository');
 const { userService } = require("../../routes/v1/admin/userRoutes");
 
 class MaterialRequestController extends SapBaseController {
@@ -13,44 +15,8 @@ class MaterialRequestController extends SapBaseController {
         this.purchaseRequestService = new PurchaseRequestService();
         this.purchaseOrderService = new PurchaseOrderService();
         this.purchaseDeliveryNoteService = new PurchaseDeliveryNoteService();
-    }
-
-    buildPRPayloadFromMR = (mr) => {
-        const today = new Date().toISOString().split('T')[0];
-        const lines = (mr.HLB_MRQ1Collection || []).filter(
-            (l) => l.U_ItmSerCode && Number(l.U_ReqQty) > 0
-        );
-
-        return {
-            DocDate: `${today}T00:00:00Z`,
-            RequriedDate: mr.U_ReqDate || null,
-            Comments: mr.U_Remark || '',
-            ReqType: mr.U_ReqType === 'E' ? 171 : 12,
-            ReqCode: mr.U_ReqCode || '',
-            RequesterName: mr.U_ReqName || '',
-            RequesterDepartment: mr.U_Dept != null ? Number(mr.U_Dept) : null,
-            SendNotification: 'tNO',
-            U_MRNo: mr.DocEntry,
-            U_PrjCode: mr.U_PrjCode || '',
-            U_PrjDesc: mr.U_PrjDesc || '',
-            U_OEM_UID: mr.U_OEM_UID ?? null,
-            U_OEM_UEMAIL: mr.U_OEM_UEMAIL ?? null,
-            U_OEM_UName: mr.U_OEM_UName ?? null,
-            U_PreparedBy: mr.U_PreparedBy ?? null,
-            DocumentLines: lines.map((line) => ({
-                ItemCode: line.U_ItmSerCode,
-                ItemDescription: line.U_ItemDesc,
-                U_HLB_FullDesc: line.U_SerDesc,
-                Quantity: Number(line.U_ReqQty) || 0,
-                ProjectCode: line.U_Project,
-                WarehouseCode: line.U_Whs,
-                UoMCode: line.U_UOM,
-                U_MRDocEntry: mr.DocEntry,
-                U_MRLine: line.LineId,
-                RequiredDate: line.U_ReqDate || null,
-                U_HLB_Rmarks: line.U_HLB_Rmarks
-            }))
-        };
+        this.approvalService = new ApprovalService();
+        this.userRepository = new UserRepository();
     }
 
     projectBasedFilter = async (req, res) => {
@@ -123,6 +89,19 @@ class MaterialRequestController extends SapBaseController {
         try {
             req.body.U_DocStatus = 'D';
             const response = await this.service.create(req, req.body);
+
+            try {
+                const companyIds = await this.userRepository.getUserCompanyIds(req.user.id);
+                await this.approvalService.initiate(req, {
+                    companyId: companyIds[0] ?? null,
+                    docType: 'MR',
+                    docEntry: response?.DocEntry,
+                    createdByUserId: req.user.id
+                });
+            } catch (initErr) {
+                console.error('Approval initiate failed for MR', response?.DocEntry, initErr.message);
+            }
+
             return res.status(201).json(response);
         } catch (error) {
             return this.errorCatch(req, res, 'Error while creating record', error);
@@ -286,31 +265,15 @@ class MaterialRequestController extends SapBaseController {
             }
 
             const { U_Apr_remark } = req.body || {};
-            const patchPayload = { U_DocStatus: newStatus };
-            if (U_Apr_remark !== undefined) patchPayload.U_Apr_remark = U_Apr_remark;
-
-            const response = await this.service.patch(req, id, patchPayload);
 
             if (newStatus === 'O') {
-                const prPayload = this.buildPRPayloadFromMR(mr);
-                let purchaseRequest;
-
-                if (!prPayload.DocumentLines.length) {
-                    purchaseRequest = { created: false, error: 'No eligible lines to create a Purchase Request' };
-                } else {
-                    try {
-                        const pr = await this.purchaseRequestService.create(req, prPayload);
-                        purchaseRequest = { created: true, docEntry: pr?.DocEntry, docNum: pr?.DocNum };
-                    } catch (prError) {
-                        const sapMessage = prError.response?.data?.error?.message?.value || prError.message;
-                        console.error('Auto Purchase Request creation failed for MR', id, sapMessage);
-                        purchaseRequest = { created: false, error: sapMessage };
-                    }
-                }
-
-                return res.status(200).json({ data: response, purchaseRequest });
+                const result = await this.service.finalizeApproval(req, mr, U_Apr_remark);
+                return res.status(200).json({ data: result.data, purchaseRequest: result.purchaseRequest });
             }
 
+            const patchPayload = { U_DocStatus: newStatus };
+            if (U_Apr_remark !== undefined) patchPayload.U_Apr_remark = U_Apr_remark;
+            const response = await this.service.patch(req, id, patchPayload);
             return res.status(200).json(response);
         } catch (error) {
             return this.errorCatch(req, res, 'Error while updating approval', error);

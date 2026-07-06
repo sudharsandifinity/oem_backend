@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       Company.hasMany(models.Branch, {foreignKey: 'companyId'});
       Company.hasMany(models.SapBranch, {as: 'branches'});
       Company.hasMany(models.Project, {foreignKey: 'companyId'});
+      Company.hasMany(models.ApprovalFlow, {foreignKey: 'companyId'});
     }
   }
   Company.init({

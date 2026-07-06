@@ -8,6 +8,7 @@ const authRoutes = require('./auth/index');
 const baseRoutes = require('./baseRoutes');
 const sapRoutes = require('./sap/index');
 const essRoutes = require('./ess/index');
+const approvalsRoutes = require('./approvals/index');
 const companyadmin = require('./company-admin/companyadmin');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const checkPermisson = require('../../middlewares/checkPermissonMiddleware');
@@ -19,6 +20,7 @@ router.use('/admin', authMiddleware, checkPermisson, adminRoutes);
 router.use('/user', authMiddleware, userRoutes);
 router.use('/sap', authMiddleware, sapRoutes);
 router.use('/ess', authMiddleware, essRoutes);
+router.use('/approvals', authMiddleware, approvalsRoutes);
 router.use('/company-admin', authMiddleware, companyAdminMiddleware, companyadmin);
 router.get('/health', async (req, res) => {
     try {

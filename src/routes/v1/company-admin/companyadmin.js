@@ -7,12 +7,14 @@ const UserRepository = require("../../../repositories/userRepository");
 const UserService = require("../../../services/userService");
 const UserController = require("../../../controllers/UserController");
 const { companyUserUpdateSchema, createCompanyUserSchema } = require('../../../validators/userValidator');
+const ApprovalFlowController = require('../../../controllers/ApprovalFlowController');
 
 const userRepository = new UserRepository();
 const userService = new UserService(userRepository);
 const userController = new UserController(userService);
 
 const companyAdmin = new CompanyAdmin();
+const approvalFlowController = new ApprovalFlowController();
 
 router.get('/companies', companyAdmin.AdminCompanies);
 router.get('/menus', companyAdmin.CompanyMenus);
@@ -25,6 +27,9 @@ router.patch('/users/:id',validateParams(getByPkSchema), validate(companyUserUpd
 
 router.get('/projects', companyAdmin.CompanyProjects);
 router.post('/projects/sync', companyAdmin.SyncCompanyProjects);
+
+router.get('/approval-flows', approvalFlowController.getFlow);
+router.put('/approval-flows', approvalFlowController.saveFlow);
 
 router.get('/roles', companyAdmin.CompanyRoles);
 router.get('/roles/:id', validateParams(getByPkSchema),roleController.getById);
