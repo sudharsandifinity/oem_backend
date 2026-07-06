@@ -14,10 +14,13 @@ class ApprovalService {
   }
 
   async initiate(req, { companyId, docType, docEntry, createdByUserId }) {
-    if (!companyId || docEntry == null) return null;
+    if (docEntry == null) return null;
 
-    const flow = await this.repository.getFlow(companyId, docType);
-    if (!flow || !(flow.stages || []).length) return null;
+    const flow = companyId ? await this.repository.getFlow(companyId, docType) : null;
+    if (!flow || !(flow.stages || []).length) {
+      await this.finalizeDoc(req, docType, docEntry);
+      return null;
+    }
 
     const existing = await this.repository.getRequestByDoc(docType, docEntry);
     if (existing) return existing;
@@ -127,8 +130,12 @@ class ApprovalService {
   }
 
   async finalize(req, request, remark) {
-    if (request.docType === 'MR') {
-      const mr = await this.materialRequestService.getById(req, request.docEntry, {});
+    return this.finalizeDoc(req, request.docType, request.docEntry, remark);
+  }
+
+  async finalizeDoc(req, docType, docEntry, remark) {
+    if (docType === 'MR') {
+      const mr = await this.materialRequestService.getById(req, docEntry, {});
       return this.materialRequestService.finalizeApproval(req, mr, remark);
     }
     return {};

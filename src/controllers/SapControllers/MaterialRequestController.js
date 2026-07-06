@@ -249,40 +249,6 @@ class MaterialRequestController extends SapBaseController {
         }
     }
 
-        decide = (newStatus) => async (req, res) => {
-        try {
-            const { id } = req.params;
-
-            const mr = await this.service.getById(req, id, {});
-            if (mr.U_DocStatus !== 'D') {
-                return res.status(409).json({ message: 'Only draft requests can be actioned' });
-            }
-
-            const userdetails = await userService.getById(req.user.id);
-            const projectCodes = (userdetails.Projects || []).map(p => p.Code);
-            if (!projectCodes.includes(mr.U_PrjCode)) {
-                return res.status(403).json({ message: 'You are not assigned to this project' });
-            }
-
-            const { U_Apr_remark } = req.body || {};
-
-            if (newStatus === 'O') {
-                const result = await this.service.finalizeApproval(req, mr, U_Apr_remark);
-                return res.status(200).json({ data: result.data, purchaseRequest: result.purchaseRequest });
-            }
-
-            const patchPayload = { U_DocStatus: newStatus };
-            if (U_Apr_remark !== undefined) patchPayload.U_Apr_remark = U_Apr_remark;
-            const response = await this.service.patch(req, id, patchPayload);
-            return res.status(200).json(response);
-        } catch (error) {
-            return this.errorCatch(req, res, 'Error while updating approval', error);
-        }
-    }
-
-    approve = this.decide('O');
-    reject  = this.decide('R');
-
 }
 
 module.exports = MaterialRequestController;

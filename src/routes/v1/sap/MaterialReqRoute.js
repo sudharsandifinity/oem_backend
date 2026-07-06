@@ -10,8 +10,6 @@ router.get('/pending-report', mrController.getPendingApprovalReport);
 router.get('/pending-delivery', mrController.getPendingDeliveryReport);
 router.get('/:id', mrController.getById);
 router.post('/', mrController.create);
-router.patch('/:id/approve', mrController.approve);
-router.patch('/:id/reject', mrController.reject);
 router.patch('/:id', mrController.patch);
 
 module.exports = router;

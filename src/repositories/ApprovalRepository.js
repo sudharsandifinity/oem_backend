@@ -24,16 +24,12 @@ class ApprovalRepository {
   async getFlow(companyId, docType) {
     return ApprovalFlow.findOne({
       where: { companyId, docType },
-      include: [approverInclude],
-      order: [
-        [{ model: ApprovalFlowStage, as: 'stages' }, 'stageOrder', 'ASC'],
-        [{ model: ApprovalFlowStage, as: 'stages' }, { model: ApprovalFlowStageApprover, as: 'approvers' }, 'id', 'ASC']
-      ]
+      include: [approverInclude]
     });
   }
 
   async upsertFlow(companyId, docType, stages = []) {
-    return sequelize.transaction(async (t) => {
+    await sequelize.transaction(async (t) => {
       let flow = await ApprovalFlow.findOne({ where: { companyId, docType }, transaction: t });
       if (!flow) {
         flow = await ApprovalFlow.create({ companyId, docType, status: 1 }, { transaction: t });
@@ -60,9 +56,9 @@ class ApprovalRepository {
           );
         }
       }
-
-      return this.getFlow(companyId, docType);
     });
+
+    return this.getFlow(companyId, docType);
   }
 
   async createRequest(data) {
