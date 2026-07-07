@@ -2,6 +2,7 @@ const ApprovalService = require('../services/ApprovalService');
 const ApprovalRepository = require('../repositories/ApprovalRepository');
 const UserRepository = require('../repositories/userRepository');
 const MaterialRequestService = require('../services/SapServices/MaterialRequestService');
+const { userService } = require('../routes/v1/admin/userRoutes');
 const { encodeId, decodeId } = require('../utils/hashids');
 
 const shapeStages = (flow) =>
@@ -54,24 +55,31 @@ class ApprovalController {
     }
   };
 
+  _approverProjectCodes = async (req) => {
+    try {
+      const userdetails = await userService.getById(req.user.id);
+      return (userdetails.Projects || []).map((p) => p.Code).filter(Boolean);
+    } catch {
+      return [];
+    }
+  };
+
   myPending = async (req, res) => {
     try {
       const docType = req.query.docType || 'MR';
       const { skip = 0, top = 25 } = req.query || {};
       const companyId = await this._companyId(req);
       if (!companyId) return res.status(200).json({ value: [], count: 0 });
+      
+      const projectCodes = await this._approverProjectCodes(req);
+      if (!projectCodes.length) return res.status(200).json({ value: [], count: 0 });
 
       const requests = await this.service.getPendingForApprover(companyId, docType, req.user.id);
-      const count = requests.length;
-
-      const start = Number(skip) || 0;
-      const end = start + (Number(top) || 25);
-      const page = requests.slice(start, end);
-
-      const value = [];
-      for (const request of page) {
+      const hydrated = [];
+      for (const request of requests) {
         const mr = await this._hydrateMR(req, request);
-        value.push({
+        if (!projectCodes.includes(mr.U_PrjCode)) continue;
+        hydrated.push({
           ...mr,
           approvalRequestId: encodeId(request.id),
           currentStageOrder: request.currentStageOrder,
@@ -79,6 +87,11 @@ class ApprovalController {
           DocEntry: request.docEntry
         });
       }
+
+      const count = hydrated.length;
+      const start = Number(skip) || 0;
+      const end = start + (Number(top) || 25);
+      const value = hydrated.slice(start, end);
 
       return res.status(200).json({ value, count });
     } catch (error) {
