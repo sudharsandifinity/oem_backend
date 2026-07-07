@@ -40,11 +40,23 @@ class ApprovalService {
   }
 
   async getPendingForApprover(companyId, docType, userId) {
-    const requests = await this.repository.listByCompanyDocType(companyId, docType, 'pending');
+    return this.getForApprover(companyId, docType, userId, 'pending');
+  }
+
+    async getForApprover(companyId, docType, userId, status = 'pending') {
+    const requests = await this.repository.listByCompanyDocType(companyId, docType, status || undefined);
+
+    if (status === 'pending') {
+      return requests.filter((r) => {
+        const stages = sortStages(r.ApprovalFlow);
+        const current = stages.find((s) => s.stageOrder === r.currentStageOrder);
+        return current && stageApproverIds(current).includes(userId);
+      });
+    }
+
     return requests.filter((r) => {
       const stages = sortStages(r.ApprovalFlow);
-      const current = stages.find((s) => s.stageOrder === r.currentStageOrder);
-      return current && stageApproverIds(current).includes(userId);
+      return stages.some((s) => stageApproverIds(s).includes(userId));
     });
   }
 

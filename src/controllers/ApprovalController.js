@@ -67,14 +67,17 @@ class ApprovalController {
   myPending = async (req, res) => {
     try {
       const docType = req.query.docType || 'MR';
+      const allowedStatus = ['pending', 'approved', 'sent_back', 'all'];
+      const status = allowedStatus.includes(req.query.status) ? req.query.status : 'pending';
+      const effectiveStatus = status === 'all' ? '' : status;
       const { skip = 0, top = 25 } = req.query || {};
       const companyId = await this._companyId(req);
       if (!companyId) return res.status(200).json({ value: [], count: 0 });
-      
+
       const projectCodes = await this._approverProjectCodes(req);
       if (!projectCodes.length) return res.status(200).json({ value: [], count: 0 });
 
-      const requests = await this.service.getPendingForApprover(companyId, docType, req.user.id);
+      const requests = await this.service.getForApprover(companyId, docType, req.user.id, effectiveStatus);
       const hydrated = [];
       for (const request of requests) {
         const mr = await this._hydrateMR(req, request);
