@@ -130,7 +130,6 @@ class UserService extends BaseService {
                 id: encodeId(usermenu.id),
                 parentUserMenuId: encodeId(usermenu.parentUserMenuId),
                 companyId: encodeId(usermenu.companyId),
-                branchId: encodeId(usermenu.branchId),
                 formId: encodeId(usermenu.formId),
             })),
         }));
@@ -453,10 +452,6 @@ class UserService extends BaseService {
                         ? encodeId(menu.companyId)
                         : null,
 
-                    branchId: menu.branchId
-                        ? encodeId(menu.branchId)
-                        : null,
-
                     formId: menu.formId
                         ? encodeId(menu.formId)
                         : null,
@@ -500,7 +495,6 @@ class UserService extends BaseService {
                 menuItem.id = encodeId(menuItem.id);
                 menuItem.parentUserMenuId = encodeId(menuItem.parentUserMenuId);
                 menuItem.companyId = encodeId(menuItem.companyId);
-                menuItem.branchId = encodeId(menuItem.branchId);
                 menuItem.formId = encodeId(menuItem.formId);
 
                 if (menuItem.Form) {

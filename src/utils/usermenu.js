@@ -28,7 +28,6 @@ function encodeUserMenu(menu) {
     if (menu.id) menu.id = encodeId(menu.id);
     if (menu.parentUserMenuId) menu.parentUserMenuId = encodeId(menu.parentUserMenuId);
     if (menu.companyId) menu.companyId = encodeId(menu.companyId);
-    if (menu.branchId) menu.branchId = encodeId(menu.branchId);
     if (menu.formId) menu.formId = encodeId(menu.formId);
 
     if (menu.Form) {

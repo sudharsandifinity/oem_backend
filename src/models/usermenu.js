@@ -16,9 +16,7 @@ module.exports = (sequelize, DataTypes) => {
   UserMenu.init({
     parentUserMenuId: DataTypes.INTEGER,
     companyId: DataTypes.INTEGER,
-    branchId: DataTypes.INTEGER,
     formId: DataTypes.INTEGER,
-    scope: DataTypes.ENUM('global', 'company', 'branch'),
     name: DataTypes.STRING,
     display_name: DataTypes.STRING,
     order_number: DataTypes.INTEGER,

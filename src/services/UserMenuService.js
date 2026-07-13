@@ -19,7 +19,6 @@ class UserMenuService extends BaseService{
             menuItem.id = encodeId(menuItem.id);
             menuItem.parentUserMenuId = encodeId(menuItem.parentUserMenuId);
             menuItem.companyId = encodeId(menuItem.companyId);
-            menuItem.branchId = encodeId(menuItem.branchId);
             menuItem.formId = encodeId(menuItem.formId);
 
             if (menuItem.Form) {
@@ -56,7 +55,6 @@ class UserMenuService extends BaseService{
         result.id = encodeId(result.id);
         result.parentUserMenuId = encodeId(result.parentUserMenuId);
         result.companyId = encodeId(result.companyId);
-        result.branchId = encodeId(result.branchId);
         result.formId = encodeId(result.formId);
         if (result.Form) {
             result.Form.id = encodeId(result.Form.id);
@@ -67,13 +65,13 @@ class UserMenuService extends BaseService{
 
     async create(data){
 
-        ["companyId", "branchId", "parentUserMenuId", "formId"].forEach(key => {
+        ["companyId", "parentUserMenuId", "formId"].forEach(key => {
             if (data[key] === "" || data[key] === undefined) {
                 data[key] = null;
             }
         });
 
-        ["companyId", "branchId", "parentUserMenuId", "formId"].forEach(key => {
+        ["companyId", "parentUserMenuId", "formId"].forEach(key => {
             if(data[key]){
                 data[key] = decodeId(data[key]);
             }
@@ -86,13 +84,13 @@ class UserMenuService extends BaseService{
 
     async update(id, data){
         
-        ["companyId", "branchId", "parentUserMenuId", "formId"].forEach(key => {
+        ["companyId", "parentUserMenuId", "formId"].forEach(key => {
             if (data[key] === "" || data[key] === undefined) {
                 data[key] = null;
             }
         });
 
-        ["companyId", "branchId", "parentUserMenuId", "formId"].forEach(key => {
+        ["companyId", "parentUserMenuId", "formId"].forEach(key => {
             if(data[key]){
                 data[key] = decodeId(data[key]);
             }

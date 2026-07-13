@@ -9,14 +9,8 @@ const createUserMenuSchema = Joi.object({
     'string.empty': 'Display name is required',
     'any.required': 'Display name is required'
   }),
-  scope: Joi.string().valid('global', 'company', 'branch').default('global').messages({
-    'any.only': 'Scope must be one of global, company, or branch'
-  }),
   companyId: Joi.string().allow(null, '').optional().messages({
     'string.base': 'Company ID must be a string'
-  }),
-  branchId: Joi.string().allow(null, '').optional().messages({
-    'string.base': 'Branch ID must be a string'
   }),
   parentUserMenuId: Joi.string().allow(null, '').optional().messages({
     'string.base': 'Parent Form ID must be a string'
@@ -27,9 +21,9 @@ const createUserMenuSchema = Joi.object({
   order_number: Joi.number().integer().optional().messages({
     'number.base': 'Order number must be a number'
   }),
-  status: Joi.number().max(1).optional().messages({
+  status: Joi.number().integer().valid(0, 1).optional().messages({
     'number.base': 'Status must be a number',
-    'number.max': 'Status cannot be more than 1'
+    'any.only': 'Status must be 0 (inactive) or 1 (active)'
   })
 });
 
@@ -40,14 +34,8 @@ const updateUserMenuSchema = Joi.object({
   display_name: Joi.string().optional().messages({
     'string.empty': 'Display name cannot be empty'
   }),
-  scope: Joi.string().valid('global', 'company', 'branch').optional().messages({
-    'any.only': 'Scope must be one of global, company, or branch'
-  }),
   companyId: Joi.string().allow(null, '').optional().messages({
     'string.base': 'Company ID must be a string'
-  }),
-  branchId: Joi.string().allow(null, '').optional().messages({
-    'string.base': 'Branch ID must be a string'
   }),
   parentUserMenuId: Joi.string().allow(null, '').optional().messages({
     'string.base': 'Parent Form ID must be a string'
@@ -58,9 +46,9 @@ const updateUserMenuSchema = Joi.object({
   order_number: Joi.number().integer().optional().messages({
     'number.base': 'Order number must be a number'
   }),
-  status: Joi.number().max(1).optional().messages({
+  status: Joi.number().integer().valid(0, 1).optional().messages({
     'number.base': 'Status must be a number',
-    'number.max': 'Status cannot be more than 1'
+    'any.only': 'Status must be 0 (inactive) or 1 (active)'
   })
 });
 

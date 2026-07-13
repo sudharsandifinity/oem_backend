@@ -13,8 +13,9 @@ const createCompanySchema = Joi.object({
         'string.empty': 'Company Company DB Name is required',
         'any.required': 'Company Company DB Name is required'
     }),
-    base_url: Joi.string().optional().messages({
-        'string.empty': 'base URL is not empty'
+    base_url: Joi.string().uri().optional().messages({
+        'string.empty': 'base URL is not empty',
+        'string.uri': 'base URL must be a valid URL'
     }),
     sap_username: Joi.string().optional().messages({
         'string.empty': 'sap username is not empty'
@@ -22,9 +23,9 @@ const createCompanySchema = Joi.object({
     secret_key: Joi.string().optional().messages({
         'string.empty': 'secret key is not empty'
     }),
-    status: Joi.number().max(1).optional().messages({
+    status: Joi.number().integer().valid(0, 1).optional().messages({
         'number.base': 'Status must be a number',
-        'number.max': 'Status cannot be more than 1'
+        'any.only': 'Status must be 0 (inactive) or 1 (active)'
     }),
     max_users: Joi.number().integer().min(1).allow(null).optional().messages({
         'number.base': 'Max users must be a number',
@@ -44,8 +45,9 @@ const updateCompanySchema = Joi.object({
         'string.empty': 'Company Company DB Name cannot be empty',
         'any.required': 'Company Company DB Name cannot be empty'
     }),
-     base_url: Joi.string().optional().messages({
-        'string.empty': 'base URL is not empty'
+     base_url: Joi.string().uri().optional().messages({
+        'string.empty': 'base URL is not empty',
+        'string.uri': 'base URL must be a valid URL'
     }),
     sap_username: Joi.string().optional().messages({
         'string.empty': 'sap username is not empty'
@@ -53,9 +55,9 @@ const updateCompanySchema = Joi.object({
     secret_key: Joi.string().optional().messages({
         'string.empty': 'secret key is not empty'
     }),
-    status: Joi.number().max(1).optional().messages({
+    status: Joi.number().integer().valid(0, 1).optional().messages({
         'number.base': 'Status must be a number',
-        'number.max': 'Status cannot be more than 1'
+        'any.only': 'Status must be 0 (inactive) or 1 (active)'
     }),
     max_users: Joi.number().integer().min(1).allow(null).optional().messages({
         'number.base': 'Max users must be a number',
