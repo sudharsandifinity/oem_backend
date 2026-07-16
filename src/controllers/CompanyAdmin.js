@@ -73,6 +73,80 @@ class CompanyAdmin {
         }
     }
 
+    _resolveCompanyRole = async (userId, roleId = null) => {
+        const companyIds = await this.userRepository.getUserCompanyIds(userId);
+        if (!companyIds.length) {
+            return { ok: false, code: 403, message: "No company associated with this admin" };
+        }
+        const companyId = companyIds[0];
+
+        if (roleId === null) return { ok: true, companyId };
+
+        const role = await roleService.getById(roleId);
+        if (!role) return { ok: false, code: 404, message: "Role not found!" };
+        if (!role.companyId || decodeId(role.companyId) !== companyId) {
+            return { ok: false, code: 403, message: "You cannot access roles of another company" };
+        }
+        return { ok: true, companyId, role };
+    }
+
+    _companyRolePayload = (body, companyId) => {
+        const payload = { ...body, scope: 'user', companyId: encodeId(companyId) };
+        delete payload.permissionIds;
+        return payload;
+    }
+
+    GetCompanyRole = async (req, res) => {
+        try {
+            const check = await this._resolveCompanyRole(req.user.id, decodeId(req.params.id));
+            if (!check.ok) return res.status(check.code).json({ message: check.message });
+            return res.status(200).json(check.role);
+        } catch (error) {
+            console.log('error while getting company role', error);
+            return res.status(500).json({ message: "Internal Server Error" });
+        }
+    }
+
+    CreateCompanyRole = async (req, res) => {
+        try {
+            const check = await this._resolveCompanyRole(req.user.id);
+            if (!check.ok) return res.status(check.code).json({ message: check.message });
+
+            const role = await roleService.create(this._companyRolePayload(req.body, check.companyId));
+            return res.status(201).json(role);
+        } catch (error) {
+            console.log('error while creating company role', error);
+            return res.status(500).json({ message: error.message || "Internal Server Error" });
+        }
+    }
+
+    UpdateCompanyRole = async (req, res) => {
+        try {
+            const id = decodeId(req.params.id);
+            const check = await this._resolveCompanyRole(req.user.id, id);
+            if (!check.ok) return res.status(check.code).json({ message: check.message });
+
+            const role = await roleService.update(id, this._companyRolePayload(req.body, check.companyId));
+            return res.status(200).json(role);
+        } catch (error) {
+            console.log('error while updating company role', error);
+            return res.status(500).json({ message: error.message || "Internal Server Error" });
+        }
+    }
+
+    DeleteCompanyRole = async (req, res) => {
+        try {
+            const check = await this._resolveCompanyRole(req.user.id, decodeId(req.params.id));
+            if (!check.ok) return res.status(check.code).json({ message: check.message });
+
+            await roleService.delete(req.params.id);
+            return res.status(204).send();
+        } catch (error) {
+            console.log('error while deleting company role', error);
+            return res.status(500).json({ message: error.message || "Internal Server Error" });
+        }
+    }
+
     AdminCompanies = async (req, res) => {
         try {
             const companies = await this.userService.getAdminCompanies(req.user.id);

@@ -17,7 +17,7 @@ class RoleService extends BaseService{
         return datas.map((data) => {
             const json = data.toJSON();
             json.id = encodeId(json.id);
-            json.companyId = encodeId(json.companyId);
+            json.companyId = json.companyId ? encodeId(json.companyId) : null;
             // json.Permissions.map((permission) => {
             //     permission.id = encodeId(permission.id)
             // })
@@ -37,7 +37,7 @@ class RoleService extends BaseService{
         if(!role) return null;
         const result = role.toJSON();
         result.id = encodeId(result.id);
-        result.companyId = encodeId(result.companyId);
+        result.companyId = result.companyId ? encodeId(result.companyId) : null;
         if (result.Permissions) {
             result.Permissions = result.Permissions.map((permi) => ({
                 ...permi,
@@ -50,7 +50,6 @@ class RoleService extends BaseService{
                 id: encodeId(menu.id),
                 parentUserMenuId: encodeId(menu.parentUserMenuId),
                 companyId: encodeId(menu.companyId),
-                branchId: encodeId(menu.branchId),
                 formId: encodeId(menu.formId)
             }));
         }
@@ -166,7 +165,7 @@ class RoleService extends BaseService{
                 where: {
                     companyId: { [Op.in]: companyIds },
                 },
-                attributes: ['id', 'name', 'companyId', 'status'],
+                attributes: ['id', 'name', 'scope', 'companyId', 'status'],
                 raw: true
             });
         } else {

@@ -2,7 +2,6 @@ const router = require('express').Router();
 const CompanyAdmin = require('../../../controllers/CompanyAdmin');
 const { syncEmployees } = require('../../../controllers/ESSController');
 const { validateParams, getByPkSchema, validate, createRoleSchema, updateRoleSchema } = require('../../../validators/CARoleValidation');
-const { roleController } = require('../admin/roleRoutes');
 const UserRepository = require("../../../repositories/userRepository");
 const UserService = require("../../../services/userService");
 const UserController = require("../../../controllers/UserController");
@@ -32,9 +31,9 @@ router.get('/approval-flows', approvalFlowController.getFlow);
 router.put('/approval-flows', approvalFlowController.saveFlow);
 
 router.get('/roles', companyAdmin.CompanyRoles);
-router.get('/roles/:id', validateParams(getByPkSchema),roleController.getById);
-router.post('/roles', validate(createRoleSchema),roleController.create);
-router.put('/roles/:id', validateParams(getByPkSchema), validate(updateRoleSchema), roleController.update);
-router.delete('/roles/:id', validateParams(getByPkSchema),roleController.delete);
+router.get('/roles/:id', validateParams(getByPkSchema), companyAdmin.GetCompanyRole);
+router.post('/roles', validate(createRoleSchema), companyAdmin.CreateCompanyRole);
+router.put('/roles/:id', validateParams(getByPkSchema), validate(updateRoleSchema), companyAdmin.UpdateCompanyRole);
+router.delete('/roles/:id', validateParams(getByPkSchema), companyAdmin.DeleteCompanyRole);
 
 module.exports = router;
