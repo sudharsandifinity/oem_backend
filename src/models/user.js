@@ -14,10 +14,11 @@ class User extends Model {
             foreignKey: 'userId',
             otherKey: 'companyId'
         });
-        User.belongsToMany(models.Branch, {
+        User.belongsToMany(models.SapBranch, {
             through: models.UserBranch,
             foreignKey: 'userId',
-            otherKey: 'branchId'
+            otherKey: 'branchId',
+            as: 'Branches'
         });
         User.belongsToMany(models.Role, {
             through: models.UserRole,

@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
   class SapBranch extends Model {
     static associate(models) {
       SapBranch.belongsTo(models.Company, {foreignKey: 'companyId'});
+      SapBranch.hasMany(models.UserBranch, { foreignKey: 'branchId' });
     }
   }
 

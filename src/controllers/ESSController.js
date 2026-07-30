@@ -169,8 +169,11 @@ const findMissedCheckOuts = async (req, EmpId) => {
 const syncEmployees = async (req, res) => {
   try {
     const { roleIds, company_id }= req.body;
-    const companyId = decodeId(company_id);    
-    const employees = await sapService.getAllEmployees(req, {"select": "EmployeeID,LastName,FirstName,eMail,MobilePhone,Department, EmployeeBranchAssignment"}, true);
+    const companyId = decodeId(company_id);
+    const employees = await sapService.getAllEmployees(req, {
+      select: "EmployeeID,LastName,FirstName,eMail,MobilePhone,Department",
+      expand: "EmployeeBranchAssignment"
+    });
     const userRepository = new UserRepository();
     const userService = new UserService(userRepository);
     const userController = new UserController(userService);
@@ -181,20 +184,21 @@ const syncEmployees = async (req, res) => {
     
     for (const employee of employees.value) {
       const { EmployeeID, eMail, FirstName, LastName, MobilePhone, Department } = employee;
-      let branchIds = [];
 
+      let branchIds = [];
       if (Array.isArray(employee.EmployeeBranchAssignment) && employee.EmployeeBranchAssignment.length > 0) {
         for (const assignment of employee.EmployeeBranchAssignment) {
-          console.log('as branch', assignment);
-          const findBranch = await SapBranch.findOne({ where: { companyId: companyId, BPLID: assignment.BPLID }, raw: true});
-          console.log('cc',companyId, assignment.BPLID, findBranch);
+          const findBranch = await SapBranch.findOne({ where: { companyId, BPLID: assignment.BPLID }, raw: true });
+          if (!findBranch) {
+            console.warn(`No local branch mapped for BPLID ${assignment.BPLID} (company ${companyId}), Employee ${EmployeeID}`);
+            continue;
+          }
           branchIds.push(findBranch.id);
-          
         }
       } else {
-        console.log(`No branch assignments for Employee ${employee.EmployeeID}`);
+        console.log(`No branch assignments for Employee ${EmployeeID}`);
       }
-      
+
       if(!eMail){
         skippedEmployeeIDs.push({SAP_ID: EmployeeID, Reason: "E-Mail not found!"});
         continue;

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { SAPSession, User, Role, Permission, UserMenu, UserBranch, Branch, Company, Project, Form, FormTab, SubForm, FormField } = require('../models');
+const { SAPSession, User, Role, Permission, UserMenu, UserBranch, SapBranch, Company, Project, Form, FormTab, SubForm, FormField } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
@@ -73,7 +73,8 @@ class AuthService {
                 ]
                 },
                 {
-                    model: Branch,
+                    model: SapBranch,
+                    as: 'Branches',
                     through: { attributes: [] },
                     attributes: {exclude: ['createdAt', 'updatedAt']},
                     through: {
@@ -108,7 +109,8 @@ class AuthService {
 
         const company = await Company.findOne({where: {id: decodedCompanyId}, include: [
                         {
-                            model: Branch,
+                            model: SapBranch,
+                            as: 'branches',
                             attributes: {exclude: ['createdAt', 'updatedAt']},
                             include: [
                                 {
@@ -222,7 +224,8 @@ class AuthService {
                     ]
                     },
                     {
-                    model: Branch,
+                    model: SapBranch,
+                    as: 'Branches',
                     through: { attributes: [] },
                     attributes: {exclude: ['createdAt', 'updatedAt']},
                     through: {
@@ -339,7 +342,8 @@ class AuthService {
                 ]
                 },
                 {
-                    model: Branch,
+                    model: SapBranch,
+                    as: 'Branches',
                     through: { attributes: [] },
                     through: {
                         attributes: ['sap_emp_id']

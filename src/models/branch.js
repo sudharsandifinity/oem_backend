@@ -11,7 +11,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Branch.belongsTo(models.Company, {foreignKey:'companyId'});
-      Branch.hasMany(models.UserBranch);
     }
   }
   Branch.init({

@@ -11,8 +11,10 @@ class SAPClient {
             const top = query.top || 20;
             const skip = query.skip || 0;
             const select = query.select;
+            const expand = query.expand;
 
             fullQuery = `${Endpoints.Employees}?$select=${select}&$orderby=EmployeeID desc&$top=${top}&$skip=${skip}`
+            if (expand) fullQuery += `&$expand=${expand}`;
         }
         
         return await sapGetRequest(

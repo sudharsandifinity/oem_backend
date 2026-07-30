@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { sendEmail, sendBranchAssignEmail } = require('../config/mail');
-const { UserBranch, UserRole, Company, UserMenu, Branch } = require('../models');
+const { UserBranch, Company, UserMenu, SapBranch } = require('../models');
 const { encodeId, decodeId } = require('../utils/hashids');
 const BaseService = require('./baseService');
 const { usermenu } = require('../utils/usermenu');
@@ -14,9 +14,10 @@ class UserService extends BaseService {
     async _resolveTargetCompanyIds(data) {
         const branchIdsArray = (data.branchIds || []).map((b) => decodeId(b));
         const companyIdsArray = (data.companyIds || []).map((c) => decodeId(c));
+        if (data.companyId) companyIdsArray.push(decodeId(data.companyId));
 
         if (branchIdsArray.length) {
-            const branches = await Branch.findAll({
+            const branches = await SapBranch.findAll({
                 where: { id: { [Op.in]: branchIdsArray } },
                 attributes: ['companyId']
             });
@@ -54,25 +55,40 @@ class UserService extends BaseService {
     async _assignBranches(user, data) {
         const branchIdsArray = (data.branchIds || []).map((b) => decodeId(b));
         const companyIdsArray = (data.companyIds || []).map((c) => decodeId(c));
-        if (!branchIdsArray.length && !companyIdsArray.length) return;
+        const explicitCompanyId = data.companyId ? decodeId(data.companyId) : null;
 
-        const where = {};
-        if (branchIdsArray.length && companyIdsArray.length) {
-            where[Op.or] = [{ id: { [Op.in]: branchIdsArray } }, { companyId: { [Op.in]: companyIdsArray } }];
-        } else if (branchIdsArray.length) {
-            where.id = { [Op.in]: branchIdsArray };
-        } else {
-            where.companyId = { [Op.in]: companyIdsArray };
+        if (!branchIdsArray.length && !companyIdsArray.length && !explicitCompanyId) return;
+        let branches = [];
+        if (branchIdsArray.length || companyIdsArray.length) {
+            const where = {};
+            if (branchIdsArray.length && companyIdsArray.length) {
+                where[Op.or] = [{ id: { [Op.in]: branchIdsArray } }, { companyId: { [Op.in]: companyIdsArray } }];
+            } else if (branchIdsArray.length) {
+                where.id = { [Op.in]: branchIdsArray };
+            } else {
+                where.companyId = { [Op.in]: companyIdsArray };
+            }
+            branches = await SapBranch.findAll({ where, attributes: ['id', 'companyId'] });
         }
 
-        const branches = await Branch.findAll({ where, attributes: ['id', 'companyId'] });
-
-        await UserBranch.destroy({ where: { userId: user.id } });
-        await UserBranch.bulkCreate(branches.map((branch) => ({
+        const rows = branches.map((branch) => ({
             userId: user.id,
             branchId: branch.id,
-            companyId: branch.companyId
-        })));
+            companyId: explicitCompanyId ?? branch.companyId
+        }));
+
+        const targetCompanyIds = [
+            ...new Set([...(explicitCompanyId ? [explicitCompanyId] : []), ...companyIdsArray].filter((id) => id != null))
+        ];
+        const linkedCompanyIds = new Set(rows.map((r) => r.companyId));
+        for (const companyId of targetCompanyIds) {
+            if (!linkedCompanyIds.has(companyId)) {
+                rows.push({ userId: user.id, branchId: null, companyId });
+            }
+        }
+
+        await UserBranch.destroy({ where: { userId: user.id } });
+        if (rows.length) await UserBranch.bulkCreate(rows);
     }
 
     async getAll(){
@@ -156,6 +172,8 @@ class UserService extends BaseService {
     }
 
     async create(data){
+        const hasCompany = Boolean(data.companyId) || (Array.isArray(data.companyIds) && data.companyIds.length > 0);
+        if (!hasCompany) throw new Error('Company is required');
         if(data.roleId){
             data.roleId = decodeId(data.roleId)
         }
@@ -245,6 +263,8 @@ class UserService extends BaseService {
     }
 
     async update(id, data) {
+        const hasCompany = Boolean(data.companyId) || (Array.isArray(data.companyIds) && data.companyIds.length > 0);
+        if (!hasCompany) throw new Error('Company is required');
 
         if (data.email) {
             const existing = await this.repository.findByEmail(data.email);
@@ -335,67 +355,52 @@ class UserService extends BaseService {
         return result;
     }
 
+    async _assignSapBranches(user, { companyId, branchIds = [], sapEmpId = null }) {
+        let rows = [];
+        if (branchIds.length) {
+            const branches = await SapBranch.findAll({
+                where: { id: { [Op.in]: branchIds } },
+                attributes: ['id', 'companyId']
+            });
+            rows = branches.map((b) => ({
+                userId: user.id,
+                branchId: b.id,
+                companyId: companyId ?? b.companyId,
+                sap_emp_id: sapEmpId
+            }));
+        }
+        if (!rows.length && companyId) {
+            rows.push({ userId: user.id, branchId: null, companyId, sap_emp_id: sapEmpId });
+        }
+
+        await UserBranch.destroy({ where: { userId: user.id } });
+        if (rows.length) await UserBranch.bulkCreate(rows);
+    }
+
     async createSapUser(data){
         const user = await this.repository.create(data);
-        if(data.roleIds?.length){
-            const roleIdsArray = data.roleIds.map((role) => {
-                return decodeId(role);
-            })
-            roleIdsArray.map(async role => {
-                const payload = {
-                    userId: user.id,
-                    roleId: role
-                }
-                await UserRole.create(payload)
-            })
+        if (data.roleIds?.length) {
+            await user.setRoles(data.roleIds.map((role) => decodeId(role)));
         }
-        if(data.branchIds?.length){
-            // const branchIdsArray = data.branchIds.map((branch) => {
-            //     return decodeId(branch);
-            // })
-            data.branchIds.map(async branch => {
-                const payload = {
-                    userId: user.id,
-                    companyId: data.companyId,
-                    branchId: branch,
-                    sap_emp_id: data.sap_emp_id
-                }
-                await UserBranch.create(payload)
-            })
-        }
+        await this._assignSapBranches(user, {
+            companyId: data.companyId,
+            branchIds: data.branchIds || [],
+            sapEmpId: data.sap_emp_id
+        });
         return;
     }
 
     async updatesapemp(id, data) {
         const user = await this.repository.findById(id);
-        if(!user) throw new Error('user not found!');
-        // await this.repository.update(id, data);
-        if(data.roleIds?.length){
-            const roleIdsArray = data.roleIds.map((role) => {
-                return decodeId(role);
-            })
-            roleIdsArray.map(async role => {
-                const payload = {
-                    userId: user.id,
-                    roleId: role
-                }
-                await UserRole.create(payload)
-            })
+        if (!user) throw new Error('user not found!');
+        if (data.roleIds?.length) {
+            await user.addRoles(data.roleIds.map((role) => decodeId(role)));
         }
-        if(data.branchIds?.length){
-            // const branchIdsArray = data.branchIds.map((branch) => {
-            //     return decodeId(branch);
-            // })
-            data.branchIds.map(async branch => {
-                const payload = {
-                    userId: user.id,
-                    companyId: data.companyId,
-                    branchId: branch,
-                    sap_emp_id: data.sap_emp_id
-                }
-                await UserBranch.create(payload)
-            })
-        }
+        await this._assignSapBranches(user, {
+            companyId: data.companyId,
+            branchIds: data.branchIds || [],
+            sapEmpId: data.sap_emp_id
+        });
         return;
     }
 
