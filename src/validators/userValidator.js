@@ -33,9 +33,11 @@ const createUserSchema = Joi.object({
         'array.base': 'Role IDs must be an array of strings',
         'array.includes': 'Each role ID must be a string'
     }),
-    companyId: Joi.string().required().messages({
-        'string.base': 'Company ID must be a string',
-        'any.required': 'Company ID is required'
+    companyIds: Joi.array().items(Joi.string()).min(1).required().messages({
+        'array.base': 'Company IDs must be an array of strings',
+        'array.includes': 'Each company ID must be a string',
+        'array.min': 'At least one company is required',
+        'any.required': 'Company is required'
     }),
     projectIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Project IDs must be an array of strings',
