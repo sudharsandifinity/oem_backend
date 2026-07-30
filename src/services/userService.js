@@ -12,18 +12,8 @@ class UserService extends BaseService {
     }
 
     async _resolveTargetCompanyIds(data) {
-        const branchIdsArray = (data.branchIds || []).map((b) => decodeId(b));
         const companyIdsArray = (data.companyIds || []).map((c) => decodeId(c));
         if (data.companyId) companyIdsArray.push(decodeId(data.companyId));
-
-        if (branchIdsArray.length) {
-            const branches = await SapBranch.findAll({
-                where: { id: { [Op.in]: branchIdsArray } },
-                attributes: ['companyId']
-            });
-            branches.forEach((b) => companyIdsArray.push(b.companyId));
-        }
-
         return [...new Set(companyIdsArray.filter((id) => id != null))];
     }
 
@@ -53,42 +43,16 @@ class UserService extends BaseService {
     }
 
     async _assignBranches(user, data) {
-        const branchIdsArray = (data.branchIds || []).map((b) => decodeId(b));
         const companyIdsArray = (data.companyIds || []).map((c) => decodeId(c));
-        const explicitCompanyId = data.companyId ? decodeId(data.companyId) : null;
+        if (data.companyId) companyIdsArray.push(decodeId(data.companyId));
+        const targetCompanyIds = [...new Set(companyIdsArray.filter((id) => id != null))];
 
-        if (!branchIdsArray.length && !companyIdsArray.length && !explicitCompanyId) return;
-        let branches = [];
-        if (branchIdsArray.length || companyIdsArray.length) {
-            const where = {};
-            if (branchIdsArray.length && companyIdsArray.length) {
-                where[Op.or] = [{ id: { [Op.in]: branchIdsArray } }, { companyId: { [Op.in]: companyIdsArray } }];
-            } else if (branchIdsArray.length) {
-                where.id = { [Op.in]: branchIdsArray };
-            } else {
-                where.companyId = { [Op.in]: companyIdsArray };
-            }
-            branches = await SapBranch.findAll({ where, attributes: ['id', 'companyId'] });
-        }
-
-        const rows = branches.map((branch) => ({
-            userId: user.id,
-            branchId: branch.id,
-            companyId: explicitCompanyId ?? branch.companyId
-        }));
-
-        const targetCompanyIds = [
-            ...new Set([...(explicitCompanyId ? [explicitCompanyId] : []), ...companyIdsArray].filter((id) => id != null))
-        ];
-        const linkedCompanyIds = new Set(rows.map((r) => r.companyId));
-        for (const companyId of targetCompanyIds) {
-            if (!linkedCompanyIds.has(companyId)) {
-                rows.push({ userId: user.id, branchId: null, companyId });
-            }
-        }
+        if (!targetCompanyIds.length) return;
 
         await UserBranch.destroy({ where: { userId: user.id } });
-        if (rows.length) await UserBranch.bulkCreate(rows);
+        await UserBranch.bulkCreate(
+            targetCompanyIds.map((companyId) => ({ userId: user.id, branchId: null, companyId }))
+        );
     }
 
     async getAll(){

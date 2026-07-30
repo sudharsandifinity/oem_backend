@@ -249,13 +249,13 @@ class AuthService {
             const companyId = req.body?.company_id;
             const decodedCompanyId = decodeId(companyId);
 
-            // const fst_branch_sap_id = user?.Branches?.[0]?.UserBranch?.sap_emp_id;
-            const file_cur_comp = user.Branches.filter(branch => branch.companyId == decodedCompanyId);
-            const companyID = file_cur_comp[0]?.Company.id;
-            const companyName = file_cur_comp[0]?.Company.name;
-            // console.log('compayname', companyName);
-            const db_emp_id = file_cur_comp[0].UserBranch.sap_emp_id;
-            console.log('current db_emp_id', db_emp_id);
+            const userBranch = await UserBranch.findOne({
+                where: { userId: user.id, companyId: decodedCompanyId },
+                include: [{ model: Company, attributes: ['id', 'name'] }]
+            });
+            const companyID = userBranch?.Company?.id;
+            const companyName = userBranch?.Company?.name;
+            const db_emp_id = userBranch?.sap_emp_id ?? null;
 
             const token = jwt.sign(
                 { id: user.id, email: user.email, is_super_user: user.is_super_user, EmployeeId: db_emp_id ?? null, companyID: companyID, companyName: companyName },
@@ -376,9 +376,13 @@ class AuthService {
             sapLogin = await this.sapLogin(req, user.id);
         }
 
-        const fst_branch_sap_id = user?.Branches?.[0]?.UserBranch?.sap_emp_id;
-        const companyID = user?.Branches?.[0]?.Company.id;
-        const companyName = user?.Branches?.[0]?.Company.name;
+        const userBranch = await UserBranch.findOne({
+            where: { userId: user.id },
+            include: [{ model: Company, attributes: ['id', 'name'] }]
+        });
+        const fst_branch_sap_id = userBranch?.sap_emp_id ?? null;
+        const companyID = userBranch?.Company?.id;
+        const companyName = userBranch?.Company?.name;
         // console.log('fst_branch_sap_id', fst_branch_sap_id);
         // console.log('companyName', companyName);
 

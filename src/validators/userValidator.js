@@ -37,10 +37,6 @@ const createUserSchema = Joi.object({
         'string.base': 'Company ID must be a string',
         'any.required': 'Company ID is required'
     }),
-    branchIds: Joi.array().items(Joi.string()).optional().messages({
-        'array.base': 'Branch IDs must be an array of strings',
-        'array.includes': 'Each branch ID must be a string'
-    }),
     projectIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Project IDs must be an array of strings',
         'array.includes': 'Each project ID must be a string'
@@ -79,10 +75,6 @@ const updateUserSchema = Joi.object({
         'string.base': 'Company ID must be a string',
         'any.required': 'Company ID is required'
     }),
-    branchIds: Joi.array().items(Joi.string()).optional().messages({
-        'array.base': 'Branch IDs must be an array of strings',
-        'array.includes': 'Each branch ID must be a string'
-    }),
     projectIds: Joi.array().items(Joi.string()).optional().messages({
         'array.base': 'Project IDs must be an array of strings',
         'array.includes': 'Each project ID must be a string'
@@ -119,10 +111,6 @@ const createCompanyUserSchema = Joi.object({
         'array.base': 'Role IDs must be an array of strings',
         'array.includes': 'Each role ID must be a string'
     }),
-    branchIds: Joi.array().items(Joi.string()).optional().messages({
-        'array.base': 'Branch IDs must be an array of strings',
-        'array.includes': 'Each branch ID must be a string'
-    }),
     companyIds: Joi.array().items(Joi.string()).min(1).required().messages({
         'array.base': 'Company IDs must be an array of strings',
         'array.includes': 'Each company ID must be a string',
@@ -158,14 +146,6 @@ const companyUserUpdateSchema = Joi.object({
         .messages({
             'array.base': 'Role IDs must be an array of strings',
             'array.includes': 'Each role ID must be a string'
-        }),
-
-    branchIds: Joi.array()
-        .items(Joi.string())
-        .optional()
-        .messages({
-            'array.base': 'Branch IDs must be an array of strings',
-            'array.includes': 'Each branch ID must be a string'
         }),
 
     companyIds: Joi.array()
