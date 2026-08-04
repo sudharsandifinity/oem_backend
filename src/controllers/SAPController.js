@@ -6,6 +6,7 @@ const { decodeId } = require("../utils/hashids");
 const formDataRepository = new FormDataRepository();
 const formDataService = new FormDataService(formDataRepository);
 const { callSAP } = require("../utils/sapRequest");
+const { withUdfSelect, udfField } = require("../utils/companyConfig");
 const FormData = require("form-data");
 const path = require("path");
 const fs = require("fs");
@@ -1713,8 +1714,17 @@ const getVendors = async (req, res) => {
 //   }
 // };
 
+const ITEM_BASE_SELECT = [
+    'ItemCode',
+    'ItemName',
+    'ForeignName',
+    'UoMGroupEntry',
+    'ItemWarehouseInfoCollection'
+];
+
 const getItems = async (req, res) => {
     try {
+        const itemSelect = withUdfSelect(ITEM_BASE_SELECT, req, 'items');
         const [
             itemsResponse,
             uomGroupsResponse,
@@ -1722,7 +1732,7 @@ const getItems = async (req, res) => {
         ] = await Promise.all([
             sapGetRequest(
                 req,
-                "/Items?$select=ItemCode,ItemName,U_HLB_ParItm,ForeignName,UoMGroupEntry,ItemWarehouseInfoCollection"
+                `/Items?$select=${itemSelect}`
             ),
             sapGetRequest(
                 req,
@@ -1829,49 +1839,20 @@ const getChildItemsByParent = async (req, res) => {
             });
         }
 
+        const parentField = udfField(req, 'items', 'parentItem');
+        if (!parentField) {
+            return res.json({ value: [] });
+        }
+
         const safeParentCode = parentCode.replace(/'/g, "''");
+        const itemSelect = withUdfSelect(ITEM_BASE_SELECT, req, 'items');
 
-        const [
-            itemsResponse,
-            uomGroupsResponse,
-            uomsResponse
-        ] = await Promise.all([
-            sapGetRequest(
-                req,
-                `/Items?$select=ItemCode,ItemName,U_HLB_ParItm,ForeignName,UoMGroupEntry,ItemWarehouseInfoCollection&$filter=U_HLB_ParItm eq '${safeParentCode}'`
-            ),
-            sapGetRequest(
-                req,
-                "/UnitOfMeasurementGroups"
-            ),
-            sapGetRequest(
-                req,
-                "/UnitOfMeasurements?$select=AbsEntry,Code,Name"
-            )
-        ]);
-
-        const items =
-            itemsResponse.data.value || [];
-
-        const uomGroups =
-            uomGroupsResponse.data.value || [];
-
-        const uoms =
-            uomsResponse.data.value || [];
-
-        const uomMap = new Map(
-            uoms.map(uom => [
-                uom.AbsEntry,
-                uom
-            ])
+        const itemsResponse = await sapGetRequest(
+            req,
+            `/Items?$select=${itemSelect}&$filter=${parentField} eq '${safeParentCode}'`
         );
 
-        const uomGroupMap = new Map(
-            uomGroups.map(group => [
-                group.AbsEntry,
-                group
-            ])
-        );
+        const items = itemsResponse.data.value || [];
 
         return res.json({ value: items });
 

@@ -3,12 +3,18 @@
     {
       "name": "HLB_Demo",
       "paymentMethod": "Payout",
-      "OTPayout": "Payout"
+      "OTPayout": "Payout",
+      "udfs": {
+        "items": { "parentItem": "U_HLB_ParItm" }
+      }
     },
     {
       "name": "HLB_Demo2",
       "paymentMethod": "Payout",
-      "OTPayout": "Payout"
+      "OTPayout": "Payout",
+      "udfs": {
+        "items": { "parentItem": "U_HLB_ParItm" }
+      }
     },
     {
       "name": "INSTINCTIF-KSA",
