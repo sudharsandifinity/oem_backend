@@ -24,16 +24,15 @@ class UserRepository extends BaseRepository {
                     ]
                 },
                 {
+                    model: Company,
+                    through: { attributes: [] },
+                    attributes: ['id', 'name', 'status']
+                },
+                {
                     model: SapBranch,
                     as: 'Branches',
                     through: { attributes: [] },
-                    attributes: {exclude: ['createdAt', 'updatedAt']},
-                    include: [
-                        {
-                            model: Company,
-                            attributes: {exclude: ['createdAt', 'updatedAt']},
-                        }
-                    ]
+                    attributes: {exclude: ['createdAt', 'updatedAt']}
                 }
             ]
         });
@@ -68,16 +67,15 @@ class UserRepository extends BaseRepository {
                     ]
                 },
                 {
+                    model: Company,
+                    through: { attributes: [] },
+                    attributes: ['id', 'name', 'status']
+                },
+                {
                     model: SapBranch,
                     as: 'Branches',
                     through: { attributes: [] },
-                    attributes: {exclude: ['createdAt', 'updatedAt']},
-                    include: [
-                        {
-                            model: Company,
-                            attributes: {exclude: ['createdAt', 'updatedAt']},
-                        }
-                    ]
+                    attributes: {exclude: ['createdAt', 'updatedAt']}
                 },
                 {
                     model: Project,

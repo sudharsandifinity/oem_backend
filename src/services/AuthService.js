@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { SAPSession, User, Role, Permission, UserMenu, UserBranch, SapBranch, Company, Project, Form, FormTab, SubForm, FormField } = require('../models');
 const { sendEmail } = require('../config/mail');
 const { encodeId, decodeId } = require("../utils/hashids");
+const { buildUserCompanies } = require("../utils/userCompanies");
 const { usermenu, encodeUserMenu } = require('../utils/usermenu');
 const axios = require('axios');
 const https = require('https');
@@ -187,6 +188,11 @@ class AuthService {
                 where: { email: requser.email },
                 include: [
                     {
+                        model: Company,
+                        through: { attributes: [] },
+                        attributes: ['id', 'name', 'status']
+                    },
+                    {
                     model: Role,
                     through: { attributes: [] },
                     include: [
@@ -287,16 +293,8 @@ class AuthService {
                 role.UserMenus.map(menuItem => encodeUserMenu(menuItem));
             })
 
-            data.Branches.map((branch) => {
-                branch.id = encodeId(branch.id)
-                branch.companyId = encodeId(branch.companyId)
-                branch.Company.id = encodeId(branch.Company.id)
-                delete branch.Company.company_db_name;
-                delete branch.Company.base_url;
-                delete branch.Company.sap_username;
-                delete branch.Company.secret_key;
-            })
-            
+            data.Companies = buildUserCompanies(data);
+            delete data.Branches;
 
             return { token, user, data, sapLogin };
         }
@@ -304,6 +302,11 @@ class AuthService {
         const user = await User.findOne({
             where: { email },
             include: [
+                {
+                    model: Company,
+                    through: { attributes: [] },
+                    attributes: ['id', 'name', 'status']
+                },
                 {
                 model: Role,
                 through: { attributes: [] },
@@ -416,15 +419,8 @@ class AuthService {
             role.UserMenus.map(menuItem => encodeUserMenu(menuItem));
         })
 
-        data.Branches.map((branch) => {
-            branch.id = encodeId(branch.id)
-            branch.companyId = encodeId(branch.companyId)
-            branch.Company.id = encodeId(branch.Company.id)
-            delete branch.Company.company_db_name;
-            delete branch.Company.base_url;
-            delete branch.Company.sap_username;
-            delete branch.Company.secret_key;
-        })
+        data.Companies = buildUserCompanies(data);
+        delete data.Branches;
 
         data.Projects.map((project) => {
             project.id = encodeId(project.id)

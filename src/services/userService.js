@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const { sendEmail, sendBranchAssignEmail } = require('../config/mail');
 const { UserBranch, Company, UserMenu, SapBranch } = require('../models');
 const { encodeId, decodeId } = require('../utils/hashids');
+const { buildUserCompanies } = require('../utils/userCompanies');
 const BaseService = require('./baseService');
 const { usermenu } = require('../utils/usermenu');
 
@@ -74,21 +75,12 @@ class UserService extends BaseService {
                 }))
             }))
             };
-            if (json.Branches) {
-                json.Branches = json.Branches.map((branch) => ({
-                    ...branch,
-                    id: encodeId(branch.id),
-                    companyId: encodeId(branch.CompanyId),
-                    Company: {
-                        ...branch.Company,
-                        id: encodeId(branch.Company.id)
-                    }
-                }));
-            }
+            json.Companies = buildUserCompanies(json);
+            delete json.Branches;
 
             return json;
         });
-        
+
     }
 
     async getById(id){
@@ -115,17 +107,8 @@ class UserService extends BaseService {
         }));
 
         }
-        if(result.Branches){
-            result.Branches = result.Branches.map((branch) => ({
-                ...branch,
-                id: encodeId(branch.id),
-                companyId: encodeId(branch.companyId),
-                Company: {
-                    ...branch.Company,
-                    id: encodeId(branch.Company.id)
-                }
-            }))
-        }
+        result.Companies = buildUserCompanies(result);
+        delete result.Branches;
          if(result.Projects){
             result.Projects = result.Projects.map((project) => ({
                 ...project,
