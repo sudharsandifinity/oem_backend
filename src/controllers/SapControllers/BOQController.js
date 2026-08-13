@@ -36,6 +36,18 @@ class BOQController extends SapBaseController {
         }
     }
 
+    getBoqOpenQty = async (req, res) => {
+        try {
+            const { docEntry } = req.params;
+            const { excludeMr } = req.query;
+            const result = await this.boqService.getBoqOpenQty(req, docEntry, excludeMr);
+            return res.status(200).json(result);
+        } catch (error) {
+            const message = "Error while fetching BOQ open quantity";
+            return this.errorCatch(req, res, message, error);
+        }
+    }
+
 
 }
 

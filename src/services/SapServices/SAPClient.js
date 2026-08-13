@@ -499,7 +499,7 @@ class SAPClient {
 
     // BOQ
 
-    async GetBOQs(req, qry) { 
+    async GetBOQs(req, qry) {
         let com_qry = `${Endpoints.BOQ}`;
         if(qry.filter){
             com_qry = `${Endpoints.BOQ}?$filter=${qry.filter}`;
@@ -508,6 +508,15 @@ class SAPClient {
             req,
             com_qry
         );
+    }
+
+    async GetBOQById(req, docEntry) {
+        return await sapGetRequest(req, `${Endpoints.BOQ}(${docEntry})`);
+    }
+
+    async GetMRsByBOMEntry(req, docEntry) {
+        const filter = `(U_DocStatus eq 'D' or U_DocStatus eq 'O') and HLB_MRQ1Collection/any(c: c/U_BOMEntry eq ${docEntry})`;
+        return await sapGetRequest(req, `${Endpoints.MR}?$filter=${encodeURIComponent(filter)}`);
     }
 
     // MR
