@@ -88,18 +88,6 @@ class MaterialRequestController extends SapBaseController {
         create = async (req, res) => {
         try {
             req.body.U_DocStatus = 'D';
-            console.log(
-                'MR lines payload:',
-                JSON.stringify(
-                    (req.body.HLB_MRQ1Collection || []).map((l) => ({
-                        item: l.U_ItmSerCode,
-                        U_BOMEntry: l.U_BOMEntry,
-                        U_BOMLine: l.U_BOMLine,
-                        U_MRQty: l.U_MRQty,
-                        U_ReqQty: l.U_ReqQty
-                    }))
-                )
-            );
             const response = await this.service.create(req, req.body);
 
             try {
