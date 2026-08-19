@@ -60,10 +60,11 @@ class BOQService extends SapBaseSetvice {
         const pendingByLine = {};
         for (const mr of mrs) {
             if (excludeMr != null && String(mr.DocEntry) === String(excludeMr)) continue;
+            if (String(mr.U_SQDocNum) !== String(docEntry)) continue;
             const state = resolveState(mr);
             if (state === 'released') continue;
             for (const line of mr.HLB_MRQ1Collection || []) {
-                if (String(line.U_BOMEntry) !== String(docEntry) || line.U_BOMLine == null) continue;
+                if (line.U_BOMLine == null) continue;
                 const key = String(line.U_BOMLine);
                 if (state === 'approved') {
                     approvedByLine[key] = (approvedByLine[key] || 0) + (Number(line.U_ReqQty) || 0);

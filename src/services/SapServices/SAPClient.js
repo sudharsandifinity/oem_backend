@@ -515,7 +515,7 @@ class SAPClient {
     }
 
     async GetMRsByBOMEntry(req, docEntry) {
-        const filter = `U_DocStatus eq 'D' or U_DocStatus eq 'O'`;
+        const filter = `U_SQDocNum eq '${docEntry}' and (U_DocStatus eq 'D' or U_DocStatus eq 'O')`;
         return await sapGetRequest(req, `${Endpoints.MR}?$filter=${encodeURIComponent(filter)}`);
     }
 
