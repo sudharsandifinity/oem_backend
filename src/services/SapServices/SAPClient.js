@@ -1,14 +1,15 @@
 const {Endpoints, SAP_QUERIES} = require('../../utils/sapEndPoints');
 const { sapGetRequest, sapPostRequest, sapPatchRequest } = require('../../utils/sapRequestMethods');
+const { employeeSelect } = require('../../utils/companyConfig');
 
 class SAPClient {
 
     async getEmployees(req, query) {
-        let fullQuery = `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc`
+        let fullQuery = `${Endpoints.Employees}?${employeeSelect(req)}&$orderby=EmployeeID desc`
         if(query){
             const top = query.top;
             const skip = query.skip;
-            fullQuery = `${Endpoints.Employees}?${Endpoints.EmployeesSelect}&$orderby=EmployeeID desc&$top=${top}&$skip=${skip}`
+            fullQuery = `${Endpoints.Employees}?${employeeSelect(req)}&$orderby=EmployeeID desc&$top=${top}&$skip=${skip}`
         }
         
         return await sapGetRequest(
@@ -29,7 +30,7 @@ class SAPClient {
         
         return await sapGetRequest(
             req,
-            `${Endpoints.Employees}(${id})?${Endpoints.EmployeesSelect}`
+            `${Endpoints.Employees}(${id})?${employeeSelect(req)}`
         );
     }
 
@@ -145,6 +146,13 @@ class SAPClient {
         return await sapGetRequest(
             req,
             `${Endpoints.PCTypes}?$select=Code,Name`
+        );
+    }
+
+    async getCostCenters(req, dimension) {
+        return await sapGetRequest(
+            req,
+            `${Endpoints.ProfitCenters}?$select=CenterCode,CenterName,InWhichDimension,Active&$filter=InWhichDimension eq ${dimension} and Active eq 'tYES'`
         );
     }
 
