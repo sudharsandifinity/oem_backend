@@ -33,13 +33,6 @@ const EMPLOYEE_BASE_SELECT = [
 
 const employeeSelect = (req) => `$select=${withUdfSelect(EMPLOYEE_BASE_SELECT, req, 'employee')}`;
 
-const getCompanySettings = (req) => {
-    const cfg = getCompanyConfig(req);
-    const settings = cfg.settings || {};
-    return {
-        businessUnit: settings.businessUnit ?? !!cfg.udfs?.employee?.costCenter,
-        costCenter: settings.costCenter ?? false
-    };
-};
+const getCompanySettings = (req) => getCompanyConfig(req).settings || {};
 
 module.exports = { getCompanyConfig, udfField, udfFields, withUdfSelect, EMPLOYEE_BASE_SELECT, employeeSelect, getCompanySettings };

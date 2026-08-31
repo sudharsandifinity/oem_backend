@@ -236,7 +236,10 @@ class SAPService extends SAPClient{
 
     async getCostCentersByDimension(req, dimension) {
         const response = await this.getCostCenters(req, dimension);
-        return response.data;
+        const rows = response.data?.value || [];
+        return rows
+            .filter((r) => r.Active === 'tYES')
+            .map((r) => ({ code: r.CenterCode, name: r.CenterName }));
     }
 
     async getPaymentAccount(req) {
