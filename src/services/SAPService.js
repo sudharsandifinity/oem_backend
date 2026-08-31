@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const SAPClient = require('./SapServices/SAPClient');
 const companyJson = require('../utils/Company.json');
+const { udfField } = require('../utils/companyConfig');
 const { notificationService } = require('../routes/v1/user/notificaitonRoutes');
 const UserRepository = require('../repositories/userRepository');
 const userRepository = new UserRepository();
@@ -229,6 +230,11 @@ class SAPService extends SAPClient{
 
     async getAllPCTypes(req) {
         const response = await this.getPCTypes(req);
+        return response.data;
+    }
+
+    async getCostCentersByDimension(req, dimension) {
+        const response = await this.getCostCenters(req, dimension);
         return response.data;
     }
 
@@ -987,6 +993,7 @@ class SAPService extends SAPClient{
         // console.log('respos', response.DocEntry);
         const frM = await this.getMonthYear(response.U_DtFrm);
 
+        const buField = udfField(req, 'employee', 'costCenter');
         const APInvoicePayload = {
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
@@ -1003,7 +1010,7 @@ class SAPService extends SAPClient{
                     "ExpenseType": response.U_ExpType?response.U_ExpType:null,
                     "ProjectCode": response.U_PrjCode,
                     "CostingCode2": emp.CostCenterCode,
-                    "CostingCode": emp.U_BU,
+                    ...(buField ? { "CostingCode": emp[buField] } : {}),
                     "Currency": response.U_CUR,
                     "LineTotal":response.U_ExpAmt??"0"
                 }

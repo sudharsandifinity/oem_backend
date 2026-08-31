@@ -8,11 +8,11 @@ const SAPService = require("../services/SAPService");
 const { sapLogger } = require("../config/logger");
 const { decodeId, encodeId } = require("../utils/hashids");
 const { Endpoints, SAP_QUERIES } = require('../utils/sapEndPoints');
+const { employeeSelect, udfField } = require('../utils/companyConfig');
 const sapService = new SAPService();
 
 const sapAPIs = {
   Employees: "EmployeesInfo",
-  EmployeesSelect: "$select=EmployeeID,ExternalEmployeeNumber,JobTitle,LastName,FirstName,eMail,MobilePhone,Department, PassportNumber, Picture, WorkStreet,WorkZipCode,LinkedVendor, CostCenterCode, U_BU, Position",
   Attendance: "U_HLB_OATT",
   AllLogEntries: "U_HLB_OAPL",
   Expanses: "HLB_OECL",
@@ -108,7 +108,7 @@ const employeeCheckIn = async (req, res) => {
         const { date, time } = currentTime();
         const user = req.user;
 
-        const empDetails = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);
+        const empDetails = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${employeeSelect(req)}`);
         let payload = req.body;
         payload.U_EmpID = user.EmployeeId || 0;
         payload.Name = `${empDetails.data.FirstName} ${empDetails.data.LastName}` || 0;
@@ -311,6 +311,17 @@ const getAllExpType = async (req, res) => {
   }
 }
 
+const getCostCenters = async (req, res) => {
+  try {
+    const dimension = Number(req.query.dimension) || 1;
+    const data = await sapService.getCostCentersByDimension(req, dimension);
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error fetching Cost Centers';
+    errorCatch(req, res, message, error);
+  }
+}
+
 const getAllPCType = async (req, res) => {
   try {
     const data = await sapService.getAllPCTypes(req);
@@ -325,7 +336,7 @@ const createExpRequest = async (req, res) => {
   try {
     const { date, time } = currentTime();
     const user = req.user;
-    const emp = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);
+    const emp = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${employeeSelect(req)}`);
     // res.send(emp.data);
     // console.log('emp', emp.data);
     
@@ -377,6 +388,7 @@ const createExpRequest = async (req, res) => {
     // console.log('isneedapproval', isNeedApproval);
 
     if(!isNeedApproval){
+      const buField = udfField(req, 'employee', 'costCenter');
       const APInvoicePayload = {
           "DocType": "dDocument_Service",
           "CardCode": emp.data.LinkedVendor,
@@ -391,7 +403,7 @@ const createExpRequest = async (req, res) => {
                   "ExpenseType": response.data.U_ExpType,
                   "ProjectCode": response.data.U_PrjCode,
                   "CostingCode2": emp.data.CostCenterCode,
-                  "CostingCode": emp.data.U_BU,
+                  ...(buField ? { "CostingCode": emp.data[buField] } : {}),
                   "Currency": response.data.U_CUR,
                   "LineTotal":response.data.U_ExpAmt
               }
@@ -596,10 +608,10 @@ const RequestResponse = async (req, res) => {
     // console.log('checkstaus', checkStatus.data);
     // console.log('expreq', expReq.data);
     
-    const requester = await sapGetRequest(req, `${sapAPIs.Employees}(${expReq.data.U_EmpID})?${sapAPIs.EmployeesSelect}`);    
+    const requester = await sapGetRequest(req, `${sapAPIs.Employees}(${expReq.data.U_EmpID})?${employeeSelect(req)}`);    
     // console.log('requester', requester.data);
 
-    const approver = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);    
+    const approver = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${employeeSelect(req)}`);    
     // res.send(approver.data);
     
     const app_lev = await sapGetRequest(req, `/HLB_OAPP?$select=*&$filter=U_Cate eq '${requester.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
@@ -727,6 +739,7 @@ const RequestResponse = async (req, res) => {
         }
         const updatedExpReq = await sapPatchRequest(req, `${sapAPIs.Expanses}(${updatedData.data.U_DocNo})`, empReqPayload);
 
+        const buField = udfField(req, 'employee', 'costCenter');
         const APInvoicePayload = {
           "DocType": "dDocument_Service",
           "CardCode": requester.data.LinkedVendor,
@@ -741,7 +754,7 @@ const RequestResponse = async (req, res) => {
                   "ExpenseType": expReq.data.U_ExpType,
                   "ProjectCode": expReq.data.U_PrjCode,
                   "CostingCode2": requester.data.CostCenterCode,
-                  "CostingCode": requester.data.U_BU,
+                  ...(buField ? { "CostingCode": requester.data[buField] } : {}),
                   "Currency": expReq.data.U_CUR,
                   "LineTotal":expReq.data.U_ExpAmt
               }
@@ -902,7 +915,7 @@ const resubmitLogEntry = async (req, res, docEntry) => {
   const { date, time } = currentTime();
   try {
     const user = req.user;
-    const emp = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${sapAPIs.EmployeesSelect}`);
+    const emp = await sapGetRequest(req, `${sapAPIs.Employees}(${user.EmployeeId})?${employeeSelect(req)}`);
     // console.log('emp', emp.data);
     
     const app_lev = await sapGetRequest(req, `${sapAPIs.ApprovalLevels}?$select=*&$filter=U_Cate eq '${emp.data.Position}' AND U_ESSApp eq 'Y' AND  U_HLB_EXP eq 'Y'`);
@@ -1554,4 +1567,4 @@ const getLoan = async (req, res) => {
   }
 };
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType }
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, getCostCenters }
