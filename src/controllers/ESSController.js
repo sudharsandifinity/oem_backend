@@ -313,8 +313,7 @@ const getAllExpType = async (req, res) => {
 
 const getCostCenters = async (req, res) => {
   try {
-    const dimension = Number(req.query.dimension) || 1;
-    const data = await sapService.getCostCentersByDimension(req, dimension);
+    const data = await sapService.getCostCentersByDimension(req, 1);
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error fetching Cost Centers';
