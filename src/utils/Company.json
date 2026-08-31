@@ -3,18 +3,12 @@
     {
       "name": "HLB_Demo",
       "paymentMethod": "Payout",
-      "OTPayout": "Payout",
-      "udfs": {
-        "employee": { "costCenter": "U_BU" }
-      }
+      "OTPayout": "Payout"
     },
     {
       "name": "HLB_Demo2",
       "paymentMethod": "Payout",
-      "OTPayout": "Payout",
-      "udfs": {
-        "employee": { "costCenter": "U_BU" }
-      }
+      "OTPayout": "Payout"
     },
     {
       "name": "INSTINCTIF-KSA",
@@ -22,6 +16,9 @@
       "OTPayout": "Compoff",
       "udfs": {
         "employee": { "costCenter": "U_BU" }
+      },
+      "settings": {
+        "costCenter": true
       }
     },
     {
@@ -30,6 +27,9 @@
       "OTPayout": "Compoff",
       "udfs": {
         "employee": { "costCenter": "U_BU" }
+      },
+      "settings": {
+        "costCenter": true
       }
     },
     {
@@ -38,6 +38,9 @@
       "OTPayout": "Compoff",
       "udfs": {
         "employee": { "costCenter": "U_BU" }
+      },
+      "settings": {
+        "costCenter": true
       }
     },
     {
@@ -46,6 +49,9 @@
       "OTPayout": "Compoff",
       "udfs": {
         "employee": { "costCenter": "U_BU" }
+      },
+      "settings": {
+        "costCenter": true
       }
     },
     {
@@ -54,6 +60,9 @@
       "OTPayout": "Compoff",
       "udfs": {
         "employee": { "costCenter": "U_BU" }
+      },
+      "settings": {
+        "costCenter": true
       }
     },
     {
@@ -62,6 +71,9 @@
       "OTPayout": "Compoff",
       "udfs": {
         "employee": { "costCenter": "U_BU" }
+      },
+      "settings": {
+        "costCenter": true
       }
     },
     {

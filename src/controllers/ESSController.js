@@ -8,7 +8,7 @@ const SAPService = require("../services/SAPService");
 const { sapLogger } = require("../config/logger");
 const { decodeId, encodeId } = require("../utils/hashids");
 const { Endpoints, SAP_QUERIES } = require('../utils/sapEndPoints');
-const { employeeSelect, udfField } = require('../utils/companyConfig');
+const { employeeSelect, udfField, getCompanySettings } = require('../utils/companyConfig');
 const sapService = new SAPService();
 
 const sapAPIs = {
@@ -317,6 +317,16 @@ const getCostCenters = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     const message = 'Error fetching Cost Centers';
+    errorCatch(req, res, message, error);
+  }
+}
+
+const companySettings = async (req, res) => {
+  try {
+    const settings = getCompanySettings(req);
+    return res.status(200).json({ company: req.user?.companyName ?? null, settings });
+  } catch (error) {
+    const message = 'Error fetching Company Settings';
     errorCatch(req, res, message, error);
   }
 }
@@ -1566,4 +1576,4 @@ const getLoan = async (req, res) => {
   }
 };
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, getCostCenters }
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, getCostCenters, companySettings }
