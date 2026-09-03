@@ -1005,6 +1005,7 @@ class SAPService extends SAPClient{
         }
 
         const buField = udfField(req, 'employee', 'costCenter');
+        const costCenter = response.U_CostCenter || (buField ? emp[buField] : null);
         const APInvoicePayload = {
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
@@ -1021,7 +1022,7 @@ class SAPService extends SAPClient{
                     "ExpenseType": expTypeData.U_ExpCode?expTypeData.U_ExpCode:null,
                     "ProjectCode": response.U_PrjCode,
                     "CostingCode2": emp.CostCenterCode,
-                    ...(buField ? { "CostingCode": emp[buField] } : {}),
+                    ...(costCenter ? { "CostingCode": costCenter } : {}),
                     "Currency": response.U_CUR,
                     "LineTotal":response.U_ExpAmt??"0"
                 }

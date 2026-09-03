@@ -398,6 +398,7 @@ const createExpRequest = async (req, res) => {
 
     if(!isNeedApproval){
       const buField = udfField(req, 'employee', 'costCenter');
+      const costCenter = response.data.U_CostCenter || (buField ? emp.data[buField] : null);
       const APInvoicePayload = {
           "DocType": "dDocument_Service",
           "CardCode": emp.data.LinkedVendor,
@@ -412,7 +413,7 @@ const createExpRequest = async (req, res) => {
                   "ExpenseType": response.data.U_ExpType,
                   "ProjectCode": response.data.U_PrjCode,
                   "CostingCode2": emp.data.CostCenterCode,
-                  ...(buField ? { "CostingCode": emp.data[buField] } : {}),
+                  ...(costCenter ? { "CostingCode": costCenter } : {}),
                   "Currency": response.data.U_CUR,
                   "LineTotal":response.data.U_ExpAmt
               }
@@ -749,6 +750,7 @@ const RequestResponse = async (req, res) => {
         const updatedExpReq = await sapPatchRequest(req, `${sapAPIs.Expanses}(${updatedData.data.U_DocNo})`, empReqPayload);
 
         const buField = udfField(req, 'employee', 'costCenter');
+        const costCenter = expReq.data.U_CostCenter || (buField ? requester.data[buField] : null);
         const APInvoicePayload = {
           "DocType": "dDocument_Service",
           "CardCode": requester.data.LinkedVendor,
@@ -763,7 +765,7 @@ const RequestResponse = async (req, res) => {
                   "ExpenseType": expReq.data.U_ExpType,
                   "ProjectCode": expReq.data.U_PrjCode,
                   "CostingCode2": requester.data.CostCenterCode,
-                  ...(buField ? { "CostingCode": requester.data[buField] } : {}),
+                  ...(costCenter ? { "CostingCode": costCenter } : {}),
                   "Currency": expReq.data.U_CUR,
                   "LineTotal":expReq.data.U_ExpAmt
               }
