@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       requestId: DataTypes.INTEGER,
       stageOrder: DataTypes.INTEGER,
       approverUserId: DataTypes.INTEGER,
+      actedAs: DataTypes.STRING,
       decision: DataTypes.STRING,
       remark: DataTypes.TEXT
     },

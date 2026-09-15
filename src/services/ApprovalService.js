@@ -1,11 +1,18 @@
 const ApprovalRepository = require('../repositories/ApprovalRepository');
 const MaterialRequestService = require('./SapServices/MaterialRequestService');
+const { Project } = require('../models');
 
 const httpError = (message, statusCode) => Object.assign(new Error(message), { statusCode });
 
 const sortStages = (flow) => [...(flow?.stages || [])].sort((a, b) => a.stageOrder - b.stageOrder);
 
-const stageApproverIds = (stage) => (stage?.approvers || []).map((a) => a.userId);
+const stageActorIds = (stage) => [stage?.approverUserId, stage?.delegatorUserId].filter((id) => id != null);
+
+const actorRole = (stage, userId) => {
+  if (stage?.approverUserId === userId) return 'approver';
+  if (stage?.delegatorUserId === userId) return 'delegator';
+  return null;
+};
 
 class ApprovalService {
   constructor() {
@@ -13,10 +20,17 @@ class ApprovalService {
     this.materialRequestService = new MaterialRequestService();
   }
 
-  async initiate(req, { companyId, docType, docEntry, createdByUserId }) {
+  async _resolveProjectId(companyId, projectCode) {
+    if (!companyId || !projectCode) return null;
+    const project = await Project.findOne({ where: { companyId, Code: projectCode }, attributes: ['id'], raw: true });
+    return project?.id ?? null;
+  }
+
+  async initiate(req, { companyId, docType, docEntry, createdByUserId, projectCode }) {
     if (docEntry == null) return null;
 
-    const flow = companyId ? await this.repository.getFlow(companyId, docType) : null;
+    const projectId = await this._resolveProjectId(companyId, projectCode);
+    const flow = projectId ? await this.repository.getFlow(companyId, docType, projectId) : null;
     if (!flow || !(flow.stages || []).length) {
       await this.finalizeDoc(req, docType, docEntry);
       return null;
@@ -50,13 +64,13 @@ class ApprovalService {
       return requests.filter((r) => {
         const stages = sortStages(r.ApprovalFlow);
         const current = stages.find((s) => s.stageOrder === r.currentStageOrder);
-        return current && stageApproverIds(current).includes(userId);
+        return current && stageActorIds(current).includes(userId);
       });
     }
 
     return requests.filter((r) => {
       const stages = sortStages(r.ApprovalFlow);
-      return stages.some((s) => stageApproverIds(s).includes(userId));
+      return stages.some((s) => stageActorIds(s).includes(userId));
     });
   }
 
@@ -72,22 +86,24 @@ class ApprovalService {
     }
     const stages = sortStages(request.ApprovalFlow);
     const current = stages.find((s) => s.stageOrder === request.currentStageOrder);
-    if (!current || !stageApproverIds(current).includes(userId)) {
+    const role = current ? actorRole(current, userId) : null;
+    if (!role) {
       throw httpError('You are not an approver for the current stage', 403);
     }
-    return { stages, current };
+    return { stages, current, actedAs: role };
   }
 
   async approve(req, { requestId, userId, remark }) {
     const request = await this.repository.getRequestById(requestId);
     if (!request) throw httpError('Approval request not found', 404);
 
-    const { stages } = this._assertCurrentStageApprover(request, userId);
+    const { stages, actedAs } = this._assertCurrentStageApprover(request, userId);
 
     await this.repository.addAction({
       requestId: request.id,
       stageOrder: request.currentStageOrder,
       approverUserId: userId,
+      actedAs,
       decision: 'approved',
       remark: remark ?? null
     });
@@ -111,12 +127,13 @@ class ApprovalService {
     const request = await this.repository.getRequestById(requestId);
     if (!request) throw httpError('Approval request not found', 404);
 
-    this._assertCurrentStageApprover(request, userId);
+    const { actedAs } = this._assertCurrentStageApprover(request, userId);
 
     await this.repository.addAction({
       requestId: request.id,
       stageOrder: request.currentStageOrder,
       approverUserId: userId,
+      actedAs,
       decision: 'rejected',
       remark: remark ?? null
     });

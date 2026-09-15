@@ -5,17 +5,17 @@ const MaterialRequestService = require('../services/SapServices/MaterialRequestS
 const { userService } = require('../routes/v1/admin/userRoutes');
 const { encodeId, decodeId } = require('../utils/hashids');
 
+const shapeActor = (user) =>
+  user ? { name: [user.first_name, user.last_name].filter(Boolean).join(' '), email: user.email ?? '' } : null;
+
 const shapeStages = (flow) =>
   [...(flow?.stages || [])]
     .sort((a, b) => a.stageOrder - b.stageOrder)
     .map((stage) => ({
       stageOrder: stage.stageOrder,
       name: stage.name,
-      approvers: (stage.approvers || []).map((a) => ({
-        userId: encodeId(a.userId),
-        name: [a.User?.first_name, a.User?.last_name].filter(Boolean).join(' '),
-        email: a.User?.email ?? ''
-      }))
+      approver: shapeActor(stage.approver),
+      delegator: shapeActor(stage.delegator)
     }));
 
 const shapeActions = (request) =>
@@ -74,14 +74,10 @@ class ApprovalController {
       const companyId = await this._companyId(req);
       if (!companyId) return res.status(200).json({ value: [], count: 0 });
 
-      const projectCodes = await this._approverProjectCodes(req);
-      if (!projectCodes.length) return res.status(200).json({ value: [], count: 0 });
-
       const requests = await this.service.getForApprover(companyId, docType, req.user.id, effectiveStatus);
       const hydrated = [];
       for (const request of requests) {
         const mr = await this._hydrateMR(req, request);
-        if (!projectCodes.includes(mr.U_PrjCode)) continue;
         hydrated.push({
           ...mr,
           approvalRequestId: encodeId(request.id),

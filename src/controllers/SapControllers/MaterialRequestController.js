@@ -96,7 +96,8 @@ class MaterialRequestController extends SapBaseController {
                     companyId: companyIds[0] ?? null,
                     docType: 'MR',
                     docEntry: response?.DocEntry,
-                    createdByUserId: req.user.id
+                    createdByUserId: req.user.id,
+                    projectCode: req.body.U_PrjCode
                 });
             } catch (initErr) {
                 console.error('Approval initiate failed for MR', response?.DocEntry, initErr.message);

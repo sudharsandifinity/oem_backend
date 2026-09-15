@@ -2,63 +2,59 @@ const {
   sequelize,
   ApprovalFlow,
   ApprovalFlowStage,
-  ApprovalFlowStageApprover,
   ApprovalRequest,
   ApprovalRequestAction,
   User
 } = require('../models');
 
-const approverInclude = {
+const userAttrs = ['id', 'first_name', 'last_name', 'email'];
+
+const stagesInclude = {
   model: ApprovalFlowStage,
   as: 'stages',
   include: [
-    {
-      model: ApprovalFlowStageApprover,
-      as: 'approvers',
-      include: [{ model: User, attributes: ['id', 'first_name', 'last_name', 'email'] }]
-    }
+    { model: User, as: 'approver', attributes: userAttrs },
+    { model: User, as: 'delegator', attributes: userAttrs }
   ]
 };
 
 class ApprovalRepository {
-  async getFlow(companyId, docType) {
+  async getFlow(companyId, docType, projectId) {
     return ApprovalFlow.findOne({
-      where: { companyId, docType },
-      include: [approverInclude]
+      where: { companyId, docType, projectId },
+      include: [stagesInclude]
     });
   }
 
-  async upsertFlow(companyId, docType, stages = []) {
+  async upsertFlow(companyId, docType, projectId, stages = []) {
     await sequelize.transaction(async (t) => {
-      let flow = await ApprovalFlow.findOne({ where: { companyId, docType }, transaction: t });
+      let flow = await ApprovalFlow.findOne({ where: { companyId, docType, projectId }, transaction: t });
       if (!flow) {
-        flow = await ApprovalFlow.create({ companyId, docType, status: 1 }, { transaction: t });
+        flow = await ApprovalFlow.create({ companyId, docType, projectId, status: 1 }, { transaction: t });
       }
 
       const existing = await ApprovalFlowStage.findAll({ where: { flowId: flow.id }, attributes: ['id'], transaction: t });
       const existingIds = existing.map((s) => s.id);
       if (existingIds.length) {
-        await ApprovalFlowStageApprover.destroy({ where: { stageId: existingIds }, transaction: t });
         await ApprovalFlowStage.destroy({ where: { id: existingIds }, transaction: t });
       }
 
       for (let i = 0; i < stages.length; i += 1) {
         const stage = stages[i];
-        const created = await ApprovalFlowStage.create(
-          { flowId: flow.id, stageOrder: i + 1, name: stage.name || `Stage ${i + 1}` },
+        await ApprovalFlowStage.create(
+          {
+            flowId: flow.id,
+            stageOrder: i + 1,
+            name: stage.name || `Stage ${i + 1}`,
+            approverUserId: stage.approverUserId ?? null,
+            delegatorUserId: stage.delegatorUserId ?? null
+          },
           { transaction: t }
         );
-        const approverIds = [...new Set((stage.approverUserIds || []).filter(Boolean))];
-        if (approverIds.length) {
-          await ApprovalFlowStageApprover.bulkCreate(
-            approverIds.map((userId) => ({ stageId: created.id, userId })),
-            { transaction: t }
-          );
-        }
       }
     });
 
-    return this.getFlow(companyId, docType);
+    return this.getFlow(companyId, docType, projectId);
   }
 
   async createRequest(data) {
@@ -68,11 +64,11 @@ class ApprovalRepository {
   async getRequestById(id) {
     return ApprovalRequest.findByPk(id, {
       include: [
-        { model: ApprovalFlow, include: [approverInclude] },
+        { model: ApprovalFlow, include: [stagesInclude] },
         {
           model: ApprovalRequestAction,
           as: 'actions',
-          include: [{ model: User, attributes: ['id', 'first_name', 'last_name', 'email'] }]
+          include: [{ model: User, attributes: userAttrs }]
         }
       ],
       order: [[{ model: ApprovalRequestAction, as: 'actions' }, 'createdAt', 'ASC']]
@@ -88,7 +84,7 @@ class ApprovalRepository {
     if (status) where.status = status;
     return ApprovalRequest.findAll({
       where,
-      include: [{ model: ApprovalFlow, include: [approverInclude] }],
+      include: [{ model: ApprovalFlow, include: [stagesInclude] }],
       order: [['docEntry', 'DESC']]
     });
   }
