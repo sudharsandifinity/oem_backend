@@ -1,113 +1,154 @@
 'use strict';
 /** @type {import('sequelize-cli').Migration} */
 
+const steps = (queryInterface) => {
+  const run = async (label, sql) => {
+    console.log(`   step: ${label}`);
+    await queryInterface.sequelize.query(sql);
+  };
+  return run;
+};
+
 module.exports = {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.dropTable('approval_flow_stage_approvers');
+  async up(queryInterface) {
+    const run = steps(queryInterface);
 
-    await queryInterface.bulkDelete('approval_request_actions', null, {});
-    await queryInterface.bulkDelete('approval_requests', null, {});
-    await queryInterface.bulkDelete('approval_flow_stages', null, {});
-    await queryInterface.bulkDelete('approval_flows', null, {});
+    await run(
+      'drop approval_flow_stage_approvers',
+      `IF OBJECT_ID('approval_flow_stage_approvers','U') IS NOT NULL DROP TABLE [approval_flow_stage_approvers];`
+    );
 
-    await queryInterface.addColumn('approval_flows', 'projectId', {
-      type: Sequelize.INTEGER,
-      allowNull: false
-    });
+    await run('clear approval_request_actions', `DELETE FROM [approval_request_actions];`);
+    await run('clear approval_requests', `DELETE FROM [approval_requests];`);
+    await run('clear approval_flow_stages', `DELETE FROM [approval_flow_stages];`);
+    await run('clear approval_flows', `DELETE FROM [approval_flows];`);
 
-    await queryInterface.removeConstraint('approval_flows', 'uq_approval_flows_company_docType');
+    await run(
+      'add approval_flows.projectId',
+      `IF COL_LENGTH('approval_flows','projectId') IS NULL ALTER TABLE [approval_flows] ADD [projectId] INT NULL;`
+    );
 
-    await queryInterface.addConstraint('approval_flows', {
-      fields: ['projectId'],
-      type: 'foreign key',
-      name: 'fk_approval_flows_projectId',
-      references: { table: 'projects', field: 'id' },
-      onUpdate: 'CASCADE',
-      onDelete: 'NO ACTION'
-    });
+    await run(
+      'drop old unique constraint (companyId,docType)',
+      `IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'uq_approval_flows_company_docType' AND parent_object_id = OBJECT_ID('approval_flows'))
+         ALTER TABLE [approval_flows] DROP CONSTRAINT [uq_approval_flows_company_docType];`
+    );
 
-    await queryInterface.addConstraint('approval_flows', {
-      fields: ['companyId', 'docType', 'projectId'],
-      type: 'unique',
-      name: 'uq_approval_flows_company_docType_project'
-    });
+    await run(
+      'drop old unique index (companyId,docType) if index-based',
+      `IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'uq_approval_flows_company_docType' AND object_id = OBJECT_ID('approval_flows'))
+         DROP INDEX [uq_approval_flows_company_docType] ON [approval_flows];`
+    );
 
-    await queryInterface.addColumn('approval_flow_stages', 'approverUserId', {
-      type: Sequelize.INTEGER,
-      allowNull: false
-    });
+    await run(
+      'add FK approval_flows.projectId -> projects.id',
+      `IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'fk_approval_flows_projectId')
+         ALTER TABLE [approval_flows] ADD CONSTRAINT [fk_approval_flows_projectId]
+         FOREIGN KEY ([projectId]) REFERENCES [projects]([id]);`
+    );
 
-    await queryInterface.addColumn('approval_flow_stages', 'delegatorUserId', {
-      type: Sequelize.INTEGER,
-      allowNull: true
-    });
+    await run(
+      'add unique (companyId,docType,projectId)',
+      `IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE name = 'uq_approval_flows_company_docType_project')
+         ALTER TABLE [approval_flows] ADD CONSTRAINT [uq_approval_flows_company_docType_project]
+         UNIQUE ([companyId],[docType],[projectId]);`
+    );
 
-    await queryInterface.addConstraint('approval_flow_stages', {
-      fields: ['approverUserId'],
-      type: 'foreign key',
-      name: 'fk_approval_flow_stages_approverUserId',
-      references: { table: 'users', field: 'id' },
-      onUpdate: 'NO ACTION',
-      onDelete: 'NO ACTION'
-    });
+    await run(
+      'add approval_flow_stages.approverUserId',
+      `IF COL_LENGTH('approval_flow_stages','approverUserId') IS NULL ALTER TABLE [approval_flow_stages] ADD [approverUserId] INT NULL;`
+    );
 
-    await queryInterface.addConstraint('approval_flow_stages', {
-      fields: ['delegatorUserId'],
-      type: 'foreign key',
-      name: 'fk_approval_flow_stages_delegatorUserId',
-      references: { table: 'users', field: 'id' },
-      onUpdate: 'NO ACTION',
-      onDelete: 'NO ACTION'
-    });
+    await run(
+      'add approval_flow_stages.delegatorUserId',
+      `IF COL_LENGTH('approval_flow_stages','delegatorUserId') IS NULL ALTER TABLE [approval_flow_stages] ADD [delegatorUserId] INT NULL;`
+    );
 
-    await queryInterface.addColumn('approval_request_actions', 'actedAs', {
-      type: Sequelize.STRING,
-      allowNull: true
-    });
+    await run(
+      'add FK approval_flow_stages.approverUserId -> users.id',
+      `IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'fk_approval_flow_stages_approverUserId')
+         ALTER TABLE [approval_flow_stages] ADD CONSTRAINT [fk_approval_flow_stages_approverUserId]
+         FOREIGN KEY ([approverUserId]) REFERENCES [users]([id]);`
+    );
+
+    await run(
+      'add FK approval_flow_stages.delegatorUserId -> users.id',
+      `IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'fk_approval_flow_stages_delegatorUserId')
+         ALTER TABLE [approval_flow_stages] ADD CONSTRAINT [fk_approval_flow_stages_delegatorUserId]
+         FOREIGN KEY ([delegatorUserId]) REFERENCES [users]([id]);`
+    );
+
+    await run(
+      'add approval_request_actions.actedAs',
+      `IF COL_LENGTH('approval_request_actions','actedAs') IS NULL ALTER TABLE [approval_request_actions] ADD [actedAs] NVARCHAR(255) NULL;`
+    );
   },
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('approval_request_actions', 'actedAs');
+  async down(queryInterface) {
+    const run = steps(queryInterface);
 
-    await queryInterface.removeConstraint('approval_flow_stages', 'fk_approval_flow_stages_delegatorUserId');
-    await queryInterface.removeConstraint('approval_flow_stages', 'fk_approval_flow_stages_approverUserId');
-    await queryInterface.removeColumn('approval_flow_stages', 'delegatorUserId');
-    await queryInterface.removeColumn('approval_flow_stages', 'approverUserId');
+    await run(
+      'drop actedAs',
+      `IF COL_LENGTH('approval_request_actions','actedAs') IS NOT NULL ALTER TABLE [approval_request_actions] DROP COLUMN [actedAs];`
+    );
 
-    await queryInterface.removeConstraint('approval_flows', 'uq_approval_flows_company_docType_project');
-    await queryInterface.removeConstraint('approval_flows', 'fk_approval_flows_projectId');
-    await queryInterface.removeColumn('approval_flows', 'projectId');
+    await run(
+      'drop FK delegatorUserId',
+      `IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'fk_approval_flow_stages_delegatorUserId')
+         ALTER TABLE [approval_flow_stages] DROP CONSTRAINT [fk_approval_flow_stages_delegatorUserId];`
+    );
 
-    await queryInterface.addConstraint('approval_flows', {
-      fields: ['companyId', 'docType'],
-      type: 'unique',
-      name: 'uq_approval_flows_company_docType'
-    });
+    await run(
+      'drop FK approverUserId',
+      `IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'fk_approval_flow_stages_approverUserId')
+         ALTER TABLE [approval_flow_stages] DROP CONSTRAINT [fk_approval_flow_stages_approverUserId];`
+    );
 
-    await queryInterface.createTable('approval_flow_stage_approvers', {
-      id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
-      stageId: { type: Sequelize.INTEGER, allowNull: false },
-      userId: { type: Sequelize.INTEGER, allowNull: false },
-      createdAt: { allowNull: false, type: Sequelize.DATE },
-      updatedAt: { allowNull: false, type: Sequelize.DATE }
-    });
+    await run(
+      'drop delegatorUserId',
+      `IF COL_LENGTH('approval_flow_stages','delegatorUserId') IS NOT NULL ALTER TABLE [approval_flow_stages] DROP COLUMN [delegatorUserId];`
+    );
 
-    await queryInterface.addConstraint('approval_flow_stage_approvers', {
-      fields: ['stageId'],
-      type: 'foreign key',
-      name: 'fk_approval_stage_approvers_stageId',
-      references: { table: 'approval_flow_stages', field: 'id' },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    });
+    await run(
+      'drop approverUserId',
+      `IF COL_LENGTH('approval_flow_stages','approverUserId') IS NOT NULL ALTER TABLE [approval_flow_stages] DROP COLUMN [approverUserId];`
+    );
 
-    await queryInterface.addConstraint('approval_flow_stage_approvers', {
-      fields: ['userId'],
-      type: 'foreign key',
-      name: 'fk_approval_stage_approvers_userId',
-      references: { table: 'users', field: 'id' },
-      onUpdate: 'NO ACTION',
-      onDelete: 'NO ACTION'
-    });
+    await run(
+      'drop unique (companyId,docType,projectId)',
+      `IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'uq_approval_flows_company_docType_project')
+         ALTER TABLE [approval_flows] DROP CONSTRAINT [uq_approval_flows_company_docType_project];`
+    );
+
+    await run(
+      'drop FK projectId',
+      `IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'fk_approval_flows_projectId')
+         ALTER TABLE [approval_flows] DROP CONSTRAINT [fk_approval_flows_projectId];`
+    );
+
+    await run(
+      'drop projectId',
+      `IF COL_LENGTH('approval_flows','projectId') IS NOT NULL ALTER TABLE [approval_flows] DROP COLUMN [projectId];`
+    );
+
+    await run(
+      'restore unique (companyId,docType)',
+      `IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE name = 'uq_approval_flows_company_docType')
+         ALTER TABLE [approval_flows] ADD CONSTRAINT [uq_approval_flows_company_docType] UNIQUE ([companyId],[docType]);`
+    );
+
+    await run(
+      'recreate approval_flow_stage_approvers',
+      `IF OBJECT_ID('approval_flow_stage_approvers','U') IS NULL
+         CREATE TABLE [approval_flow_stage_approvers] (
+           [id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+           [stageId] INT NOT NULL,
+           [userId] INT NOT NULL,
+           [createdAt] DATETIMEOFFSET NOT NULL,
+           [updatedAt] DATETIMEOFFSET NOT NULL,
+           CONSTRAINT [fk_approval_stage_approvers_stageId] FOREIGN KEY ([stageId]) REFERENCES [approval_flow_stages]([id]) ON DELETE CASCADE,
+           CONSTRAINT [fk_approval_stage_approvers_userId] FOREIGN KEY ([userId]) REFERENCES [users]([id])
+         );`
+    );
   }
 };
