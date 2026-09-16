@@ -1114,8 +1114,10 @@ class SAPService extends SAPClient{
         
 
         const expReq = await getById(req, endpoint, checkStatus.U_DocNo);
-        const requester = await this.getEmployeeDetail(req, expReq.U_EmpID); 
-        const approver = await this.getEmployeeDetail(req, user.EmployeeId); 
+        const [requester, approver] = await Promise.all([
+            this.getEmployeeDetail(req, expReq.U_EmpID),
+            this.getEmployeeDetail(req, user.EmployeeId)
+        ]);
         const app_lev = await this.checkAppvalLvs(req, requester.Position, checkAprv);
     
         payload.U_ApprDt = date;
@@ -1299,16 +1301,17 @@ class SAPService extends SAPClient{
                 meta_data: JSON.stringify(devPay)
             };
             // console.log('Approval Notification created:', notificationPayload);
-            const noti = await notificationService.createAndSend(notificationPayload);
-            console.log('final notification Notification created:', noti.dataValues);
+            notificationService
+                .createAndSend(notificationPayload)
+                .then(noti => console.log('final notification Notification created:', noti?.dataValues))
+                .catch(err => console.warn('Notification send failed:', err?.message || err));
         }
 
-        for(const item of get_sm_stg){
-            if(item.Code == id){
-                continue
-            }
-            await this.patchLogData(req, item.Code, payload)
-        }
+        await Promise.all(
+            get_sm_stg
+                .filter(item => item.Code != id)
+                .map(item => this.patchLogData(req, item.Code, payload))
+        );
 
         const updatedData = await this.getLogById(req, id);
 
@@ -1557,8 +1560,10 @@ class SAPService extends SAPClient{
                 meta_data: JSON.stringify(devPay)
             };
             // console.log('Approval Notification created:', notificationPayload);
-            const noti = await notificationService.createAndSend(notificationPayload);
-            console.log('final notification Notification created:', noti.dataValues);
+            notificationService
+                .createAndSend(notificationPayload)
+                .then(noti => console.log('final notification Notification created:', noti?.dataValues))
+                .catch(err => console.warn('Notification send failed:', err?.message || err));
             return
           }
         }
