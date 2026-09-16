@@ -12,6 +12,14 @@ const { notificationService } = require('../routes/v1/user/notificaitonRoutes');
 const UserRepository = require('../repositories/userRepository');
 const userRepository = new UserRepository();
 
+const ATTACHMENT_ENDPOINTS = new Set([
+    Endpoints.TravelExp,
+    Endpoints.Expanses,
+    Endpoints.Leave,
+    Endpoints.AirTicket,
+    Endpoints.Loan
+]);
+
 class SAPService extends SAPClient{
 
     async getAllEmployees(req, query) {
@@ -1732,194 +1740,114 @@ class SAPService extends SAPClient{
     }
 
     async getAprRqstList(req, EmpId, query) {
-        
-        // const [
-        //     logResponse,
-        //     allExpansesResponse,
-        //     // allTExpsResponse,
-        //     allLeaveRequests,
-        //     allAttachmentsResponse,
-        //     allOTExp
-        // ] = await Promise.all([
-        //     this.getMyAprLogs(req, EmpId, query),
-        //     this.getAllExpReq(req),
-        //     // this.getAllTExp(req),
-        //     this.getAllLvReq(req),
-        //     this.getAllAtts(req),
-        //     this.getAllOTR(req)
-        // ]);
-        
-        // const logs = logResponse.value || [];
-        // const allExpanses = allExpansesResponse.value || [];
-        // // const allTExpsReq = allTExpsResponse.value || [];
-        // const allLeaveRq = allLeaveRequests.value || [];
-        // const attachments = allAttachmentsResponse.value || [];
-        // const OTs = allOTExp.value || [];
+        let logs = [];
+        try {
+            const logResponse = await this.getMyAprLogs(req, EmpId, query);
+            logs = logResponse?.value || [];
+        } catch (error) {
+            console.warn('Approval logs fetch failed:', error?.message || error);
+            return [];
+        }
 
-        const results = await Promise.allSettled([
-            this.getMyAprLogs(req, EmpId, query),
-            this.getAllExpReq(req),
-            this.getAllTExp(req), 
-            this.getAllLvReq(req),
-            this.getAllAtts(req),
-            this.getAllOTR(req),
-            AttendanceRegularizationDraft.findAll(),
-            this.getAllAirTicket(req),
-            this.getAllLoans(req),
-            this.getAllRR(req),
-        ]);
+        if (!logs.length) return [];
 
-        const [
-            logResult,
-            expResult,
-            tExpResult,
-            leaveResult,
-            attResult,
-            otResult,
-            rgResult,
-            airResult,
-            loanResult,
-            resignationResult
-        ] = results;
+        const endpointByType = {};
+        const docTypes = [...new Set(logs.map((log) => log.U_DocType).filter(Boolean))];
+        for (const type of docTypes) {
+            if (type === 'OR') continue;
+            try {
+                const module = await this.checkModule(type);
+                if (module?.endpoint) endpointByType[type] = module.endpoint;
+            } catch {
+                console.warn('Unknown DocType in approval log:', type);
+            }
+        }
 
-        const logs = logResult.status === 'fulfilled' ? logResult.value.value || [] : [];
-        const allExpanses = expResult.status === 'fulfilled' ? expResult.value.value || [] : [];
-        const allTExpsReq = tExpResult.status === 'fulfilled' ? tExpResult.value.value || [] : [];
-        const allLeaveRq = leaveResult.status === 'fulfilled' ? leaveResult.value.value || [] : [];
-        const attachments = attResult.status === 'fulfilled' ? attResult.value.value || [] : [];
-        const OTs = otResult.status === 'fulfilled' ? otResult.value.value || [] : [];
-        const Rgs = rgResult.status === 'fulfilled' ? rgResult.value || [] : [];
-        const ATs = airResult.status === 'fulfilled' ? airResult.value || [] : [];
-        const Loans = loanResult.status === 'fulfilled' ? loanResult.value || [] : [];
-        const RRs = resignationResult.status === 'fulfilled' ? resignationResult.value || [] : [];
+        const idsByEndpoint = new Map();
+        const draftIds = [];
+        for (const log of logs) {
+            const docNo = Number(log.U_DocNo);
+            if (!Number.isFinite(docNo)) continue;
+            if (log.U_DocType === 'OR') {
+                draftIds.push(docNo);
+                continue;
+            }
+            const endpoint = endpointByType[log.U_DocType];
+            if (!endpoint) continue;
+            if (!idsByEndpoint.has(endpoint)) idsByEndpoint.set(endpoint, []);
+            idsByEndpoint.get(endpoint).push(docNo);
+        }
 
-        results.forEach((r, i) => {
+        const endpoints = [...idsByEndpoint.keys()];
+        const tasks = endpoints.map((endpoint) => this.getDocsByEntries(req, endpoint, idsByEndpoint.get(endpoint)));
+        if (draftIds.length) {
+            tasks.push(AttendanceRegularizationDraft.findAll({ where: { id: draftIds } }));
+        }
+
+        const settled = await Promise.allSettled(tasks);
+        settled.forEach((r, i) => {
             if (r.status === 'rejected') {
-            console.warn(`Service ${i} failed:`, r.reason?.message || r.reason);
+                console.warn(`Approval doc fetch failed (${endpoints[i] || 'regularizations'}):`, r.reason?.message || r.reason);
             }
         });
+
+        const docsByEndpoint = new Map();
+        endpoints.forEach((endpoint, i) => {
+            const r = settled[i];
+            docsByEndpoint.set(endpoint, r.status === 'fulfilled' ? r.value || [] : []);
+        });
+
+        let drafts = [];
+        if (draftIds.length) {
+            const r = settled[endpoints.length];
+            drafts = r.status === 'fulfilled' ? r.value || [] : [];
+        }
+
+        const attachmentIds = [];
+        for (const [endpoint, docs] of docsByEndpoint) {
+            if (!ATTACHMENT_ENDPOINTS.has(endpoint)) continue;
+            docs.forEach((doc) => {
+                const attId = Number(doc.U_Atch);
+                if (Number.isFinite(attId) && attId > 0) attachmentIds.push(attId);
+            });
+        }
+
+        let attachments = [];
+        if (attachmentIds.length) {
+            try {
+                attachments = await this.getAttachmentsByEntries(req, attachmentIds);
+            } catch (error) {
+                console.warn('Attachment fetch failed:', error?.message || error);
+            }
+        }
 
         const attachmentMap = new Map(
             attachments.map(att => [att.AbsoluteEntry, att])
         );
 
-        const expenseWithAttMap = new Map(
-            allExpanses.map(exp => [
-                exp.DocEntry,
-                {
-                    ...exp,
-                    AttachmentData: attachmentMap.get(Number(exp.U_Atch)) || null
-                }
-            ])
-        );
+        const docMapByEndpoint = new Map();
+        for (const [endpoint, docs] of docsByEndpoint) {
+            const withAttachment = ATTACHMENT_ENDPOINTS.has(endpoint);
+            docMapByEndpoint.set(
+                endpoint,
+                new Map(
+                    docs.map((doc) => [
+                        doc.DocEntry,
+                        withAttachment
+                            ? { ...doc, AttachmentData: attachmentMap.get(Number(doc.U_Atch)) || null }
+                            : { ...doc }
+                    ])
+                )
+            );
+        }
 
-        const tExpMap = new Map(
-            allTExpsReq.map(texp => [
-                texp.DocEntry,
-                {
-                    ...texp,
-                    AttachmentData: attachmentMap.get(Number(texp.U_Atch)) || null
-                }
-            ])
-        );
-
-        const LeaveMap = new Map(
-            allLeaveRq.map(lev => [
-                lev.DocEntry,
-                {
-                    ...lev,
-                    AttachmentData: attachmentMap.get(Number(lev.U_Atch)) || null
-                }
-            ])
-        );
-
-        const OT = new Map(
-            OTs.map(ot => [
-                ot.DocEntry,
-                {
-                    ...ot
-                }
-            ])
-        );
-
-        const Rg = new Map(
-            Rgs.map(rg => [
-                rg.dataValues.id,
-                {
-                    ...rg.dataValues
-                }
-            ])
-        );
-
-        const AirTicketMap = new Map(
-            ATs.map(t => [
-                t.DocEntry,
-                {
-                    ...t,
-                    AttachmentData: attachmentMap.get(Number(t.U_Atch)) || null
-                }
-            ])
-        );
-
-        const LoanData = new Map(
-            Loans.map(t => [
-                t.DocEntry,
-                {
-                    ...t,
-                    AttachmentData: attachmentMap.get(Number(t.U_Atch)) || null
-                }
-            ])
-        );
-
-        const RR = new Map(
-            RRs.map(r => [
-                r.DocEntry,
-                {
-                    ...r
-                }
-            ])
+        const draftMap = new Map(
+            drafts.map(rg => [rg.dataValues.id, { ...rg.dataValues }])
         );
 
         const result = logs.map(log => {
-            let expenseData = null;
-
-            switch (log.U_DocType) {
-                case "TR":
-                    expenseData = tExpMap.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "OT":
-                    expenseData = OT.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "E":
-                    expenseData = expenseWithAttMap.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "PC":
-                    expenseData = expenseWithAttMap.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "L":
-                    expenseData = LeaveMap.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "OR":
-                    expenseData = Rg.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "AT":
-                    expenseData = AirTicketMap.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "LA":
-                    expenseData = LoanData.get(Number(log.U_DocNo)) || null;
-                    break;
-
-                case "RR":
-                    expenseData = RR.get(Number(log.U_DocNo)) || null;
-                    break;
-            }
+            const source = log.U_DocType === 'OR' ? draftMap : docMapByEndpoint.get(endpointByType[log.U_DocType]);
+            const expenseData = source ? source.get(Number(log.U_DocNo)) || null : null;
 
             return {
                 ...log,

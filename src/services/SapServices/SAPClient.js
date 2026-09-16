@@ -171,6 +171,33 @@ class SAPClient {
         );
     }
 
+    async getByKeyList(req, endpoint, keyField, ids, chunkSize = 25) {
+        const safeIds = [...new Set((ids || []).map(Number).filter(Number.isFinite))];
+        if (!safeIds.length) return [];
+
+        const chunks = [];
+        for (let i = 0; i < safeIds.length; i += chunkSize) {
+            chunks.push(safeIds.slice(i, i + chunkSize));
+        }
+
+        const responses = await Promise.all(
+            chunks.map((chunk) => {
+                const filter = chunk.map((id) => `${keyField} eq ${id}`).join(' or ');
+                return sapGetRequest(req, `${endpoint}?$filter=${encodeURIComponent(filter)}`);
+            })
+        );
+
+        return responses.flatMap((res) => res.data?.value || []);
+    }
+
+    async getDocsByEntries(req, endpoint, ids) {
+        return await this.getByKeyList(req, endpoint, 'DocEntry', ids);
+    }
+
+    async getAttachmentsByEntries(req, ids) {
+        return await this.getByKeyList(req, Endpoints.Attachments, 'AbsoluteEntry', ids);
+    }
+
     async getAtt(req, id) {
         return await sapGetRequest(
             req,
