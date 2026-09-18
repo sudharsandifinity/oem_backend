@@ -8,7 +8,10 @@ const authService = new AuthService();
 async function callSAP(req, method, endpoint, data = {}, headerCont = {}, options = {}) {
   const startedAt = Date.now();
   const userId = req.user.id;
-  const sapSession = await SAPSession.findOne({ where: { user_id: userId }, order: [['createdAt', 'DESC']] });
+  if (!req._sapSession) {
+    req._sapSession = await SAPSession.findOne({ where: { user_id: userId }, order: [['createdAt', 'DESC']] });
+  }
+  const sapSession = req._sapSession;
   if (!sapSession) throw new Error('SAP session not found. Please log in.');
   const sessionMs = Date.now() - startedAt;
 
@@ -42,12 +45,12 @@ async function callSAP(req, method, endpoint, data = {}, headerCont = {}, option
     return res;
   } catch (error) {
     console.warn(`[SAP-TIME] ${method} ${endpoint.split('?')[0]} FAILED after ${Date.now() - startedAt}ms`);
-    if ([401].includes(error.response?.status)) {
+    if ([401].includes(error.response?.status) && !req._sapRetried) {
       console.log('SAP session expired, refreshing...');
-      // console.log('userId', userId);
-      // console.log('req', req.user);
-      await authService.sapLogin(req = {}, userId);
-      return callSAP(userId, method, endpoint, data);
+      req._sapRetried = true;
+      delete req._sapSession;
+      await authService.sapLogin({ user: req.user, body: req.body || {} }, userId);
+      return callSAP(req, method, endpoint, data, headerCont, options);
     }
 
     throw error;

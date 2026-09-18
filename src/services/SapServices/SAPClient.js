@@ -180,14 +180,14 @@ class SAPClient {
             chunks.push(safeIds.slice(i, i + chunkSize));
         }
 
-        const responses = await Promise.all(
-            chunks.map((chunk) => {
-                const filter = chunk.map((id) => `${keyField} eq ${id}`).join(' or ');
-                return sapGetRequest(req, `${endpoint}?$filter=${encodeURIComponent(filter)}`);
-            })
-        );
+        const rows = [];
+        for (const chunk of chunks) {
+            const filter = chunk.map((id) => `${keyField} eq ${id}`).join(' or ');
+            const res = await sapGetRequest(req, `${endpoint}?$filter=${encodeURIComponent(filter)}`);
+            rows.push(...(res.data?.value || []));
+        }
 
-        return responses.flatMap((res) => res.data?.value || []);
+        return rows;
     }
 
     async getDocsByEntries(req, endpoint, ids) {

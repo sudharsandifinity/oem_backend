@@ -177,6 +177,19 @@ class SAPService extends SAPClient{
         }
     }
 
+    async getRqstByIdLean(req, endpoint, docEntry){
+        if(endpoint == "U_HLB_OATT"){
+            let draft = await AttendanceRegularizationDraft.findOne({where: {Code:docEntry}, order: [['id','DESC']]});
+            if(!draft){
+                draft = await AttendanceRegularizationDraft.findByPk(docEntry);
+            }
+            return draft ? { ...draft.dataValues } : null;
+        }
+
+        const response = await this.getReqById(req, endpoint, docEntry);
+        return { ...response.data };
+    }
+
     async createReq(req, endpoint, payload){
         const response = await this.createRq(req, endpoint, payload);
         return response.data;
@@ -1130,11 +1143,13 @@ class SAPService extends SAPClient{
             return { message: "This request is already approved!" };
         }
 
-        const expReq = await getById(req, endpoint, checkStatus.U_DocNo);
-        const [requester, approver] = await Promise.all([
+        const expReq = await this.getRqstByIdLean(req, endpoint, checkStatus.U_DocNo);
+        const sameEmployee = String(expReq.U_EmpID) === String(user.EmployeeId);
+        const [requester, approverResult] = await Promise.all([
             this.getEmployeeDetail(req, expReq.U_EmpID),
-            this.getEmployeeDetail(req, user.EmployeeId)
+            sameEmployee ? Promise.resolve(null) : this.getEmployeeDetail(req, user.EmployeeId)
         ]);
+        const approver = sameEmployee ? requester : approverResult;
         const app_lev = await this.checkAppvalLvs(req, requester.Position, checkAprv);
     
         payload.U_ApprDt = date;
@@ -1335,7 +1350,7 @@ class SAPService extends SAPClient{
     
         // console.log('totalAprLevs', totalAprLevs);
         // console.log('totalLogs', totalLogs);
-        const updatedExpReq = await getById(req, endpoint,checkStatus.U_DocNo);
+        const updatedExpReq = await this.getRqstByIdLean(req, endpoint, checkStatus.U_DocNo);
     
         if(totalAprLevs == totalLogs || !isNeedApproval){
           console.log('inside final approval');
@@ -1791,12 +1806,29 @@ class SAPService extends SAPClient{
         }
 
         const endpoints = [...idsByEndpoint.keys()];
-        const tasks = endpoints.map((endpoint) => this.getDocsByEntries(req, endpoint, idsByEndpoint.get(endpoint)));
-        if (draftIds.length) {
-            tasks.push(AttendanceRegularizationDraft.findAll({ where: { id: draftIds } }));
+        const settled = [];
+
+        for (const endpoint of endpoints) {
+            try {
+                settled.push({
+                    status: 'fulfilled',
+                    value: await this.getDocsByEntries(req, endpoint, idsByEndpoint.get(endpoint))
+                });
+            } catch (reason) {
+                settled.push({ status: 'rejected', reason });
+            }
         }
 
-        const settled = await Promise.allSettled(tasks);
+        if (draftIds.length) {
+            try {
+                settled.push({
+                    status: 'fulfilled',
+                    value: await AttendanceRegularizationDraft.findAll({ where: { id: draftIds } })
+                });
+            } catch (reason) {
+                settled.push({ status: 'rejected', reason });
+            }
+        }
         settled.forEach((r, i) => {
             if (r.status === 'rejected') {
                 console.warn(`Approval doc fetch failed (${endpoints[i] || 'regularizations'}):`, r.reason?.message || r.reason);
