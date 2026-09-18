@@ -1113,6 +1113,23 @@ class SAPService extends SAPClient{
         console.log('checst', checkStatus);
         
 
+        const isApprover = String(user.EmployeeId) === String(checkStatus.U_AppId);
+        const isDelegate = checkStatus.U_DelID
+            ? String(user.EmployeeId) === String(checkStatus.U_DelID)
+            : false;
+
+        if (!isApprover && !isDelegate) {
+            return { message: "You don't have permission to approve this request!" };
+        }
+
+        if (checkStatus.U_AppSts === "R") {
+            return { message: "This request is already Rejected!" };
+        }
+
+        if (checkStatus.U_AppSts === "A") {
+            return { message: "This request is already approved!" };
+        }
+
         const expReq = await getById(req, endpoint, checkStatus.U_DocNo);
         const [requester, approver] = await Promise.all([
             this.getEmployeeDetail(req, expReq.U_EmpID),
@@ -1221,20 +1238,7 @@ class SAPService extends SAPClient{
         //  console.log('user.EmployeeId !== checkStatus.U_DelID', user.EmployeeId !== checkStatus.U_DelID);
          
     
-        if ((user.EmployeeId !== checkStatus.U_AppId) && 
-            (checkStatus.U_DelID && user.EmployeeId !== checkStatus.U_DelID)) {
-          return { message: "You don't have permission to approve this request!" };
-        }
-    
-        // if(checkStatus.U_AppSts === "A"){
-        //   return {message: "This request is already approved!"};
-        // }
-    
-        if(checkStatus.U_AppSts === "R"){
-          return {message: "This request is already Rejected!"};
-        }
-    
-        const patchReq = await this.patchLogData(req, id, payload);
+        await this.patchLogData(req, id, payload);
         if(payload.U_AppSts == "R"){
             const appUser = await userRepository.findByEmail(requester.eMail);
             if(!appUser) console.log('User not found! notification not added.');
@@ -1576,6 +1580,7 @@ class SAPService extends SAPClient{
 
             const nextStg = Number(checkStatus.U_Stg) + 1;
             const nextStgApr = approvalCollection.filter(i => i.U_Stg == nextStg);
+            const logPayloads = [];
 
             for(const i of nextStgApr){
                 // console.log('entry');
@@ -1619,8 +1624,10 @@ class SAPService extends SAPClient{
                 }
                 // console.log('logpayload', logPayload);
                 
-               await this.createLog(req, logPayload) 
+                logPayloads.push(logPayload);
             }
+
+            await Promise.all(logPayloads.map(nextLog => this.createLog(req, nextLog)));
         }
         return;
     }

@@ -6,9 +6,11 @@ const authService = new AuthService();
 
 
 async function callSAP(req, method, endpoint, data = {}, headerCont = {}, options = {}) {
+  const startedAt = Date.now();
   const userId = req.user.id;
   const sapSession = await SAPSession.findOne({ where: { user_id: userId }, order: [['createdAt', 'DESC']] });
   if (!sapSession) throw new Error('SAP session not found. Please log in.');
+  const sessionMs = Date.now() - startedAt;
 
   const headers = {
     headerCont,
@@ -31,8 +33,15 @@ async function callSAP(req, method, endpoint, data = {}, headerCont = {}, option
     }
     const res = await axios(config);
 
+    req._sapCalls = (req._sapCalls || 0) + 1;
+    req._sapMs = (req._sapMs || 0) + (Date.now() - startedAt);
+    console.log(
+      `[SAP-TIME] ${method} ${endpoint.split('?')[0]} took ${Date.now() - startedAt}ms (session ${sessionMs}ms) | request total ${req._sapMs}ms over ${req._sapCalls} calls`
+    );
+
     return res;
   } catch (error) {
+    console.warn(`[SAP-TIME] ${method} ${endpoint.split('?')[0]} FAILED after ${Date.now() - startedAt}ms`);
     if ([401].includes(error.response?.status)) {
       console.log('SAP session expired, refreshing...');
       // console.log('userId', userId);
