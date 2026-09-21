@@ -8,6 +8,7 @@ const fs = require('fs');
 const SAPClient = require('./SapServices/SAPClient');
 const companyJson = require('../utils/Company.json');
 const { udfField } = require('../utils/companyConfig');
+const sapCache = require('../utils/sapCache');
 const { notificationService } = require('../routes/v1/user/notificaitonRoutes');
 const UserRepository = require('../repositories/userRepository');
 const userRepository = new UserRepository();
@@ -33,8 +34,14 @@ class SAPService extends SAPClient{
     }
 
     async getEmployeeDetail(req, id) {
-        const response = await this.getEmployee(req, id);
-        return response.data;
+        return sapCache.getOrFetch(
+            sapCache.buildKey(req, 'employee', id),
+            sapCache.TTL.EMPLOYEE,
+            async () => {
+                const response = await this.getEmployee(req, id);
+                return response.data;
+            }
+        );
     }
 
     // dynamic
@@ -202,6 +209,7 @@ class SAPService extends SAPClient{
 
     async patchEmp(req, EmpId, payload){
         const response = await this.patchEmployee(req, EmpId, payload);
+        sapCache.clear(sapCache.buildKey(req, 'employee', EmpId));
         return response.data;
     }
 
@@ -246,13 +254,25 @@ class SAPService extends SAPClient{
 
     async getAllExpTypes(req, query = false) {
         // const query = "$filter=U_ExpCode eq 'TR'"
-        const response = await this.getExpTypes(req, query);
-        return response.data;
+        return sapCache.getOrFetch(
+            sapCache.buildKey(req, 'expenseTypes', query || ''),
+            sapCache.TTL.MASTER_DATA,
+            async () => {
+                const response = await this.getExpTypes(req, query);
+                return response.data;
+            }
+        );
     }
 
     async getAllPCTypes(req) {
-        const response = await this.getPCTypes(req);
-        return response.data;
+        return sapCache.getOrFetch(
+            sapCache.buildKey(req, 'pcTypes'),
+            sapCache.TTL.MASTER_DATA,
+            async () => {
+                const response = await this.getPCTypes(req);
+                return response.data;
+            }
+        );
     }
 
     async getCostCentersByDimension(req, dimension) {
@@ -269,8 +289,15 @@ class SAPService extends SAPClient{
     }
 
     async checkAppvalLvs(req, position, model){
-        const response = await this.checkApprovalLevels(req, position, model);
-        return response.data;
+        return sapCache.getOrFetch(
+            sapCache.buildKey(req, 'approvalLevels', position, model),
+            sapCache.TTL.APPROVAL_LEVELS,
+            async () => {
+                const response = await this.checkApprovalLevels(req, position, model);
+                return response.data;
+            },
+            { emptyTtlMs: sapCache.TTL.APPROVAL_LEVELS_EMPTY }
+        );
     }
 
     async createTravelExpReq(req, payload){
@@ -1122,9 +1149,6 @@ class SAPService extends SAPClient{
         const {U_LvAppFDt, U_LvAppTDt, U_NoOfInst, U_SancnAmt, U_EffDate, ...payload} = req.body;
         const checkStatus = await this.getLogById(req, id);
         const { endpoint, getById, patch, checkAprv } = await this.checkModule(checkStatus.U_DocType);
-        console.log('checkAprv', checkAprv);
-        console.log('checst', checkStatus);
-        
 
         const isApprover = String(user.EmployeeId) === String(checkStatus.U_AppId);
         const isDelegate = checkStatus.U_DelID
@@ -1145,11 +1169,10 @@ class SAPService extends SAPClient{
 
         const expReq = await this.getRqstByIdLean(req, endpoint, checkStatus.U_DocNo);
         const sameEmployee = String(expReq.U_EmpID) === String(user.EmployeeId);
-        const [requester, approverResult] = await Promise.all([
-            this.getEmployeeDetail(req, expReq.U_EmpID),
-            sameEmployee ? Promise.resolve(null) : this.getEmployeeDetail(req, user.EmployeeId)
-        ]);
-        const approver = sameEmployee ? requester : approverResult;
+        const requester = await this.getEmployeeDetail(req, expReq.U_EmpID);
+        const approver = sameEmployee
+            ? requester
+            : await this.getEmployeeDetail(req, user.EmployeeId);
         const app_lev = await this.checkAppvalLvs(req, requester.Position, checkAprv);
     
         payload.U_ApprDt = date;
@@ -1157,7 +1180,7 @@ class SAPService extends SAPClient{
         payload.U_AppByID = approver.EmployeeID,
         payload.U_AppByName = `${approver.FirstName} ${approver.LastName}`
     
-        console.log('payload', payload);
+        let docPatch = null;
 
         if(checkStatus.U_DocType == "L"){
 
@@ -1175,6 +1198,7 @@ class SAPService extends SAPClient{
             }
             console.log('form pay', formPayload);
             await patch(req, endpoint, checkStatus.U_DocNo, formPayload);
+            docPatch = formPayload;
         } else if(checkStatus.U_DocType == "LA"){
 
             const formPayload = {
@@ -1186,6 +1210,7 @@ class SAPService extends SAPClient{
             const loanData = this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate);
             console.log('loanData', loanData);
             await patch(req, endpoint, checkStatus.U_DocNo, loanData);
+            docPatch = loanData;
 
         }
     
@@ -1221,8 +1246,6 @@ class SAPService extends SAPClient{
           });
     
         }
-        console.log('latest log', latestLogs);
-        
     
         // console.log('checkStatus', checkStatus.data);
         // console.log('getLogs', getLogs.data.value.length);
@@ -1326,16 +1349,20 @@ class SAPService extends SAPClient{
                 .catch(err => console.warn('Notification send failed:', err?.message || err));
         }
 
-        await Promise.all(
-            get_sm_stg
-                .filter(item => item.Code != id)
-                .map(item => this.patchLogData(req, item.Code, payload))
-        );
+        for (const item of get_sm_stg.filter(item => item.Code != id)) {
+            await this.patchLogData(req, item.Code, payload);
+        }
 
-        const updatedData = await this.getLogById(req, id);
+       const updatedData = { ...checkStatus, ...payload };
 
-        console.log('updated log data', updatedData);
-    
+        const patchedLogCodes = new Set(get_sm_stg.map(item => String(item.Code)));
+        const logsAfterPatch = {
+            ...getLogs,
+            value: getLogs.value.map(log =>
+                patchedLogCodes.has(String(log.Code)) ? { ...log, ...payload } : log
+            )
+        };
+
         if(updatedData.U_AppSts == "R"){
           console.log('inside reject');
           
@@ -1350,13 +1377,13 @@ class SAPService extends SAPClient{
     
         // console.log('totalAprLevs', totalAprLevs);
         // console.log('totalLogs', totalLogs);
-        const updatedExpReq = await this.getRqstByIdLean(req, endpoint, checkStatus.U_DocNo);
+        const updatedExpReq = { ...expReq, ...(docPatch || {}) };
     
         if(totalAprLevs == totalLogs || !isNeedApproval){
           console.log('inside final approval');
     
-          const getLatestLogs = await this.getLogByDoc(req, checkStatus);
-          
+          const getLatestLogs = logsAfterPatch;
+
           let latestUpdatedLogs = null;
           if(isResubmitted){
             const expDateTimeStr = `${updatedExpReq.U_Udt.split('T')[0]}T${updatedExpReq.U_UTm}`;
@@ -1394,7 +1421,6 @@ class SAPService extends SAPClient{
                 }else{
                     noDays = 0.5;
                 }
-                console.log('updatedExpReq', updatedExpReq);
                 console.log('no days', noDays);
                 console.log('inside L');
                 const leaves = await this.getAllLeaveType(req, requester.EmployeeID);
@@ -1423,8 +1449,6 @@ class SAPService extends SAPClient{
                 
                 empReqPayload.U_BalLeave = balance_leave;
             }
-            console.log('empReqPayload', empReqPayload);
-            
             await patch(req, endpoint, updatedData.U_DocNo, empReqPayload);
             
             if(updatedData.U_DocType == "OT" && OTPayout == "Compoff"){
@@ -1451,7 +1475,6 @@ class SAPService extends SAPClient{
                         }
                     ]
                 }
-                console.log('leaveUpdatePayload', leaveUpdatePayload);
                 await this.patchLvReq(req, checkComb?.Code, leaveUpdatePayload);
                 console.log('leave updated');
             }
@@ -1479,11 +1502,9 @@ class SAPService extends SAPClient{
                                 "U_AppByName": ""
                             }
 
-                            await Promise.all(
-                                maxStageLogs.map(log =>
-                                    this.patchLogData(req, log.Code, payload)
-                                )
-                            );
+                            for (const log of maxStageLogs) {
+                                await this.patchLogData(req, log.Code, payload);
+                            }
                         }
 
                         const empReqPayload = {
@@ -1642,7 +1663,9 @@ class SAPService extends SAPClient{
                 logPayloads.push(logPayload);
             }
 
-            await Promise.all(logPayloads.map(nextLog => this.createLog(req, nextLog)));
+            for (const nextLog of logPayloads) {
+                await this.createLog(req, nextLog);
+            }
         }
         return;
     }

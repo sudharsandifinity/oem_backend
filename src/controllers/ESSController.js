@@ -9,6 +9,7 @@ const { sapLogger } = require("../config/logger");
 const { decodeId, encodeId } = require("../utils/hashids");
 const { Endpoints, SAP_QUERIES } = require('../utils/sapEndPoints');
 const { employeeSelect, udfField, getCompanySettings } = require('../utils/companyConfig');
+const sapCache = require('../utils/sapCache');
 const sapService = new SAPService();
 
 const sapAPIs = {
@@ -329,6 +330,25 @@ const companySettings = async (req, res) => {
     const message = 'Error fetching Company Settings';
     errorCatch(req, res, message, error);
   }
+}
+
+const isCacheAdmin = (req) => req.user?.is_super_user == 1 || req.user?.is_com_admin == 1;
+
+const sapCacheStats = async (req, res) => {
+  if (!isCacheAdmin(req)) {
+    return res.status(403).json({ message: 'Not permitted' });
+  }
+  return res.status(200).json(sapCache.stats());
+}
+
+const sapCacheClear = async (req, res) => {
+  if (!isCacheAdmin(req)) {
+    return res.status(403).json({ message: 'Not permitted' });
+  }
+  const { prefix } = req.query;
+  const removed = sapCache.clear(prefix);
+  console.log(`[SAP-CACHE] cleared ${removed} entries (prefix: ${prefix || 'ALL'}) by user ${req.user?.id}`);
+  return res.status(200).json({ cleared: removed, prefix: prefix || null });
 }
 
 const getAllPCType = async (req, res) => {
@@ -1578,4 +1598,4 @@ const getLoan = async (req, res) => {
   }
 };
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, getCostCenters, companySettings }
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, getCostCenters, companySettings, sapCacheStats, sapCacheClear }
