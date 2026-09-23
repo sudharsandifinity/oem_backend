@@ -46,6 +46,10 @@ class MaterialRequestService extends SapBaseSetvice {
                 UoMCode: line.U_UOM,
                 U_MRDocEntry: mr.DocEntry,
                 U_MRLine: line.LineId,
+                U_BOMQty: Number(line.U_BOMQty) || 0,
+                U_BOMOpenQty: Number(line.U_BOMOpenQty) || 0,
+                U_MROpenQty: Number(line.U_MROpenQty) || 0,
+                U_BOMLine: line.U_BOMLine ?? null,
                 RequiredDate: line.U_ReqDate || null,
                 U_HLB_Rmarks: line.U_HLB_Rmarks
             }))
