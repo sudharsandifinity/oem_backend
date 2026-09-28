@@ -21,6 +21,21 @@ const ATTACHMENT_ENDPOINTS = new Set([
     Endpoints.Loan
 ]);
 
+const BULK_BLOCKED_DOC_TYPES = new Set(['L', 'LA']);
+const BULK_MAX_ITEMS = 10;
+
+const DOC_TYPE_NAMES = {
+    TR: 'Travel',
+    OT: 'Over Time',
+    E: 'Expense',
+    PC: 'Petty Cash',
+    L: 'Leave',
+    AT: 'Air Ticket',
+    OR: 'Regularization',
+    RR: 'Resignation',
+    LA: 'Loan'
+};
+
 class SAPService extends SAPClient{
 
     async getAllEmployees(req, query) {
@@ -1136,8 +1151,8 @@ class SAPService extends SAPClient{
         return result;
     }
 
-    async RequestResponse (req) {
-        const cmpJson = companyJson.Companies.find(company => 
+    async RequestResponse (req, overrides = {}) {
+        const cmpJson = companyJson.Companies.find(company =>
            company.name == req.user.companyName
         );
         const paymentMethod = cmpJson.paymentMethod || null;
@@ -1145,9 +1160,14 @@ class SAPService extends SAPClient{
 
         const { date, time } = currentTime();
         const user = req.user;
-        const {id} = req.params;
-        const {U_LvAppFDt, U_LvAppTDt, U_NoOfInst, U_SancnAmt, U_EffDate, ...payload} = req.body;
+        const id = overrides.id ?? req.params.id;
+        const {U_LvAppFDt, U_LvAppTDt, U_NoOfInst, U_SancnAmt, U_EffDate, ...payload} = overrides.body ?? req.body;
         const checkStatus = await this.getLogById(req, id);
+
+        if (overrides.bulk && BULK_BLOCKED_DOC_TYPES.has(checkStatus.U_DocType)) {
+            return { message: `${DOC_TYPE_NAMES[checkStatus.U_DocType] || checkStatus.U_DocType} requests cannot be approved in bulk` };
+        }
+
         const { endpoint, getById, patch, checkAprv } = await this.checkModule(checkStatus.U_DocType);
 
         const isApprover = String(user.EmployeeId) === String(checkStatus.U_AppId);
@@ -1668,6 +1688,61 @@ class SAPService extends SAPClient{
             }
         }
         return;
+    }
+
+    async BulkRequestResponse (req) {
+        const { decision, remark, items } = req.body || {};
+
+        if (!['A', 'R'].includes(decision)) {
+            return { error: "decision must be 'A' or 'R'" };
+        }
+        if (!Array.isArray(items) || items.length === 0) {
+            return { error: 'items must be a non-empty array' };
+        }
+        if (items.length > BULK_MAX_ITEMS) {
+            return { error: `A maximum of ${BULK_MAX_ITEMS} requests can be processed at once` };
+        }
+
+        const seen = new Set();
+        const results = [];
+
+        for (const item of items) {
+            const id = typeof item === 'object' && item !== null ? item.id : item;
+
+            if (id === undefined || id === null || String(id).trim() === '') {
+                results.push({ id: id ?? null, status: 'failed', message: 'Missing request id' });
+                continue;
+            }
+            if (seen.has(String(id))) {
+                results.push({ id, status: 'skipped', message: 'Duplicate request id in this batch' });
+                continue;
+            }
+            seen.add(String(id));
+
+            const body = {
+                U_AppSts: decision,
+                U_Comments: (typeof item === 'object' && item !== null ? item.remark : undefined) ?? remark ?? ''
+            };
+
+            try {
+                const outcome = await this.RequestResponse(req, { id, body, bulk: true });
+                if (outcome && outcome.message) {
+                    results.push({ id, status: 'skipped', message: outcome.message });
+                } else {
+                    results.push({ id, status: decision === 'A' ? 'approved' : 'rejected' });
+                }
+            } catch (error) {
+                const message = error.response?.data?.error?.message?.value || error.message || 'Unknown error';
+                console.error(`[BULK-APPROVAL] log ${id} failed:`, message);
+                results.push({ id, status: 'failed', message });
+            }
+        }
+
+        const succeeded = results.filter(r => r.status === 'approved' || r.status === 'rejected').length;
+        const skipped = results.filter(r => r.status === 'skipped').length;
+        const failed = results.filter(r => r.status === 'failed').length;
+
+        return { total: results.length, succeeded, skipped, failed, results };
     }
 
     async resubmitLogEntry (req, docEntry, DocType) {

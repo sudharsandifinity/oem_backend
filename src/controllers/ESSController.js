@@ -1287,6 +1287,19 @@ const updateMyAprvls = async (req, res) => {
   }
 }
 
+const bulkUpdateMyAprvls = async (req, res) => {
+  try {
+    const data = await sapService.BulkRequestResponse(req);
+    if (data.error) {
+      return res.status(400).json({ message: data.error });
+    }
+    return res.status(200).json(data);
+  } catch (error) {
+    const message = 'Error while processing bulk approval';
+    errorCatch(req, res, message, error);
+  }
+}
+
 const getMyAprs = async (req, res) => {
   try {
     const { top = 20, skip = 0, status = "" } = req.query;
@@ -1598,4 +1611,4 @@ const getLoan = async (req, res) => {
   }
 };
 
-module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, getCostCenters, companySettings, sapCacheStats, sapCacheClear }
+module.exports = { getHolidays, getProjects, getAllEmployees, employeeCheckIn, employeeCheckOut, syncEmployees, getEmployeeProfile, isCheckedIn, missedOutNotification, getAllExpType, getExp, createExpRequest, getAllExpList, updateExpReq, getAllLogsList, getApprovalRequestsList, RequestResponse, resubmitExpReq, currencyList, viewAttachment, createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, resubmitExp, getAttandanceData, createRegularizeRequest, getEmpBenifits, getEmpSalary, getPettyCashes, termination, terminationReason, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes, createLoan, getLoans, getLoan, getEmpRegReq, getAllPCType, getCostCenters, companySettings, bulkUpdateMyAprvls, sapCacheStats, sapCacheClear }

@@ -1,4 +1,4 @@
-const { createRequest, updateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp, getPettyCashes, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes,  createLoan, getLoans, getLoan, getAllPCType, getEmployeePaySlip } = require('../../../controllers/ESSController');
+const { createRequest, updateMyAprvls, bulkUpdateMyAprvls, resubmitTExp, getTravelExpanses, getMyAprs, getTravelExpanse, getOTRequests, getOTRequest, createOTRequest, resubmitOTR, getLeaveRequests, getLeaveequest, createLeaveRequest, getLeaveTypes, resubmitLeaveReq, getAirTickets, getAirTicket, createAirTicket, resubmitAirTicket, getExpanses, getExpanse, createERequest, getAllExpType, resubmitExp, getPettyCashes, getResignations, getResignation, createResignation, resubmitResignation, listAllCertificates, listCertificatesByEmpId, addCertReq, ViewCerts, listWarnByEmpId, addWarnReq, ViewWarnLtr, LoanTypes,  createLoan, getLoans, getLoan, getAllPCType, getEmployeePaySlip } = require('../../../controllers/ESSController');
 const upload = require('../../../middlewares/uploadMiddleware');
 const PayslipController = require('../../../controllers/SapControllers/PayslipController');
 const payslipController = new PayslipController();
@@ -11,6 +11,7 @@ router.post('/travel-expanse', upload.array('Attachments2_Lines'), createRequest
 router.patch('/resubmit/travel-expanse/:id', upload.array('Attachments2_Lines'), resubmitTExp);
 
 router.get('/pending', getMyAprs);
+router.patch('/approvals/bulk', bulkUpdateMyAprvls);
 router.patch('/approvals/:id', upload.array('Attachments2_Lines'), updateMyAprvls);
 
 router.get('/ot-requests', getOTRequests);
