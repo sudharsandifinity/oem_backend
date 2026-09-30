@@ -492,22 +492,37 @@ class SAPService extends SAPClient{
         return diffDays + 1;
     }
 
-    async createAttachment (req) {
+    buildAttachmentName (req, docType, file, index) {
+        const user = req.user || {};
+        const local = String(user.email || '').split('@')[0].replace(/[^A-Za-z0-9]/g, '');
+        const email = local || `user${user.id ?? 'x'}`;
+        const empId = user.EmployeeId === null || user.EmployeeId === undefined || String(user.EmployeeId).trim() === ''
+            ? 'na'
+            : String(user.EmployeeId).replace(/[^A-Za-z0-9]/g, '');
+        const type = String(docType || 'NA').replace(/[^A-Za-z0-9]/g, '') || 'NA';
+        const serial = String(index + 1).padStart(3, '0');
+        const ext = path.extname(file.originalname || '').toLowerCase();
+
+        const d = new Date();
+        const p = (n) => String(n).padStart(2, '0');
+        const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+
+        return `${email}_${empId}_${type}_${stamp}_${serial}${ext}`;
+    }
+
+    async createAttachment (req, docType) {
         try {
             const files = req.files;
-        
+
             if (!files || files.length === 0) {
                 return { message: "No files uploaded" };
             }
-    
+
             const form = new FormData();
-        
-            files.forEach(file => {
-            const ext = path.extname(file.originalname);
-            const base = path.basename(file.originalname, ext);
-        
-            const uniqueName = `${base}_${Date.now()}_${crypto.randomUUID()}${ext}`;
-        
+
+            files.forEach((file, index) => {
+            const uniqueName = this.buildAttachmentName(req, docType, file, index);
+
             form.append(
                 "file",
                 fs.createReadStream(file.path),
@@ -735,7 +750,7 @@ class SAPService extends SAPClient{
         let attachments = null;
 
         if (req.files && req.files.length > 0) {
-            attachments = await this.createAttachment(req);
+            attachments = await this.createAttachment(req, DocType);
         }
         console.log("attachments", attachments );
         
@@ -1833,7 +1848,7 @@ class SAPService extends SAPClient{
         let attachments = null;
     
         if (req.files && req.files.length > 0) {
-          attachments = await this.createAttachment(req);;
+          attachments = await this.createAttachment(req, DocType);;
         }
     
         payload.U_ApprSts = "P"
@@ -2031,7 +2046,7 @@ class SAPService extends SAPClient{
         let attachments = null;
 
         if (req.files && req.files.length > 0) {
-            attachments = await this.createAttachment(req);
+            attachments = await this.createAttachment(req, "OR");
         }
         // console.log("attachments", attachments );
         
