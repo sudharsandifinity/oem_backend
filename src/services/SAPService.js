@@ -36,6 +36,35 @@ const DOC_TYPE_NAMES = {
     LA: 'Loan'
 };
 
+const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+const parseDateInput = (value) => {
+    if (value === null || value === undefined) return null;
+    const s = String(value).trim();
+    let year, month, day, match;
+
+    if ((match = s.match(/^(\d{4})(\d{2})(\d{2})$/))) {
+        [, year, month, day] = match;
+    } else if ((match = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s].*)?$/))) {
+        [, year, month, day] = match;
+    } else if ((match = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/))) {
+        [, day, month, year] = match;
+    } else if ((match = s.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})$/))) {
+        const idx = MONTH_NAMES.indexOf(match[2].slice(0, 3).toLowerCase());
+        if (idx < 0) return null;
+        [day, month, year] = [match[1], idx + 1, match[3]];
+    } else {
+        return null;
+    }
+
+    const y = Number(year);
+    const m = Number(month);
+    const d = Number(day);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null;
+    return date;
+};
+
 class SAPService extends SAPClient{
 
     async getAllEmployees(req, query) {
@@ -1131,39 +1160,37 @@ class SAPService extends SAPClient{
         }
     }
 
-    async generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate) {
-        const installmentAmount = U_SancnAmt / U_NoOfInst;
+    async generateLoanInstallments(U_NoOfInst, U_SancnAmt, effectiveDate) {
+        const count = Number(U_NoOfInst);
+        const amount = Number(U_SancnAmt);
+        const installmentAmount = amount / count;
         const installments = [];
 
-        const effectiveDate = new Date(U_EffDate); 
+        const startYear = effectiveDate.getUTCFullYear();
+        const startMonth = effectiveDate.getUTCMonth();
+        const startDay = effectiveDate.getUTCDate();
+        const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' });
 
-        for (let i = 0; i < U_NoOfInst; i++) {
-            const currentMonth = new Date(effectiveDate);
-            currentMonth.setMonth(effectiveDate.getMonth() + i);
-            
-            const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentMonth).toUpperCase();
-            const year = currentMonth.getFullYear();
+        for (let i = 0; i < count; i++) {
+            const lastDayOfMonth = new Date(Date.UTC(startYear, startMonth + i + 1, 0)).getUTCDate();
+            const due = new Date(Date.UTC(startYear, startMonth + i, Math.min(startDay, lastDayOfMonth)));
 
-            const installment = {
-                U_Month: monthName,
-                U_Year: year,
-                U_Date: currentMonth.toISOString(),
+            installments.push({
+                U_Month: monthFormatter.format(due).toUpperCase(),
+                U_Year: due.getUTCFullYear(),
+                U_Date: due.toISOString(),
                 U_Amount: installmentAmount,
                 U_Status: "O"
-            };
-
-            installments.push(installment);
+            });
         }
 
-        const result = {
-            U_NoOfInst: U_NoOfInst,
-            U_SancnAmt: U_SancnAmt,
-            U_EffDate: U_EffDate,
+        return {
+            U_NoOfInst: count,
+            U_SancnAmt: amount,
+            U_EffDate: effectiveDate.toISOString().slice(0, 10),
             U_ApprSts: "A",
             INPR_LOA1Collection: installments
         };
-        console.log('loan result', result);
-        return result;
     }
 
     async RequestResponse (req, overrides = {}) {
@@ -1236,8 +1263,10 @@ class SAPService extends SAPClient{
             docPatch = formPayload;
         } else if(checkStatus.U_DocType == "LA"){
 
-            if (!U_EffDate || Number.isNaN(new Date(U_EffDate).getTime())) {
-                return { message: "A valid effective date is required to approve a loan request!" };
+            const effectiveDate = parseDateInput(U_EffDate);
+            if (!effectiveDate) {
+                console.warn('[LOAN-APPROVAL] unparseable U_EffDate received:', JSON.stringify(U_EffDate));
+                return { message: `A valid effective date is required to approve a loan request! Received: ${U_EffDate === undefined ? 'nothing' : JSON.stringify(U_EffDate)}` };
             }
             if (!Number(U_NoOfInst) || Number(U_NoOfInst) < 1) {
                 return { message: "Number of installments is required to approve a loan request!" };
@@ -1246,7 +1275,7 @@ class SAPService extends SAPClient{
                 return { message: "Sanctioned amount is required to approve a loan request!" };
             }
 
-            const loanData = await this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate);
+            const loanData = await this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, effectiveDate);
             await patch(req, endpoint, checkStatus.U_DocNo, loanData);
             docPatch = loanData;
 
