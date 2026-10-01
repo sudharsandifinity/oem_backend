@@ -1188,7 +1188,6 @@ class SAPService extends SAPClient{
             U_NoOfInst: count,
             U_SancnAmt: amount,
             U_EffDate: effectiveDate.toISOString().slice(0, 10),
-            U_ApprSts: "A",
             INPR_LOA1Collection: installments
         };
     }
@@ -1276,7 +1275,12 @@ class SAPService extends SAPClient{
             }
 
             const loanData = await this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, effectiveDate);
-            await patch(req, endpoint, checkStatus.U_DocNo, loanData);
+            await sapPatchRequest(
+                req,
+                `${endpoint}(${checkStatus.U_DocNo})`,
+                loanData,
+                { 'B1S-ReplaceCollectionsOnPatch': 'true' }
+            );
             docPatch = loanData;
 
         }

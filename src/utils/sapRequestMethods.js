@@ -10,8 +10,8 @@ const sapPostRequest = async (req, endpoint, payload) => {
   return data;
 };
 
-const sapPatchRequest = async (req, endpoint, payload) => {
-    const data = await callSAP(req, 'PATCH', endpoint, payload);
+const sapPatchRequest = async (req, endpoint, payload, headers = {}) => {
+    const data = await callSAP(req, 'PATCH', endpoint, payload, headers);
     return data;
 };
 
