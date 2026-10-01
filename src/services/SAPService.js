@@ -1236,14 +1236,17 @@ class SAPService extends SAPClient{
             docPatch = formPayload;
         } else if(checkStatus.U_DocType == "LA"){
 
-            const formPayload = {
-                "U_NoOfInst": U_NoOfInst??"",
-                "U_SancnAmt": U_SancnAmt??"",
-                "U_EffDate": U_EffDate
+            if (!U_EffDate || Number.isNaN(new Date(U_EffDate).getTime())) {
+                return { message: "A valid effective date is required to approve a loan request!" };
+            }
+            if (!Number(U_NoOfInst) || Number(U_NoOfInst) < 1) {
+                return { message: "Number of installments is required to approve a loan request!" };
+            }
+            if (!Number(U_SancnAmt) || Number(U_SancnAmt) <= 0) {
+                return { message: "Sanctioned amount is required to approve a loan request!" };
             }
 
-            const loanData = this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate);
-            console.log('loanData', loanData);
+            const loanData = await this.generateLoanInstallments(U_NoOfInst, U_SancnAmt, U_EffDate);
             await patch(req, endpoint, checkStatus.U_DocNo, loanData);
             docPatch = loanData;
 
