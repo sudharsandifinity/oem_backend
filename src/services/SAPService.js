@@ -22,7 +22,7 @@ const ATTACHMENT_ENDPOINTS = new Set([
 ]);
 
 const BULK_BLOCKED_DOC_TYPES = new Set(['L', 'LA']);
-const BULK_MAX_ITEMS = 10;
+const BULK_MAX_ITEMS = 15;
 
 const DOC_TYPE_NAMES = {
     TR: 'Travel',
@@ -521,25 +521,33 @@ class SAPService extends SAPClient{
         return diffDays + 1;
     }
 
-    buildAttachmentName (req, docType, file, index) {
+    buildAttachmentName (req, meta, file, index) {
         const user = req.user || {};
-        const local = String(user.email || '').split('@')[0].replace(/[^A-Za-z0-9]/g, '');
-        const email = local || `user${user.id ?? 'x'}`;
-        const empId = user.EmployeeId === null || user.EmployeeId === undefined || String(user.EmployeeId).trim() === ''
-            ? 'na'
-            : String(user.EmployeeId).replace(/[^A-Za-z0-9]/g, '');
-        const type = String(docType || 'NA').replace(/[^A-Za-z0-9]/g, '') || 'NA';
-        const serial = String(index + 1).padStart(3, '0');
+        const name = String(meta.empName || '')
+            .replace(/[\\/:*?"<>|_\x00-\x1F]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim() || `Emp ${user.EmployeeId ?? 'NA'}`;
+        const docEntry = String(meta.docEntry ?? '').replace(/[^A-Za-z0-9]/g, '') || 'NA';
+        const type = String(meta.typeCode || 'NA').replace(/[^A-Za-z0-9]/g, '') || 'NA';
+        const serial = String((meta.startSerial || 0) + index + 1).padStart(3, '0');
         const ext = path.extname(file.originalname || '').toLowerCase();
 
         const d = new Date();
         const p = (n) => String(n).padStart(2, '0');
-        const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+        const day = `${p(d.getDate())}${p(d.getMonth() + 1)}${d.getFullYear()}`;
 
-        return `${email}_${empId}_${type}_${stamp}_${serial}${ext}`;
+        return `${name}_Doc ${docEntry}_${day}_${type}_${serial}${ext}`;
     }
 
-    async createAttachment (req, docType) {
+    attachmentTypeCode (docType, ...sources) {
+        if (docType === 'E') {
+            const code = sources.map((s) => s?.U_ExpType).find((v) => v !== undefined && v !== null && String(v).trim() !== '');
+            if (code) return String(code).trim();
+        }
+        return docType;
+    }
+
+    async createAttachment (req, meta) {
         try {
             const files = req.files;
 
@@ -550,7 +558,7 @@ class SAPService extends SAPClient{
             const form = new FormData();
 
             files.forEach((file, index) => {
-            const uniqueName = this.buildAttachmentName(req, docType, file, index);
+            const uniqueName = this.buildAttachmentName(req, meta, file, index);
 
             form.append(
                 "file",
@@ -750,7 +758,7 @@ class SAPService extends SAPClient{
         const OTPayout = cmpJson.OTPayout || null;
 
         const { date, time } = currentTime();
-        const { endpoint, create, checkAprv } = await this.checkModule(DocType);
+        const { endpoint, create, checkAprv, patch } = await this.checkModule(DocType);
         console.log('endpoint',  endpoint,);
         console.log('date', date, time);
         console.log('DocType', DocType);
@@ -776,14 +784,6 @@ class SAPService extends SAPClient{
 
         // return stg_1
 
-        let attachments = null;
-
-        if (req.files && req.files.length > 0) {
-            attachments = await this.createAttachment(req, DocType);
-        }
-        console.log("attachments", attachments );
-        
-        
         let payload = req.body;
         payload.U_EmpID = user.EmployeeId || 0;
         payload.U_EmpName = emp.FirstName +" "+ emp.LastName || "";
@@ -792,7 +792,7 @@ class SAPService extends SAPClient{
         payload.U_CTm = time
         payload.U_Udt = date,
         payload.U_UTm = time,
-        payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
+        payload.U_Atch = ""
         if (DocType == "E" || DocType == "PC"){
             payload.U_TransType = DocType
         }
@@ -840,7 +840,24 @@ class SAPService extends SAPClient{
 
         console.log('payload', payload);
         // return payload
-        const response = await create(req, endpoint, payload); 
+        const response = await create(req, endpoint, payload);
+
+        if (req.files && req.files.length > 0 && response?.DocEntry) {
+            try {
+                const attachments = await this.createAttachment(req, {
+                    empName: `${emp.FirstName || ''} ${emp.LastName || ''}`,
+                    docEntry: response.DocEntry,
+                    typeCode: this.attachmentTypeCode(DocType, payload)
+                });
+                console.log("attachments", attachments);
+                if (attachments?.AbsoluteEntry) {
+                    await patch(req, endpoint, response.DocEntry, { U_Atch: attachments.AbsoluteEntry });
+                    response.U_Atch = attachments.AbsoluteEntry;
+                }
+            } catch (error) {
+                console.error('[ATTACHMENT] failed to attach files to', DocType, response.DocEntry, error.response?.data || error.message);
+            }
+        }
 
         let moduleName;
         let moduleurl;
@@ -1880,27 +1897,37 @@ class SAPService extends SAPClient{
         const {id} = req.params;
         const user = req.user;
         let payload = req.body;
-    
-        let attachments = null;
-    
-        if (req.files && req.files.length > 0) {
-          attachments = await this.createAttachment(req, DocType);;
-        }
-    
-        payload.U_ApprSts = "P"
-        payload.U_IsReSub = "Y"
-        payload.U_Udt = date
-        payload.U_UTm = time
-        payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
-    
-        console.log('payu', payload);
-        
+
         const expanse = await getById(req, endpoint, id);
         // const expanse = await sapGetRequest(req, `${sapAPIs.Expanses}(${id})`);
-    
+
         console.log('expanse', expanse);
-        
+
         if(expanse.U_ApprSts === "R" && expanse.U_EmpID == user.EmployeeId){
+            let attachments = null;
+
+            if (req.files && req.files.length > 0) {
+                const startSerial = expanse.AttachmentData?.Attachments2_Lines?.length || 0;
+                let empName = expanse.U_EmpName;
+                if (!empName) {
+                    const emp = await this.getEmployeeDetail(req, user.EmployeeId);
+                    empName = `${emp?.FirstName || ''} ${emp?.LastName || ''}`;
+                }
+                attachments = await this.createAttachment(req, {
+                    empName,
+                    docEntry: id,
+                    typeCode: this.attachmentTypeCode(DocType, payload, expanse),
+                    startSerial
+                });
+            }
+
+            payload.U_ApprSts = "P"
+            payload.U_IsReSub = "Y"
+            payload.U_Udt = date
+            payload.U_UTm = time
+            payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
+
+            console.log('payu', payload);
           console.log('we can procees with this, inside patch');
           // console.log('payload', payload);
           
@@ -2079,13 +2106,6 @@ class SAPService extends SAPClient{
             // console.log('stg1', stg_1);
         }
 
-        let attachments = null;
-
-        if (req.files && req.files.length > 0) {
-            attachments = await this.createAttachment(req, "OR");
-        }
-        // console.log("attachments", attachments );
-        
         let payload = req.body;
         payload.Name = emp.FirstName +" "+ emp.LastName || "";
         payload.U_EmpID = emp.EmployeeID || "";
@@ -2105,6 +2125,15 @@ class SAPService extends SAPClient{
         //     return ('Request is already Pending!')
         // }
         const createdData = await AttendanceRegularizationDraft.create(payload);
+
+        if (req.files && req.files.length > 0) {
+            await this.createAttachment(req, {
+                empName: `${emp.FirstName || ''} ${emp.LastName || ''}`,
+                docEntry: payload.Code ?? createdData.id,
+                typeCode: "OR"
+            });
+        }
+
         if(isNeedApproval){
             for (const element of stg_1) {
                 const isDelegationId = element.U_DlgID;
