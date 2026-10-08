@@ -7,6 +7,16 @@ const { usermenu, encodeUserMenu } = require('../utils/usermenu');
 const axios = require('axios');
 const https = require('https');
 const { decrypt } = require('../utils/crypto');
+const crypto = require('crypto');
+
+const RESET_OTP = {
+    TTL_MS: 10 * 60 * 1000,
+    MAX_ATTEMPTS: 5,
+    RESEND_COOLDOWN_MS: 60 * 1000,
+    WINDOW_MS: 60 * 60 * 1000,
+    MAX_REQUESTS_PER_WINDOW: 5,
+    RESET_TOKEN_TTL_MS: 10 * 60 * 1000
+};
 
 class AuthService {
 
@@ -418,35 +428,139 @@ class AuthService {
         return user;
     }
 
-    async forgotPassword(email) {
-        const user = await User.findOne({ where: { email } });
-        if (!user) throw new Error('Email not found');
-
-        const resetToken = jwt.sign(
-            { id: user.id },
-            process.env.RESET_PASSWORD_SECRET,
-            { expiresIn: '15m' }
-        );
-
-        const resetLink = `${process.env.RESET_PASSWORD_FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-        await sendEmail(email, "Reset password", `Click this link to reset your password: ${resetLink}`);
-        return resetLink;
+    hashResetValue(value) {
+        return crypto.createHmac('sha256', process.env.RESET_PASSWORD_SECRET).update(String(value)).digest('hex');
     }
 
-    async resetPassword(token, newPassword) {
-        try {
-            const decoded = jwt.verify(token, process.env.RESET_PASSWORD_SECRET);
-            const user = await User.findByPk(decoded.id);
-            if (!user) throw new Error('Invalid user');
+    resetError(message, status = 400) {
+        const error = new Error(message);
+        error.status = status;
+        return error;
+    }
 
-            user.password = newPassword;
-            await user.save();
-            await sendEmail(user.email, "Password reset successfull", "Password has been changed successfully!");
-            return true;
-        } catch (error) {
-            throw new Error('Invalid or expired token');
+    clearResetOtp(user) {
+        user.reset_otp_hash = null;
+        user.reset_otp_expires_at = null;
+        user.reset_otp_attempts = 0;
+    }
+
+    async forgotPassword(email) {
+        const user = await User.findOne({ where: { email } });
+        if (!user || Number(user.status) !== 1) return;
+
+        const now = Date.now();
+        const sentAt = user.reset_otp_sent_at ? new Date(user.reset_otp_sent_at).getTime() : 0;
+        if (now - sentAt < RESET_OTP.RESEND_COOLDOWN_MS) return;
+
+        const windowStart = user.reset_otp_window_start ? new Date(user.reset_otp_window_start).getTime() : 0;
+        if (!windowStart || now - windowStart >= RESET_OTP.WINDOW_MS) {
+            user.reset_otp_window_start = new Date(now);
+            user.reset_otp_request_count = 0;
         }
+        if (user.reset_otp_request_count >= RESET_OTP.MAX_REQUESTS_PER_WINDOW) return;
+
+        const otp = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+        const previousSentAt = user.reset_otp_sent_at;
+
+        user.reset_otp_hash = this.hashResetValue(`${user.id}:${otp}`);
+        user.reset_otp_expires_at = new Date(now + RESET_OTP.TTL_MS);
+        user.reset_otp_attempts = 0;
+        user.reset_otp_sent_at = new Date(now);
+        user.reset_otp_request_count = (user.reset_otp_request_count || 0) + 1;
+        user.reset_session_id = null;
+        await user.save();
+
+        const minutes = Math.round(RESET_OTP.TTL_MS / 60000);
+        try {
+            await sendEmail(
+                user.email,
+                "Password reset verification code",
+                `Your password reset verification code is ${otp}.\n\nThis code expires in ${minutes} minutes. If you did not request a password reset, you can ignore this email.`
+            );
+        } catch (error) {
+            console.error('[FORGOT-PASSWORD] failed to send verification code', error.message);
+            this.clearResetOtp(user);
+            user.reset_otp_sent_at = previousSentAt;
+            user.reset_otp_request_count = Math.max(0, user.reset_otp_request_count - 1);
+            await user.save();
+            throw this.resetError('Unable to send the verification code right now. Please try again later.', 503);
+        }
+    }
+
+    async verifyResetOtp(email, otp) {
+        const invalid = () => this.resetError('Invalid or expired verification code');
+
+        const user = await User.findOne({ where: { email } });
+        if (!user || Number(user.status) !== 1 || !user.reset_otp_hash || !user.reset_otp_expires_at) {
+            throw invalid();
+        }
+
+        if (new Date(user.reset_otp_expires_at).getTime() < Date.now()) {
+            this.clearResetOtp(user);
+            await user.save();
+            throw invalid();
+        }
+
+        const expected = Buffer.from(user.reset_otp_hash, 'hex');
+        const actual = Buffer.from(this.hashResetValue(`${user.id}:${otp}`), 'hex');
+        const matches = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+
+        if (!matches) {
+            user.reset_otp_attempts = (user.reset_otp_attempts || 0) + 1;
+            if (user.reset_otp_attempts >= RESET_OTP.MAX_ATTEMPTS) {
+                this.clearResetOtp(user);
+                await user.save();
+                throw this.resetError('Too many incorrect attempts. Please request a new verification code.', 429);
+            }
+            await user.save();
+            throw invalid();
+        }
+
+        const sessionId = crypto.randomBytes(32).toString('hex');
+        this.clearResetOtp(user);
+        user.reset_session_id = this.hashResetValue(sessionId);
+        await user.save();
+
+        const resetToken = jwt.sign(
+            { id: user.id, sid: sessionId, purpose: 'password_reset' },
+            process.env.RESET_PASSWORD_SECRET,
+            { expiresIn: Math.round(RESET_OTP.RESET_TOKEN_TTL_MS / 1000) }
+        );
+
+        return { resetToken, expiresIn: Math.round(RESET_OTP.RESET_TOKEN_TTL_MS / 1000) };
+    }
+
+    async resetPassword(resetToken, newPassword) {
+        const invalid = () => this.resetError('Reset session is invalid or has expired. Please request a new verification code.');
+
+        let decoded;
+        try {
+            decoded = jwt.verify(resetToken, process.env.RESET_PASSWORD_SECRET);
+        } catch (error) {
+            throw invalid();
+        }
+
+        if (decoded?.purpose !== 'password_reset' || !decoded.sid || !decoded.id) throw invalid();
+
+        const user = await User.findByPk(decoded.id);
+        if (!user || Number(user.status) !== 1 || !user.reset_session_id) throw invalid();
+
+        const expected = Buffer.from(user.reset_session_id, 'hex');
+        const actual = Buffer.from(this.hashResetValue(decoded.sid), 'hex');
+        if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) throw invalid();
+
+        user.password = newPassword;
+        user.reset_session_id = null;
+        this.clearResetOtp(user);
+        await user.save();
+
+        try {
+            await sendEmail(user.email, "Password changed", "Your password has been changed successfully. If you did not do this, contact your administrator immediately.");
+        } catch (error) {
+            console.error('[RESET-PASSWORD] failed to send confirmation email', error.message);
+        }
+
+        return true;
     }
 
     async changePassword(userId, currentPassword, newPassword) {

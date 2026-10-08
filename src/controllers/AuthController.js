@@ -111,31 +111,34 @@ class AuthController {
     forgotPassword = async (req, res) => {
         try {
             const { email } = req.body;
-            const resetLink = await authService.forgotPassword(email);
-            return res.status(200).json({ message: 'Reset link sent to email', resetLink });
+            await authService.forgotPassword(email);
+            return res.status(200).json({
+                message: 'If an account exists for this email, a verification code has been sent.',
+                otpExpiresIn: 600,
+                resendAfter: 60
+            });
         } catch (error) {
-            return res.status(400).json({ message: error.message });
+            return res.status(error.status || 500).json({ message: error.status ? error.message : 'Unable to process the request' });
+        }
+    }
+
+    verifyResetOtp = async (req, res) => {
+        try {
+            const { email, otp } = req.body;
+            const result = await authService.verifyResetOtp(email, otp);
+            return res.status(200).json({ message: 'Verification successful', ...result });
+        } catch (error) {
+            return res.status(error.status || 500).json({ message: error.status ? error.message : 'Unable to verify the code' });
         }
     }
 
     resetPassword = async (req, res) => {
         try {
-            const { newPassword } = req.body;
-            const { token } = req.query;
-            
-            if (!token) {
-                return res.status(400).json({ message: 'Reset token is missing in URL query.' });
-            }
-
-            if (!newPassword) {
-                return res.status(400).json({ message: 'New password is required.' });
-            }
-
-            await authService.resetPassword(token, newPassword);
-
+            const { resetToken, newPassword } = req.body;
+            await authService.resetPassword(resetToken, newPassword);
             return res.status(200).json({ message: 'Password reset successful' });
         } catch (error) {
-            return res.status(400).json({ message: error.message });
+            return res.status(error.status || 500).json({ message: error.status ? error.message : 'Unable to reset the password' });
         }
     };
 

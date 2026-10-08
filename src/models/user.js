@@ -7,6 +7,18 @@ class User extends Model {
         return await bcrypt.compare(plainPassword, this.password);
     }
 
+    toJSON() {
+        const values = { ...this.get() };
+        delete values.reset_otp_hash;
+        delete values.reset_otp_expires_at;
+        delete values.reset_otp_attempts;
+        delete values.reset_otp_sent_at;
+        delete values.reset_otp_request_count;
+        delete values.reset_otp_window_start;
+        delete values.reset_session_id;
+        return values;
+    }
+
     static associate(models) {
         // User.belongsTo(models.Role);
         User.belongsToMany(models.Branch, {
@@ -61,7 +73,22 @@ module.exports = (sequelize) => {
         status: {
             type: DataTypes.TINYINT,
             defaultValue: 1
-        }
+        },
+        reset_otp_hash: {type: DataTypes.STRING(128)},
+        reset_otp_expires_at: {type: DataTypes.DATE},
+        reset_otp_attempts: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
+        reset_otp_sent_at: {type: DataTypes.DATE},
+        reset_otp_request_count: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
+        reset_otp_window_start: {type: DataTypes.DATE},
+        reset_session_id: {type: DataTypes.STRING(64)}
     }, {
         sequelize,
         modelName: 'User',
