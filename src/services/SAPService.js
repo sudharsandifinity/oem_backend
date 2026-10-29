@@ -1,6 +1,6 @@
 const { currentTime, addMinutes } = require('../utils/currentTime');
 const { Endpoints } = require('../utils/sapEndPoints');
-const { sapPatchRequest } = require('../utils/sapRequestMethods');
+const { sapPatchRequest, sapGetRequest } = require('../utils/sapRequestMethods');
 const { AttendanceRegularizationDraft } = require('../models');
 const FormData = require('form-data');
 const path = require('path');
@@ -524,7 +524,7 @@ class SAPService extends SAPClient{
     buildAttachmentName (req, meta, file, index) {
         const user = req.user || {};
         const name = String(meta.empName || '')
-            .replace(/[\\/:*?"<>|_\x00-\x1F]/g, ' ')
+            .replace(/[\\/:*?"'<>|#%&_\x00-\x1F]/g, ' ')
             .replace(/\s+/g, ' ')
             .trim() || `Emp ${user.EmployeeId ?? 'NA'}`;
         const docEntry = String(meta.docEntry ?? '').replace(/[^A-Za-z0-9]/g, '') || 'NA';
@@ -547,6 +547,23 @@ class SAPService extends SAPClient{
         return docType;
     }
 
+    async uploadAttachmentFiles (req, meta, items) {
+        const form = new FormData();
+
+        items.forEach((item, index) => {
+            form.append(
+                "file",
+                item.buffer ?? fs.createReadStream(item.path),
+                {
+                    filename: this.buildAttachmentName(req, meta, item, index),
+                    contentType: item.mimetype || 'application/octet-stream'
+                }
+            );
+        });
+
+        return this.createAtta(req, form, form.getHeaders());
+    }
+
     async createAttachment (req, meta) {
         try {
             const files = req.files;
@@ -555,33 +572,78 @@ class SAPService extends SAPClient{
                 return { message: "No files uploaded" };
             }
 
-            const form = new FormData();
-
-            files.forEach((file, index) => {
-            const uniqueName = this.buildAttachmentName(req, meta, file, index);
-
-            form.append(
-                "file",
-                fs.createReadStream(file.path),
-                {
-                    filename: uniqueName,
-                    contentType: file.mimetype
-                }
-            );
-            });
-        
-            const response = await this.createAtta(
-                req,
-                form,
-                form.getHeaders()
-            );
-        
-            return response;
-    
+            return await this.uploadAttachmentFiles(req, meta, files);
         } catch (error) {
             console.error(error.response?.data || error.message);
         }
     };
+
+    parseKeepAttachments (value) {
+        if (value === undefined || value === null) return null;
+        let list = value;
+        if (typeof list === 'string') {
+            const trimmed = list.trim();
+            if (trimmed === '') return [];
+            try {
+                list = JSON.parse(trimmed);
+            } catch (error) {
+                list = trimmed.split(',');
+            }
+        }
+        if (!Array.isArray(list)) list = [list];
+        return list.map((v) => Number(String(v).trim())).filter((v) => Number.isInteger(v));
+    }
+
+    lastAttachmentSerial (lines) {
+        return lines.reduce((max, line) => {
+            const match = String(line?.FileName || '').match(/_(\d{3,})$/);
+            return match ? Math.max(max, Number(match[1])) : max;
+        }, lines.length);
+    }
+
+    async downloadAttachmentLine (req, absoluteEntry, line) {
+        const fileName = line.FileExtension ? `${line.FileName}.${line.FileExtension}` : line.FileName;
+        const quoted = encodeURIComponent(String(fileName).replace(/'/g, "''"));
+        const response = await sapGetRequest(
+            req,
+            `${Endpoints.Attachments}(${absoluteEntry})/$value?filename='${quoted}'`,
+            {},
+            {},
+            { responseType: 'arraybuffer' }
+        );
+        return {
+            buffer: Buffer.from(response.data),
+            originalname: fileName,
+            mimetype: response.headers?.['content-type'] || 'application/octet-stream'
+        };
+    }
+
+    async resolveResubmitAttachments (req, meta, existingEntry, existingLines, keepValue) {
+        const newFiles = Array.isArray(req.files) ? req.files : [];
+        const keep = this.parseKeepAttachments(keepValue);
+        const keptLines = keep === null
+            ? existingLines
+            : existingLines.filter((line) => keep.includes(Number(line.LineNum)));
+
+        const unchanged = keptLines.length === existingLines.length && newFiles.length === 0;
+        if (unchanged) return { changed: false };
+
+        if (keptLines.length === 0 && newFiles.length === 0) return { changed: true, absoluteEntry: "" };
+
+        const keptItems = [];
+        for (const line of keptLines) {
+            keptItems.push(await this.downloadAttachmentLine(req, existingEntry, line));
+        }
+
+        const created = await this.uploadAttachmentFiles(
+            req,
+            { ...meta, startSerial: this.lastAttachmentSerial(existingLines) },
+            [...keptItems, ...newFiles]
+        );
+
+        if (!created?.AbsoluteEntry) throw new Error('Attachment upload failed');
+        return { changed: true, absoluteEntry: created.AbsoluteEntry };
+    }
 
     async checkModule(DocType){
         
@@ -1887,13 +1949,10 @@ class SAPService extends SAPClient{
         }   
     }
 
-    async resubmitRequest (req, DocType) {
+    async resubmitRequest (req, gDocType) {
         const { date, time } = currentTime();
-        const { endpoint, getById, patch } = await this.checkModule(DocType);
+        const { endpoint, getById, patch } = await this.checkModule(gDocType);
 
-        console.log('DocType', DocType);
-        
-      
         const {id} = req.params;
         const user = req.user;
         let payload = req.body;
@@ -1901,31 +1960,51 @@ class SAPService extends SAPClient{
         const expanse = await getById(req, endpoint, id);
         // const expanse = await sapGetRequest(req, `${sapAPIs.Expanses}(${id})`);
 
+        let DocType = gDocType;
+        if (gDocType == "E" || gDocType == "PC") {
+            DocType = expanse?.U_TransType == "PC" ? "PC" : "E";
+            payload.U_TransType = DocType;
+        }
+
+        console.log('DocType', DocType);
         console.log('expanse', expanse);
 
         if(expanse.U_ApprSts === "R" && expanse.U_EmpID == user.EmployeeId){
-            let attachments = null;
+            const keepAttachments = payload.keepAttachments ?? payload['keepAttachments[]'];
+            delete payload.keepAttachments;
+            delete payload['keepAttachments[]'];
+            delete payload.U_Atch;
 
-            if (req.files && req.files.length > 0) {
-                const startSerial = expanse.AttachmentData?.Attachments2_Lines?.length || 0;
-                let empName = expanse.U_EmpName;
-                if (!empName) {
-                    const emp = await this.getEmployeeDetail(req, user.EmployeeId);
-                    empName = `${emp?.FirstName || ''} ${emp?.LastName || ''}`;
-                }
-                attachments = await this.createAttachment(req, {
+            let empName = expanse.U_EmpName;
+            if (!empName) {
+                const emp = await this.getEmployeeDetail(req, user.EmployeeId);
+                empName = `${emp?.FirstName || ''} ${emp?.LastName || ''}`;
+            }
+
+            let existingLines = expanse.AttachmentData?.Attachments2_Lines;
+            if (!existingLines && expanse.U_Atch) {
+                existingLines = (await this.getAttachment(req, expanse.U_Atch))?.Attachments2_Lines;
+            }
+
+            const attachmentResult = await this.resolveResubmitAttachments(
+                req,
+                {
                     empName,
                     docEntry: id,
-                    typeCode: this.attachmentTypeCode(DocType, payload, expanse),
-                    startSerial
-                });
-            }
+                    typeCode: this.attachmentTypeCode(DocType, payload, expanse)
+                },
+                expanse.U_Atch,
+                existingLines || [],
+                keepAttachments
+            );
 
             payload.U_ApprSts = "P"
             payload.U_IsReSub = "Y"
             payload.U_Udt = date
             payload.U_UTm = time
-            payload.U_Atch = attachments ? attachments.AbsoluteEntry:""
+            if (attachmentResult.changed) {
+                payload.U_Atch = attachmentResult.absoluteEntry
+            }
 
             console.log('payu', payload);
           console.log('we can procees with this, inside patch');
