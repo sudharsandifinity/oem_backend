@@ -18,6 +18,15 @@ const RESET_OTP = {
     RESET_TOKEN_TTL_MS: 10 * 60 * 1000
 };
 
+const resolveCompanyId = (value) => {
+    if (value === undefined || value === null || String(value).trim() === '') return null;
+    const raw = String(value).trim();
+    let decoded = null;
+    try { decoded = decodeId(raw); } catch (e) { decoded = null; }
+    if (decoded !== null && decoded !== undefined) return Number(decoded);
+    return /^\d+$/.test(raw) ? Number(raw) : null;
+};
+
 class AuthService {
 
     async sapLogin(req, user=null) {
@@ -95,7 +104,11 @@ class AuthService {
         });
         // const getCompany = userData.Branches.map(bch => bch.Company.id)
         // console.log('getCompany', getCompany);
-        const decodedCompanyId = decodeId(companyId) ?? userData?.Branches?.[0]?.Company.id;
+        const resolvedCompanyId = resolveCompanyId(companyId);
+        if (companyId && resolvedCompanyId === null) {
+            throw new Error('Invalid company ID');
+        }
+        const decodedCompanyId = resolvedCompanyId ?? userData?.Branches?.[0]?.Company.id;
         console.log('decodedCompanyId', decodedCompanyId);
         if (typeof decodedCompanyId !== 'number' || isNaN(decodedCompanyId)) {
             throw new Error('Decoded company ID is invalid');
@@ -242,19 +255,25 @@ class AuthService {
                 ]
             });
             if (!user) throw new Error('Invalid email or user not found!');
-            const sapLogin = await this.sapLogin(req, user.id);
 
-            if (!req.body.company_id) {
+            if (!req.body?.company_id) {
                 throw new Error('company ID is not found');
             }
-            const companyId = req.body?.company_id;
-            const decodedCompanyId = decodeId(companyId);
+            const decodedCompanyId = resolveCompanyId(req.body.company_id);
+            if (decodedCompanyId === null) {
+                throw new Error('Invalid company ID');
+            }
 
             // const fst_branch_sap_id = user?.Branches?.[0]?.UserBranch?.sap_emp_id;
-            const file_cur_comp = user.Branches.filter(branch => branch.companyId == decodedCompanyId);
-            const companyName = file_cur_comp[0]?.Company.name;
+            const file_cur_comp = (user.Branches || []).filter(branch => branch.companyId == decodedCompanyId);
+            if (!file_cur_comp.length) {
+                throw new Error("You don't have access to this company");
+            }
+
+            const sapLogin = await this.sapLogin(req, user.id);
+            const companyName = file_cur_comp[0]?.Company?.name;
             // console.log('compayname', companyName);
-            const db_emp_id = file_cur_comp[0].UserBranch.sap_emp_id;
+            const db_emp_id = file_cur_comp[0]?.UserBranch?.sap_emp_id;
             console.log('current db_emp_id', db_emp_id);
 
             const token = jwt.sign(
