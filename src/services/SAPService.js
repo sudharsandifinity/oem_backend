@@ -1177,7 +1177,7 @@ class SAPService extends SAPClient{
         }
     }
 
-    async APInvoice (req, emp, response, U_DocType){
+    async APInvoice (req, emp, response, U_DocType, postingDate = null){
         const { endpoint, patch } = await this.checkModule(U_DocType);
         // console.log('respos', response);
         // console.log('respos', response.DocEntry);
@@ -1196,7 +1196,7 @@ class SAPService extends SAPClient{
             "DocType": "dDocument_Service",
             "CardCode": emp.LinkedVendor,
             "DocCurrency": response.U_CUR,
-            "DocDate": response.U_Udt,
+            "DocDate": postingDate ?? response.U_Udt,
             "TaxDate": response.U_CDt,
             "JournalMemo": expTypeData.U_ExpName?`${expTypeData.U_ExpName} - ${emp.FirstName} ${emp.LastName} - ${frM}`:null,
             "Project": response.U_PrjCode,
@@ -1631,7 +1631,7 @@ class SAPService extends SAPClient{
 
             if(companyJson.paymentRequired.includes(checkStatus.U_DocType)){
                 if(paymentMethod == "Ap Invoice"){
-                    const apinvoice = await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType);
+                    const apinvoice = await this.APInvoice(req, requester, updatedExpReq, checkStatus.U_DocType, date);
                     if(apinvoice.U_PSts != "Success"){
                         const getAllLatestLogs = getLatestLogs.value || [];
                         if(getAllLatestLogs.length > 0){
