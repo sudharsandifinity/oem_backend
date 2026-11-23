@@ -36,7 +36,7 @@ class ApprovalService {
       return null;
     }
 
-    const existing = await this.repository.getRequestByDoc(docType, docEntry);
+    const existing = await this.repository.getRequestByDoc(companyId, docType, docEntry);
     if (existing) return existing;
 
     const request = await this.repository.createRequest({
@@ -74,10 +74,27 @@ class ApprovalService {
     });
   }
 
-  async getRequestDetail(id) {
-    const request = await this.repository.getRequestById(id);
-    if (!request) throw httpError('Approval request not found', 404);
+  _canView(request, user, companyId) {
+    if (!request || request.companyId !== companyId) return false;
+    if (user.isComAdmin === true || user.isComAdmin === 1) return true;
+    if (request.createdByUserId === user.id) return true;
+    if (sortStages(request.ApprovalFlow).some((s) => stageActorIds(s).includes(user.id))) return true;
+    return (request.actions || []).some((a) => a.approverUserId === user.id);
+  }
+
+  async getRequestDetail(id, user, companyId) {
+    const request = id ? await this.repository.getRequestById(id) : null;
+    if (!request || request.companyId !== companyId) throw httpError('Approval request not found', 404);
+    if (!this._canView(request, user, companyId)) {
+      throw httpError('You are not allowed to view this approval request', 403);
+    }
     return request;
+  }
+
+  async getRequestForDoc(user, companyId, docType, docEntry) {
+    const found = await this.repository.getRequestByDoc(companyId, docType, docEntry);
+    if (!found) return null;
+    return this.getRequestDetail(found.id, user, companyId);
   }
 
   _assertCurrentStageApprover(request, userId) {
@@ -152,6 +169,15 @@ class ApprovalService {
     if (request.createdByUserId && request.createdByUserId !== userId) {
       throw httpError('Only the requestor can resubmit', 403);
     }
+
+    await this.repository.addAction({
+      requestId: request.id,
+      stageOrder: request.currentStageOrder,
+      approverUserId: userId,
+      actedAs: 'requestor',
+      decision: 'resubmitted',
+      remark: null
+    });
 
     await this.repository.updateRequest(request.id, { status: 'pending', currentStageOrder: 1 });
     this.notifyStageApprovers(request.ApprovalFlow, 1);

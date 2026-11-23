@@ -75,8 +75,8 @@ class ApprovalRepository {
     });
   }
 
-  async getRequestByDoc(docType, docEntry) {
-    return ApprovalRequest.findOne({ where: { docType, docEntry } });
+  async getRequestByDoc(companyId, docType, docEntry) {
+    return ApprovalRequest.findOne({ where: { companyId, docType, docEntry }, order: [['id', 'DESC']] });
   }
 
   async listByCompanyDocType(companyId, docType, status) {

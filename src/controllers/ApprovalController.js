@@ -22,10 +22,39 @@ const shapeActions = (request) =>
   (request.actions || []).map((a) => ({
     stageOrder: a.stageOrder,
     decision: a.decision,
+    actedAs: a.actedAs ?? null,
     remark: a.remark ?? '',
     approver: [a.User?.first_name, a.User?.last_name].filter(Boolean).join(' '),
     createdAt: a.createdAt
   }));
+
+const shapePendingWith = (request, stages) => {
+  if (request.status !== 'pending') return null;
+  const current = stages.find((s) => s.stageOrder === request.currentStageOrder);
+  if (!current) return null;
+  return {
+    stageOrder: current.stageOrder,
+    stageName: current.name,
+    totalStages: stages.length,
+    approver: current.approver,
+    delegator: current.delegator
+  };
+};
+
+const shapeRequest = (request) => {
+  const stages = shapeStages(request.ApprovalFlow);
+  return {
+    id: encodeId(request.id),
+    docType: request.docType,
+    docEntry: request.docEntry,
+    currentStageOrder: request.currentStageOrder,
+    status: request.status,
+    createdByUserId: request.createdByUserId,
+    stages,
+    pendingWith: shapePendingWith(request, stages),
+    actions: shapeActions(request)
+  };
+};
 
 class ApprovalController {
   constructor() {
@@ -124,22 +153,32 @@ class ApprovalController {
   getRequest = async (req, res) => {
     try {
       const id = decodeId(req.params.id);
-      const request = await this.service.getRequestDetail(id);
+      const companyId = await this._companyId(req);
+      const request = await this.service.getRequestDetail(id, req.user, companyId);
       const mr = await this._hydrateMR(req, request);
 
-      return res.status(200).json({
-        id: encodeId(request.id),
-        docType: request.docType,
-        docEntry: request.docEntry,
-        currentStageOrder: request.currentStageOrder,
-        status: request.status,
-        createdByUserId: request.createdByUserId,
-        stages: shapeStages(request.ApprovalFlow),
-        actions: shapeActions(request),
-        mr
-      });
+      return res.status(200).json({ ...shapeRequest(request), mr });
     } catch (error) {
       return this._sendError(res, error, 'Error while fetching approval request');
+    }
+  };
+
+  getByDoc = async (req, res) => {
+    try {
+      const docType = req.query.docType || 'MR';
+      const docEntry = Number(req.query.docEntry);
+      if (!Number.isInteger(docEntry) || docEntry <= 0) {
+        return res.status(400).json({ message: 'Valid docEntry is required' });
+      }
+      const companyId = await this._companyId(req);
+      if (!companyId) return res.status(200).json({ docType, docEntry, status: 'not_required' });
+
+      const request = await this.service.getRequestForDoc(req.user, companyId, docType, docEntry);
+      if (!request) return res.status(200).json({ docType, docEntry, status: 'not_required' });
+
+      return res.status(200).json(shapeRequest(request));
+    } catch (error) {
+      return this._sendError(res, error, 'Error while fetching approval status');
     }
   };
 
